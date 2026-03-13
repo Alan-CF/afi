@@ -5,7 +5,7 @@ export default function NavBar() {
     return (
         <nav>
             <h1>Hello {user?.username}!</h1>
-            <img src={user?.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full"/>
+            <img src={user?.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full"/>
         </nav>
     );
 }
