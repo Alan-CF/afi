@@ -61,7 +61,7 @@ export async function answerQuestion(req: Request) {
   const answerData = {
     answer,
     game_id: gameId,
-    user_id: userId,
+    profile_id: userId,
     awarded_points: points,
     similarity_score: similarity,
     is_correct,

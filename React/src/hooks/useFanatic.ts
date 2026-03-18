@@ -174,4 +174,43 @@ export function useFanaticBestTry() {
     refreshBestTry: fetchBestTry,
   };
 }
+
+export function useFanaticNextRiddleDate() {
+  const [nextRiddleDate, setNextRiddleDate] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchNextRiddleDate = async () => {
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.rpc('fanatic_next_riddle_date');
+
+      console.log("Fetched next riddle date data:", data, "error:", error);
+      if (error) throw error;
+
+      setNextRiddleDate(typeof data === "string" ? new Date(data) : null);
+
+      setError(null);
+    } catch (err) {
+      console.error("Error in useFanaticNextRiddleDate hook:", err);
+      setError(
+        err instanceof Error ? err : new Error("Failed to fetch next riddle date"),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNextRiddleDate();
+  }, []);
+
+  return {
+    nextRiddleDate,
+    loading,
+    error,
+    refreshNextRiddleDate: fetchNextRiddleDate,
+  };
+}
   
