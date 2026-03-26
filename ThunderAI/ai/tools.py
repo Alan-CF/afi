@@ -1,1 +1,1 @@
-from sb.supabase_client import supabase
+from sb.functions import search_products
