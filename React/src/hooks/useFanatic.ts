@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from '../lib/supabaseClient';
 import { getSession } from '../lib/auth'
-import { getRiddles, submitAnswer } from "../lib/fanaticApi";
+import { submitAnswer } from "../lib/fanaticApi";
 type Riddle = {
   sort_order: number;
   riddle: string;
@@ -28,10 +28,17 @@ export function useFanaticRiddles() {
     try {
       setLoading(true);
 
-      const data = await getRiddles();
+      const { data, error } = await supabase.rpc("fanatic_get_current_game");
+      
+      if (error) throw error;
 
-      setRiddles(data.riddles ?? []);
-      setCategory(data.game_category ?? null);
+      setRiddles(
+        data?.map((row: any) => ({
+          sort_order: row.sort_order,
+          riddle: row.riddle,
+        })) ?? []
+      );
+      setCategory(data?.[0]?.game_category ?? null);
 
       setError(null);
     } catch (err) {
