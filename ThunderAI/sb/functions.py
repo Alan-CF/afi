@@ -18,11 +18,7 @@ def _get_embedding(product: str):
     )
     return response.json()["data"][0]["embedding"]
 
-def get_active_cart():
-    if not (session := supabase.auth.get_session()):
-        raise PermissionError("Not authenticated")
-
-    user_id = session.user.id
+def get_active_cart(user_id: str):
 
     data = (
         supabase.table("shopping_carts")
@@ -57,4 +53,23 @@ def search_products(product: str):
 def authenticate_user(jwt_token: str):
     token = jwt_token.replace("Bearer ", "")
     supabase.postgrest.auth(token)
+    return jwt.decode(token, options={"verify_signature": False})["sub"]
 
+def get_chat_history(user_id: str):
+
+    data = (
+        supabase.table("thunder_conversations")
+        .select("role, content")
+        .eq("profile_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+        .data
+    )
+    return data
+
+def save_chat_message(user_id: str, message: str, role: str):
+    supabase.table("thunder_conversations").insert({
+        "profile_id": user_id,
+        "content": message,
+        "role": role
+    }).execute()
