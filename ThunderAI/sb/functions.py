@@ -62,6 +62,7 @@ def get_chat_history(user_id: str):
         .select("role, content")
         .eq("profile_id", user_id)
         .order("created_at", desc=True)
+        .limit(5)
         .execute()
         .data
     )
