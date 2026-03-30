@@ -397,3 +397,25 @@ entrypoint = "./functions/fanatic/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/fanatic/*.html" ]
+
+[functions.product-embedding-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/product-embedding-generator/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/product-embedding-generator/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/product-embedding-generator/*.html" ]
+
+[functions.question-embedding-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/question-embedding-generator/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/question-embedding-generator/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/question-embedding-generator/*.html" ]
