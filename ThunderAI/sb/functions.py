@@ -5,11 +5,15 @@ import os
 
 
 def _get_embedding(product: str):
+    api_key = os.getenv("VOYAGE_API_KEY")
+    if not api_key:
+        raise ValueError("VOYAGE_API_KEY not set in environment variables")
+    
     response = requests.post(
         "https://api.voyageai.com/v1/embeddings",
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {os.getenv('VOYAGE_API_KEY')}",
+            "Authorization": f"Bearer {api_key}",
         },
         json={
             "input": [product],
