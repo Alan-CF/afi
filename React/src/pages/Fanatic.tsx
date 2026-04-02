@@ -17,13 +17,20 @@ function isFutureDate(date?: Date | null) {
 }
 
 function formatTime(
-    { hours, minutes, seconds, total }: CountdownRenderProps,
-    showTotalHours = false,
+    { minutes, seconds, total }: CountdownRenderProps,
 ) {
     const totalHours = Math.floor(total / (1000 * 60 * 60));
-    const displayHours = showTotalHours ? totalHours : hours;
 
-    return [displayHours, minutes, seconds]
+    if (totalHours >= 24) {
+        const totalDays = Math.floor(totalHours / 24);
+        const remainingHours = totalHours % 24;
+
+        return [totalDays, remainingHours, minutes, seconds]
+            .map((value) => value.toString().padStart(2, "0"))
+            .join(":");
+    }
+
+    return [totalHours, minutes, seconds]
         .map((value) => value.toString().padStart(2, "0"))
         .join(":");
 }
@@ -72,7 +79,7 @@ function Fanatic() {
                         intervalDelay={0}
                         precision={0}
                         renderer={(props) =>
-                            props.completed ? null : <>Next game in: {formatTime(props, true)}</>
+                            props.completed ? null : <>Next game in: {formatTime(props)}</>
                         }
                     />
                 </p>
@@ -122,7 +129,7 @@ function Fanatic() {
                         intervalDelay={0}
                         precision={0}
                         renderer={(props) =>
-                            props.completed ? null : <>Next riddle in: {formatTime(props, true)}</>
+                            props.completed ? null : <>Next riddle in: {formatTime(props)}</>
                         }
                     />
                 )}
