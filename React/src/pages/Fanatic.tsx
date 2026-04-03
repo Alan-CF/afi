@@ -4,7 +4,8 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import CarouselCard from "../components/ui/CarouselCard";
 import Dialog from "../components/ui/Dialog";
-import { 
+import type { FanaticAnswer } from "../lib/fanaticApi";
+import {
     useFanaticGame, 
     useFanaticRiddles,
     useSubmitFanaticAnswer, 
@@ -19,9 +20,58 @@ function isFutureDate(date?: Date | null) {
     return !!date && date.getTime() > Date.now();
 }
 
-function formatTime(
-    { minutes, seconds, total }: CountdownRenderProps,
-) {
+function handleSimilarityText(similarity: number | null) {
+    if (similarity === null) {
+        return "The ref called time out.";
+    }
+
+    let messages;
+
+    if (similarity >= 0.8) {
+         messages = [
+            "Swish! Nothing but net!",
+            "Buckets!",
+            "And one!",
+            "That's a buzzer beater!",
+            "MVP! MVP! MVP!",
+        ];
+    } else if (similarity >= 0.6) {
+        messages = [
+            "You're in the paint!",
+            "Open look, take the shot!",
+            "That's a good read of the play.",
+            "You're driving to the basket.",
+            "One dribble away!",
+        ];
+    } else if (similarity >= 0.4) {
+        messages = [
+            "You're finding your range.",
+            "Getting into the game.",
+            "Warming up on the court.",
+            "That one grazed the rim.",
+            "Almost in shooting position.",
+        ];
+    } else if (similarity >= 0.2) {
+        messages = [
+            "Way off the rim.",
+            "Missed the court entirely.",
+            "Coach is not happy.",
+            "Clang! Off the backboard.",
+            "That shot had no chance.",
+        ];
+    } else {
+        messages = [
+            "Airball! Not even close.",
+            "Didn't even hit the backboard.",
+            "You shot at the wrong hoop.",
+            "Bench yourself and rethink.",
+            "That shot left the building.",
+        ];
+    }
+    return messages[Math.floor(Math.random() * messages.length)];
+}
+
+function formatTime({ minutes, seconds, total }: CountdownRenderProps) {
     const totalHours = Math.floor(total / (1000 * 60 * 60));
 
     if (totalHours >= 24) {
@@ -59,7 +109,7 @@ function Fanatic() {
         loading: riddlesLoading,
         error: riddlesError,
     } = useFanaticRiddles({ enabled: hasActiveGame });
-    const { answer, loading: submitting, error: submitError } = useSubmitFanaticAnswer();
+    const { answer, loading: submitting } = useSubmitFanaticAnswer();
     const {
         triesInfo,
         loading: triesLoading,
@@ -80,11 +130,12 @@ function Fanatic() {
 
     const [guess, setGuess] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [submitResult, setSubmitResult] = useState<any>(null);
+    const [submitResult, setSubmitResult] = useState<FanaticAnswer | null>(null);
 
     const handleGuess = async () => {
         if (!guess.trim()) return;
         const result = await answer(guess);
+        if (!result) return;
         setSubmitResult(result);
         setDialogOpen(true);
         refreshTriesInfo();
@@ -136,9 +187,10 @@ function Fanatic() {
     const carouselItems = riddles
         .sort((a, b) => a.sort_order - b.sort_order)
         .map(r => r.riddle);
-        
+
     const hasNextTryDate = isFutureDate(triesInfo?.next_try_date);
     const isOutOfTries = triesInfo?.remaining_tries_game === 0 || triesInfo?.remaining_tries_today === 0;
+
     return (
         <>
             <div className="min-h-screen flex flex-col">
@@ -209,17 +261,22 @@ function Fanatic() {
                     </div>
 
                     {/* Result Dialog */}
-                    <Dialog isOpen={dialogOpen}>
-                        <div className="flex flex-col gap-4 text-center items-center">
-                            <h2 className={`text-3xl font-anton ${submitError ? 'text-red-500' : submitResult?.correct ? 'text-green-500' : 'text-primary'}`}>
-                                {submitError ? "Error" : submitResult?.message || "Result"}
+                    <Dialog isOpen={dialogOpen} className="max-w-2xl mx-auto">
+                        <div className="flex flex-col gap-3 text-center items-center">
+                            <h2 className="text-3xl font-anton text-black mb-2">
+                                {handleSimilarityText(submitResult?.similarity_score ?? null)}
                             </h2>
+                            <h4 className="text-xl font-lato text-black font-semibold">
+                               Similarity Score:
+                            </h4>
                             <p className="font-lato text-lg">
-                                {submitError 
-                                    ? submitError.message 
-                                    : submitResult 
-                                        ? JSON.stringify(submitResult) 
-                                        : "No result"}
+                                {submitResult ? `${(submitResult.similarity_score * 100).toFixed(2)}%` : "N/A"}
+                            </p>
+                            <h4 className="text-xl font-lato text-black font-semibold">
+                               Awarded Points:
+                            </h4>
+                            <p className="font-lato text-lg">
+                                {submitResult ? submitResult.awarded_points : "N/A"}
                             </p>
                             <Button 
                                 variant="primary" 

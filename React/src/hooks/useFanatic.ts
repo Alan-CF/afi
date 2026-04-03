@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { getSession } from "../lib/auth";
-import { submitAnswer } from "../lib/fanaticApi";
+import { submitAnswer, type FanaticAnswer } from "../lib/fanaticApi";
 
 type Riddle = {
   sort_order: number;
@@ -141,7 +141,7 @@ export function useSubmitFanaticAnswer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const answer = async (answer: string) => {
+  const answer = async (answer: string): Promise<FanaticAnswer | undefined> => {
     try {
       setLoading(true);
 
