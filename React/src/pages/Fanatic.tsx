@@ -12,6 +12,7 @@ import {
     useFanaticBestTry,
     useFanaticNextRiddleDate
 } from "../hooks/useFanatic";
+import { useProfile } from "../hooks/useProfile";
 
 function isFutureDate(date?: Date | null) {
     return !!date && date.getTime() > Date.now();
@@ -37,12 +38,19 @@ function formatTime(
 }
 
 function Fanatic() {
+
+    const { 
+        user, 
+        loading: profileLoading, 
+    } = useProfile();
     const {
         status: gameStatus,
         nextGameDate,
         loading: gameLoading,
         error: gameError,
     } = useFanaticGame();
+
+    const hasAuthenticatedUser = user !== null;
     const hasActiveGame = gameStatus === "active";
     const {
         riddles,
@@ -56,13 +64,13 @@ function Fanatic() {
         loading: triesLoading,
         error: triesError,
         refreshTriesInfo,
-    } = useFanaticTries({ enabled: hasActiveGame });
+    } = useFanaticTries({ enabled: hasActiveGame && hasAuthenticatedUser });
     const {
         bestTry,
         loading: bestTryLoading,
         error: bestTryError,
         refreshBestTry,
-    } = useFanaticBestTry({ enabled: hasActiveGame });
+    } = useFanaticBestTry({ enabled: hasActiveGame && hasAuthenticatedUser });
     const {
         nextRiddleDate,
         loading: nextRiddleLoading,
@@ -82,7 +90,7 @@ function Fanatic() {
         refreshBestTry();
     };
     
-    if (gameLoading || (hasActiveGame && (riddlesLoading || triesLoading || bestTryLoading || nextRiddleLoading))) {
+    if (profileLoading || gameLoading || (hasActiveGame && (riddlesLoading || triesLoading || bestTryLoading || nextRiddleLoading))) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <p className="text-xl font-anton animate-pulse">Loading...</p>
@@ -175,9 +183,9 @@ function Fanatic() {
                     variant="secondary"
                     className="font-anton text-2xl py-3"
                     onClick={handleGuess}
-                    disabled={submitting || hasNextTryDate || isOutOfTries}
+                    disabled={submitting || hasNextTryDate || isOutOfTries || !hasAuthenticatedUser}
                 >
-                    {hasNextTryDate ? (
+                    {!hasAuthenticatedUser ? "Login to Guess" : hasNextTryDate ? (
                         <Countdown
                             key={triesInfo!.next_try_date!.toISOString()}
                             date={triesInfo!.next_try_date!}
