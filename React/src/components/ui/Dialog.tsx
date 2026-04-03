@@ -1,7 +1,7 @@
 interface DialogProps {
     isOpen: boolean;
     children: React.ReactNode;
-    className?: string;
+    className?: React.HTMLAttributes<HTMLDivElement>["className"];
 }
 
 const Dialog = ({ isOpen, children, className }: DialogProps) => {

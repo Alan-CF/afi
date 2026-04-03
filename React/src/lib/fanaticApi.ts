@@ -1,7 +1,15 @@
 import { supabase } from './supabaseClient';
 
+export type FanaticAnswer = {
+  answer: string;
+  game_id: number;
+  profile_id: string;
+  awarded_points: number;
+  similarity_score: number;
+  is_correct: boolean;
+};
 
-export async function submitAnswer(answer: string) {
+export async function submitAnswer(answer: string): Promise<FanaticAnswer> {
   const { data: { session } } = await supabase.auth.getSession();
 
   const headers: Record<string, string> = {};
