@@ -7,8 +7,12 @@ interface ProductGroupCardProps {
 
 export function ProductGroupCard({ title, description, imageUrl, onClick }: ProductGroupCardProps) {
     return (
-      <button onClick={onClick} className="flex flex-col justify-between text-start p-4">
-        <img src={imageUrl} alt={title} className="w-full h-90 md:h-120 object-cover mb-4 rounded" />
+      <button onClick={onClick} className="flex shrink-0 cursor-pointer flex-col justify-between p-4 text-start">
+        <img
+          src={imageUrl}
+          alt={title}
+          className="mb-4 h-90 md:h-120 w-48 md:w-64 max-w-full rounded object-cover"
+        />
         <div className="flex flex-col">
           <h3 className="text-2xl md:text-3xl font-anton font-semibold">{title}</h3>
           <p className="text-md md:text-lg font-lato">{description}</p>

@@ -8,16 +8,18 @@ export default function Shop() {
     loading: categoriesLoading, 
     error: categoriesError 
   } = useCategories();
-  // const { 
-  //   collections, 
-  //   loading: collectionsLoading, 
-  //   error: collectionsError 
-  // } = useCollections();
-  // const { 
-  //   players, 
-  //   loading: playersLoading, 
-  //   error: playersError 
-  // } = usePlayers();
+  const { 
+    collections, 
+    loading: collectionsLoading, 
+    error: collectionsError 
+  } = useCollections();
+  const { 
+    players, 
+    loading: playersLoading, 
+    error: playersError 
+  } = usePlayers();
+
+  console.log("Shop data:", { categories, collections, players });
 
   if (categoriesLoading) {
     return (
@@ -39,13 +41,38 @@ export default function Shop() {
 
   return (<>
   <NavBar />
-  {categories.map(category => (
-    <ProductGroupCard
-      key={category.name}
-      title={category.name}
-      imageUrl={category.image_url}
-      onClick={() => console.log(`Category ${category.name} clicked`)}
-    />
-  ))}
+  <div className="flex gap-4 overflow-x-auto p-4 scrollbar-hide">
+    {categories.map(category => (
+      <ProductGroupCard
+        key={category.name}
+        title={category.name}
+        imageUrl={category.image_url}
+        onClick={() => console.log(`Category ${category.name} clicked`)}
+      />
+    ))}
+  </div>
+
+  <div className="flex gap-4 overflow-x-auto p-4 scrollbar-hide">
+    {collections.map(collection => (
+      <ProductGroupCard
+        key={collection.name}
+        title={collection.name}
+        imageUrl={collection.image_url}
+        onClick={() => console.log(`Collection ${collection.name} clicked`)}
+      />
+    ))}
+  </div>
+
+  <div className="flex gap-4 overflow-x-auto p-4 scrollbar-hide">
+    {players.map(player => (
+      <ProductGroupCard
+        key={player.name}
+        title={player.name}
+        description={`#${player.number} - ${player.position}`}
+        imageUrl={player.image_url}
+        onClick={() => console.log(`Player ${player.name} clicked`)}
+      />
+    ))}
+  </div>
   </>);
 }

@@ -59,7 +59,7 @@ function useShopGroup<T>(rpcName: string, fetchErrorMessage: string) {
 }
 
 export function useCollections() {
-  const result = useShopGroup<Collection>("get_sho_collections", "Failed to fetch collections");
+  const result = useShopGroup<Collection>("get_shop_collections", "Failed to fetch collections");
 
   return {
     collections: result.items,
