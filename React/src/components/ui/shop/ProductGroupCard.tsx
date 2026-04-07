@@ -11,7 +11,7 @@ export function ProductGroupCard({ title, description, imageUrl, onClick }: Prod
         <img
           src={imageUrl}
           alt={title}
-          className="mb-4 h-90 md:h-120 w-48 md:w-64 max-w-full rounded object-cover"
+          className="mb-4 h-90 md:h-120 w-52 md:w-72 max-w-full rounded object-cover"
         />
         <div className="flex flex-col">
           <h3 className="text-2xl md:text-3xl font-anton font-semibold">{title}</h3>
