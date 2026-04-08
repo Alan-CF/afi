@@ -134,14 +134,17 @@ function Rooms() {
       <NavBar />
 
       <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1880px] flex-col gap-5 px-3 py-3 sm:px-5 sm:py-6 xl:px-12 2xl:px-16">
+        <header className="px-1 pt-1 sm:px-0">
+          <h1 className="font-barlow-condensed text-[2rem] font-semibold tracking-[-0.02em] leading-[0.92] text-secondary sm:text-[2.35rem] lg:text-[3rem] xl:text-[3.7rem]">
+            Private Fan Rooms
+          </h1>
+        </header>
+
         <section className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)] xl:items-stretch">
           <div className="rounded-[1.45rem] bg-secondary px-3.5 py-3.5 text-white shadow-[0_20px_50px_rgba(29,66,138,0.28)] sm:px-5 sm:py-5 lg:px-6 lg:py-6 xl:min-h-[460px] xl:rounded-[2rem]">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start xl:grid-cols-1 xl:gap-4">
               <div>
-                <h1 className="mt-2 font-sora text-[1.55rem] font-semibold tracking-[-0.05em] leading-[0.98] sm:text-[2rem] lg:text-[2.7rem] xl:text-[3.35rem]">
-                  Private Fan Rooms
-                </h1>
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 xl:gap-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:gap-4">
                   <div className="rounded-[1.15rem] border border-white/15 bg-white/10 p-3 backdrop-blur-sm sm:rounded-2xl sm:p-4 lg:p-5">
                     <div className="flex items-center justify-between gap-2 sm:justify-between">
                       <p className="font-lato text-[0.62rem] uppercase tracking-[0.12em] text-white/70 sm:text-xs lg:text-sm">
