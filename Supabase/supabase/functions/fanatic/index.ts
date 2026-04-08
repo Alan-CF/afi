@@ -1,5 +1,4 @@
 import { answerQuestion } from "./handlers/answer.ts";
-import { getRiddles } from "./handlers/riddles.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
@@ -11,9 +10,7 @@ Deno.serve(async (req) => {
   const path = url.pathname;
 
   let response: Response;
-  if (path.endsWith("/todays-riddles") && req.method === "GET") {
-    response = await getRiddles(req);
-  } else if (path.endsWith("/answer") && req.method === "POST") {
+  if (path.endsWith("/answer") && req.method === "POST") {
     response = await answerQuestion(req);
   } else {
     response = new Response("Not Found", { status: 404 });

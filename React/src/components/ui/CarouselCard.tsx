@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 
 interface CarouselCardProps {
     items: React.ReactNode[];
     className?: string;
 }
 
-const CarouselCard: React.FC<CarouselCardProps> = ({ items, className }) => {
+function CarouselCard({ items, className }: CarouselCardProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -19,20 +20,41 @@ const CarouselCard: React.FC<CarouselCardProps> = ({ items, className }) => {
         }
     };
 
+    const scroll = (offset: number) => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollBy({ left: scrollRef.current.clientWidth * offset, behavior: 'smooth' });
+        }
+    };
+
     return (
-        <div className={`relative border-4 border-secondary rounded-[2rem] p-6 md:p-10 flex flex-col items-center justify-between w-full mx-auto overflow-hidden ${className ?? ""}`}>
+        <div className={`group relative flex w-full flex-col items-center justify-between overflow-hidden rounded-[2rem] border-4 border-secondary p-6 md:p-10 ${className ?? ""}`}>
+            <button 
+                onClick={() => scroll(-1)} 
+                className="absolute left-0 top-1/2 z-10 -translate-y-1/2 p-2 text-secondary opacity-0 transition-opacity disabled:opacity-0 group-hover:opacity-100 md:left-2"
+                disabled={activeIndex === 0}
+            >
+                <ChevronLeftIcon className="h-8 w-8 md:h-10 md:w-10" />
+            </button>
+            <button 
+                onClick={() => scroll(1)} 
+                className="absolute right-0 top-1/2 z-10 -translate-y-1/2 p-2 text-secondary opacity-0 transition-opacity disabled:opacity-0 group-hover:opacity-100 md:right-2"
+                disabled={activeIndex === items.length - 1}
+            >
+                <ChevronRightIcon className="h-8 w-8 md:h-10 md:w-10" />
+            </button>
+
             <div 
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="flex overflow-x-auto snap-x snap-mandatory w-full scroll-smooth no-scrollbar mb-6 md:mb-10"
+                className="no-scrollbar mb-6 flex w-full snap-x snap-mandatory scroll-smooth overflow-x-auto md:mb-10"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {items.map((item, index) => (
                     <div 
                         key={index} 
-                        className="flex-shrink-0 w-full snap-center snap-always flex items-center justify-center text-center px-4 md:px-10 min-h-[250px]"
+                        className="flex w-full shrink-0 snap-center snap-always items-center justify-center px-4 text-center min-h-[250px] md:px-10"
                     >
-                        <div className="text-xl md:text-2xl font-lato font-normal leading-snug text-text max-w-lg select-none">
+                        <div className="max-w-lg select-none font-lato text-xl leading-snug text-text md:text-2xl">
                             {item}
                         </div>
                     </div>
@@ -40,14 +62,14 @@ const CarouselCard: React.FC<CarouselCardProps> = ({ items, className }) => {
             </div>
             
             {/* Dots */}
-            <div className="flex gap-2 justify-center items-center">
+            <div className="flex items-center justify-center gap-2">
                 {items.map((_, index) => (
                     <div
                         key={index}
-                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                        className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
                             index === activeIndex 
-                                ? 'w-1.85 h-1.85 bg-secondary scale-125' 
-                                : 'w-1.5 h-1.5 bg-[#D9D9D9]'
+                                ? 'scale-125 bg-secondary' 
+                                : 'bg-[#D9D9D9]'
                         }`}
                     />
                 ))}

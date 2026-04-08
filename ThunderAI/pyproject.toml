@@ -1,0 +1,23 @@
+[project]
+name = "thunderai"
+version = "0.1.0"
+description = "AFI Shopping Agent"
+authors = [
+    {name = "Alan-CF",email = "alanyaco.cf@gmail.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "supabase (>=2.28.2,<3.0.0)",
+    "fastapi (>=0.135.1,<0.136.0)",
+    "openai (>=2.29.0,<3.0.0)",
+    "uvicorn (>=0.42.0,<0.43.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false

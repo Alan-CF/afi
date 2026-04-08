@@ -1,19 +1,15 @@
 import { supabase } from './supabaseClient';
 
-export async function getRiddles() {
-  const { data, error } = await supabase.functions.invoke('fanatic/todays-riddles', {
-    method: 'GET',
-  });
+export type FanaticAnswer = {
+  answer: string;
+  game_id: number;
+  profile_id: string;
+  awarded_points: number;
+  similarity_score: number;
+  is_correct: boolean;
+};
 
-  if (error) {
-    console.error('Error fetching today\'s riddles:', error);
-    throw error;
-  }
-
-  return data;
-}
-
-export async function submitAnswer(answer: string) {
+export async function submitAnswer(answer: string): Promise<FanaticAnswer> {
   const { data: { session } } = await supabase.auth.getSession();
 
   const headers: Record<string, string> = {};
