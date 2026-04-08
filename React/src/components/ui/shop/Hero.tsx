@@ -2,7 +2,7 @@ export default function ShopHero() {
   
 
   return (
-    <section className="pb-6">
+    <section>
       <div className="relative min-h-[28rem] overflow-hidden bg-secondary shadow-lg md:min-h-[34rem]">
         <img
           src="/shop_banner.jfif"

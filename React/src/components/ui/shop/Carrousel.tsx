@@ -13,7 +13,7 @@ export default function ShopCarousel({ children }: ShopCarouselProps) {
   });
 
   return (
-    <div className="overflow-hidden px-4" ref={emblaRef}>
+    <div className="overflow-hidden px-4 pb-4" ref={emblaRef}>
       <div className="flex">
         {children}
       </div>
