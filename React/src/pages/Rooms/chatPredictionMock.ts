@@ -20,7 +20,7 @@ export const predictionOptions: PredictionOption[] = [
   "Foul",
 ];
 
-export function getMockPredictionResult(
+export function getMockPredictionResult( //TEST PARA ACTUALIZACION
   round: number,
   selectedPrediction: PredictionSelection
 ) {
