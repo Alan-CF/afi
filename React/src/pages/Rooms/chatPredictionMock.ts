@@ -1,4 +1,5 @@
 export type PredictionOption = "Triple" | "Double" | "Foul";
+export type PredictionSelection = PredictionOption | "No Choice";
 
 type MockPredictionResult = {
   actual: PredictionOption;
@@ -21,11 +22,12 @@ export const predictionOptions: PredictionOption[] = [
 
 export function getMockPredictionResult(
   round: number,
-  selectedPrediction: PredictionOption
+  selectedPrediction: PredictionSelection
 ) {
   const result = mockPredictionResults[round % mockPredictionResults.length];
   const totalCorrectGuessers =
-    result.otherCorrectGuessers + (result.actual === selectedPrediction ? 1 : 0);
+    result.otherCorrectGuessers +
+    (selectedPrediction !== "No Choice" && result.actual === selectedPrediction ? 1 : 0);
 
   return {
     actual: result.actual,
@@ -34,7 +36,7 @@ export function getMockPredictionResult(
 }
 
 export function buildPredictionAnnouncement(
-  selectedPrediction: PredictionOption,
+  selectedPrediction: PredictionSelection,
   round: number
 ) {
   const result = getMockPredictionResult(round, selectedPrediction);

@@ -10,6 +10,7 @@ import {
   buildPredictionAnnouncement,
   predictionOptions,
   type PredictionOption,
+  type PredictionSelection,
 } from "./chatPredictionMock";
 
 type ChatLocationState = {
@@ -97,6 +98,7 @@ function formatMessageTime(date: Date) {
 }
 
 function RoomChat() {
+  const predictionBaseSeconds = 15;
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as ChatLocationState | null;
@@ -105,16 +107,21 @@ function RoomChat() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(baseMessages);
   const [predictionOpen, setPredictionOpen] = useState(true);
-  const [predictionCountdown, setPredictionCountdown] = useState(12);
-  const [selectedPrediction, setSelectedPrediction] = useState<PredictionOption | null>(null);
+  const [predictionCountdown, setPredictionCountdown] = useState(predictionBaseSeconds);
+  const [selectedPrediction, setSelectedPrediction] = useState<PredictionSelection | null>(null);
   const [predictionRound, setPredictionRound] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const selectedPredictionRef = useRef<PredictionSelection | null>(null);
 
   const scoreboard = useMemo(() => scoreSeed(room), [room]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    selectedPredictionRef.current = selectedPrediction;
+  }, [selectedPrediction]);
 
   useEffect(() => {
     if (!predictionOpen) return;
@@ -127,11 +134,17 @@ function RoomChat() {
   }, [predictionOpen]);
 
   useEffect(() => {
-    if (!selectedPrediction) return;
+    if (!predictionOpen || predictionCountdown !== 0 || selectedPrediction) return;
 
+    setSelectedPrediction("No Choice");
+    setPredictionOpen(false);
+  }, [predictionCountdown, predictionOpen, selectedPrediction]);
+
+  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      const resolvedPrediction = selectedPredictionRef.current ?? "No Choice";
       const announcement = buildPredictionAnnouncement(
-        selectedPrediction,
+        resolvedPrediction,
         predictionRound
       );
 
@@ -147,12 +160,12 @@ function RoomChat() {
       ]);
       setSelectedPrediction(null);
       setPredictionOpen(true);
-      setPredictionCountdown(12);
+      setPredictionCountdown(predictionBaseSeconds);
       setPredictionRound((current) => current + 1);
     }, 30000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [predictionRound, selectedPrediction]);
+  }, [predictionBaseSeconds, predictionRound]);
 
   function handleSendMessage() {
     const trimmedDraft = draft.trim();
