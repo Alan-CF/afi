@@ -99,6 +99,8 @@ function RoomChat() {
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(baseMessages);
+  const [predictionOpen, setPredictionOpen] = useState(true);
+  const [predictionCountdown, setPredictionCountdown] = useState(12);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scoreboard = useMemo(() => scoreSeed(room), [room]);
@@ -106,6 +108,16 @@ function RoomChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!predictionOpen) return;
+
+    const intervalId = window.setInterval(() => {
+      setPredictionCountdown((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [predictionOpen]);
 
   function handleSendMessage() {
     const trimmedDraft = draft.trim();
@@ -121,6 +133,19 @@ function RoomChat() {
 
     setMessages((current) => [...current, newMessage]);
     setDraft("");
+  }
+
+  function handlePredictionSelect(prediction: "Triple" | "Double" | "Foul") {
+    const predictionMessage: ChatMessage = {
+      id: Date.now(),
+      sender: "You",
+      text: `Prediction: ${prediction}`,
+      time: formatMessageTime(new Date()),
+      align: "right",
+    };
+
+    setMessages((current) => [...current, predictionMessage]);
+    setPredictionOpen(false);
   }
 
   return (
@@ -253,6 +278,32 @@ function RoomChat() {
           </div>
 
           <div className="sticky bottom-0 border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
+            {predictionOpen && (
+              <div className="mb-3 overflow-hidden rounded-[1.15rem] border border-[#c7d8f2] bg-[#2d4f8d] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
+                <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 text-white">
+                  <p className="font-lato text-[0.72rem] font-bold tracking-[0.02em] sm:text-xs">
+                    Next Play: What will it be?
+                  </p>
+                  <span className="rounded-full bg-white/12 px-2 py-1 font-lato text-[0.68rem] font-bold">
+                    {predictionCountdown}s
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 p-2">
+                  {(["Triple", "Double", "Foul"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => handlePredictionSelect(option)}
+                      className="rounded-[0.9rem] bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-[#eef4ff] sm:text-sm"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-3 rounded-full bg-[#f6f8fc] px-4 py-2.5">
               <input
                 type="text"
