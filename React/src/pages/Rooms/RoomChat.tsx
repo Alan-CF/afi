@@ -1,10 +1,10 @@
 import {
   ArrowLeftIcon,
+  InformationCircleIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/solid";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import NavBar from "../../components/layout/NavBar";
 import type { Room } from "../../components/ui/RoomCard";
 
 type ChatLocationState = {
@@ -66,14 +66,13 @@ const baseMessages: ChatMessage[] = [
   },
 ];
 
-function initialsFromTitle(title: string) {
-  const words = title.split(" ").filter(Boolean);
-  if (words.length === 0) return "RM";
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
-}
+const gameHighlights = [
+  { time: "8:41", text: "Curry hits a 3-pointer!" },
+  { time: "8:39", text: "Davis with the dunk!" },
+  { time: "8:36", text: "Big steal by Wiggins" },
+  { time: "8:33", text: "Green grabs the offensive board" },
+  { time: "8:29", text: "Reaves answers with a corner three" },
+];
 
 function scoreSeed(room: Room) {
   const base = room.id % 13;
@@ -85,22 +84,49 @@ function scoreSeed(room: Room) {
   };
 }
 
+function formatMessageTime(date: Date) {
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function RoomChat() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as ChatLocationState | null;
   const room = state?.room ?? defaultRoom;
   const [draft, setDraft] = useState("");
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>(baseMessages);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scoreboard = useMemo(() => scoreSeed(room), [room]);
-  const roomInitials = initialsFromTitle(room.title);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  function handleSendMessage() {
+    const trimmedDraft = draft.trim();
+    if (!trimmedDraft) return;
+
+    const newMessage: ChatMessage = {
+      id: Date.now(),
+      sender: "You",
+      text: trimmedDraft,
+      time: formatMessageTime(new Date()),
+      align: "right",
+    };
+
+    setMessages((current) => [...current, newMessage]);
+    setDraft("");
+  }
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
-      <NavBar />
-
-      <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1440px] flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
-        <section className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-hidden rounded-[1.85rem] bg-white/92 shadow-[0_24px_70px_rgba(30,41,59,0.14)] backdrop-blur-sm sm:max-w-2xl xl:max-w-3xl">
+      <main className="flex h-screen w-full flex-col">
+        <section className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white">
           <div className="bg-secondary px-4 py-3 text-white sm:px-5">
             <div className="flex items-center justify-between gap-3">
               <button
@@ -121,52 +147,74 @@ function RoomChat() {
                 </p>
               </div>
 
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                style={{ backgroundColor: room.accent }}
+              <button
+                type="button"
+                aria-label="Toggle match info"
+                onClick={() => setInfoOpen((current) => !current)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/18"
               >
-                {roomInitials}
-              </div>
+                <InformationCircleIcon className="h-5 w-5" />
+              </button>
             </div>
           </div>
 
-          <div className="bg-primary px-4 py-4 text-secondary sm:px-5">
+          <div className="bg-primary px-4 py-3 text-secondary sm:px-5 sm:py-3.5">
             <div className="grid grid-cols-3 items-center">
               <div className="text-center">
-                <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-secondary/65">
+                <p className="font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] text-secondary/65 sm:text-xs">
                   Warriors
                 </p>
-                <p className="font-anton text-[2rem] leading-none sm:text-[2.4rem]">
+                <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
                   {scoreboard.leftScore}
                 </p>
               </div>
 
               <div className="text-center">
-                <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-secondary/65">
+                <p className="font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] text-secondary/65 sm:text-xs">
                   {scoreboard.quarter}
                 </p>
-                <p className="mt-1 font-barlow-condensed text-[1.6rem] font-semibold leading-none sm:text-[2rem]">
+                <p className="mt-0.5 font-barlow-condensed text-[1.35rem] font-semibold leading-none sm:text-[1.8rem]">
                   {scoreboard.time}
                 </p>
-                <p className="mt-1 font-lato text-[0.72rem] font-bold uppercase tracking-[0.18em] text-secondary/70">
+                <p className="mt-0.5 font-lato text-[0.64rem] font-bold uppercase tracking-[0.18em] text-secondary/70 sm:text-[0.7rem]">
                   Live
                 </p>
               </div>
 
               <div className="text-center">
-                <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-secondary/65">
+                <p className="font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] text-secondary/65 sm:text-xs">
                   Lakers
                 </p>
-                <p className="font-anton text-[2rem] leading-none sm:text-[2.4rem]">
+                <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
                   {scoreboard.rightScore}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
+          {infoOpen && (
+            <div className="border-b border-[#d8e2f1] bg-[#2a4e8e] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:px-5">
+              <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
+                {gameHighlights.map((highlight) => (
+                  <div
+                    key={`${highlight.time}-${highlight.text}`}
+                    className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-2 rounded-xl bg-[#244887] px-3 py-2"
+                  >
+                    <span className="font-lato text-xs font-bold text-white/88">
+                      {highlight.time}
+                    </span>
+                    <span className="font-lato text-xs text-white sm:text-sm">
+                      {highlight.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
             <div className="space-y-4">
-              {baseMessages.map((message) => (
+              {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${
@@ -200,21 +248,29 @@ function RoomChat() {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </div>
 
-          <div className="border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
+          <div className="sticky bottom-0 border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3 rounded-full bg-[#f6f8fc] px-4 py-2.5">
               <input
                 type="text"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Type a message..."
                 className="w-full bg-transparent font-lato text-sm text-[#334155] placeholder:text-[#9aa6b8] focus:outline-none"
               />
               <button
                 type="button"
                 aria-label="Send message"
+                onClick={handleSendMessage}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d7e5fb] text-secondary transition-colors hover:bg-[#c6daf8]"
               >
                 <PaperAirplaneIcon className="h-4 w-4" />
