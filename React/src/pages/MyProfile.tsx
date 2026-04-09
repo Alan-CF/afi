@@ -17,10 +17,10 @@ import {
 
 export default function MyProfile() {
   const { user } = useProfile();
-  const handle = user?.username ?? "cesart";
-  const name = user?.full_name ?? user?.username ?? "cesart";
+  const handle = user?.username ?? "username";
+  const name = user?.full_name ?? user?.username ?? "Full Name";
 
-  const [aboutText, setAboutText] = useState("25 year old Mexican basketball fan");
+  const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
   const [isEditing, setIsEditing] = useState(false);
 
   const handleEditSave = () => {
@@ -33,7 +33,7 @@ export default function MyProfile() {
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
 
-        {/* ── INFO GENERAL ─────────────────────────────────────────────── */}
+        {/* Info general */}
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
 
@@ -82,7 +82,7 @@ export default function MyProfile() {
           </div>
         </section>
 
-        {/* ── ABOUT ME + ACHIEVEMENTS (side by side en desktop) ────────── */}
+        {/* About me + achievements (para vista en computadora) */}
         <div className="flex flex-col md:flex-row gap-5 mb-5">
 
           {/* About me */}
@@ -145,7 +145,7 @@ export default function MyProfile() {
 
         </div>
 
-        {/* ── POINTS HISTORY ───────────────────────────────────────────── */}
+        {/* Points History */}
         <div className="flex items-center justify-between mb-2 px-1">
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text)]">Points History</h2>
           <button className="text-xs font-bold text-secondary">See All</button>
@@ -160,7 +160,7 @@ export default function MyProfile() {
                   points: "+10",
                   icon: <ClockIcon className="h-5 w-5 text-gray-400" />,
                 },
-              ][0];
+              ][0]; {/* Para mostrar el mas reciente */}
               return (
                 <div className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3 w-full">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e0e6f0]">
