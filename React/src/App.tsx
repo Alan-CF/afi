@@ -16,6 +16,7 @@ function App() {
       <Route path="/rooms" element={<Rooms />} />
       <Route path="/rooms/create" element={<CreateRoom />} />
       <Route path="/rooms/chat" element={<RoomChat />} />
+      <Route path="/rooms/:roomId" element={<RoomChat />} />
     </Routes>
   );
 }

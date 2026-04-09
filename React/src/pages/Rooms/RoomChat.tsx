@@ -4,8 +4,14 @@ import {
   PaperAirplaneIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
+import {
+  fetchRoomChat,
+  sendRoomMessage,
+  subscribeToRoomMessages,
+  type RoomChatMessageRecord,
+} from "../../services/roomChat";
 import {
   buildPredictionAnnouncement,
   predictionOptions,
@@ -15,14 +21,16 @@ import {
 
 type ChatLocationState = {
   room?: Room;
+  from?: string;
 };
 
 type ChatMessage = {
-  id: number;
+  id: number | string;
   sender: string;
   text: string;
   time: string;
   align: "left" | "right" | "center";
+  createdAt: number;
 };
 
 const defaultRoom: Room = {
@@ -33,44 +41,6 @@ const defaultRoom: Room = {
   subtitle: "Live chat is on",
   accent: "#1D428A",
 };
-
-const baseMessages: ChatMessage[] = [
-  {
-    id: 1,
-    sender: "Luis",
-    text: "Hey everyone! Ready for the game?",
-    time: "7:30 PM",
-    align: "left",
-  },
-  {
-    id: 2,
-    sender: "You",
-    text: "Let's go Warriors!",
-    time: "7:31 PM",
-    align: "right",
-  },
-  {
-    id: 3,
-    sender: "Maria",
-    text: "This is going to be epic!",
-    time: "7:32 PM",
-    align: "left",
-  },
-  {
-    id: 4,
-    sender: "Cesar",
-    text: "Curry is starting hot",
-    time: "8:15 PM",
-    align: "left",
-  },
-  {
-    id: 5,
-    sender: "Luis",
-    text: "That dunk was insane",
-    time: "8:38 PM",
-    align: "left",
-  },
-];
 
 const gameHighlights = [
   { time: "8:41", text: "Curry hits a 3-pointer!" },
@@ -97,23 +67,89 @@ function formatMessageTime(date: Date) {
   });
 }
 
+function toDisplayMessage(
+  message: RoomChatMessageRecord,
+  currentUserId: string
+): ChatMessage {
+  const createdAt = new Date(message.createdAt);
+
+  return {
+    id: message.id,
+    sender: message.senderName,
+    text: message.content,
+    time: formatMessageTime(createdAt),
+    align: message.senderProfileId === currentUserId ? "right" : "left",
+    createdAt: createdAt.getTime(),
+  };
+}
+
+function mergeMessages(current: ChatMessage[], nextMessage: ChatMessage) {
+  const deduped = current.filter((message) => message.id !== nextMessage.id);
+  return [...deduped, nextMessage].sort((a, b) => a.createdAt - b.createdAt);
+}
+
 function RoomChat() {
   const predictionBaseSeconds = 15;
+  const { roomId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as ChatLocationState | null;
-  const room = state?.room ?? defaultRoom;
+  const parsedRoomId = roomId ? Number(roomId) : Number.NaN;
+  const activeRoomId = Number.isFinite(parsedRoomId)
+    ? parsedRoomId
+    : state?.room?.id ?? null;
+
+  const [room, setRoom] = useState<Room>(state?.room ?? defaultRoom);
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(baseMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [predictionOpen, setPredictionOpen] = useState(true);
   const [predictionCountdown, setPredictionCountdown] = useState(predictionBaseSeconds);
   const [selectedPrediction, setSelectedPrediction] = useState<PredictionSelection | null>(null);
   const [predictionRound, setPredictionRound] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [loadingMessages, setLoadingMessages] = useState(true);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const selectedPredictionRef = useRef<PredictionSelection | null>(null);
 
   const scoreboard = useMemo(() => scoreSeed(room), [room]);
+
+  useEffect(() => {
+    if (!activeRoomId) {
+      setLoadingMessages(false);
+      setChatError("Room not found.");
+      return;
+    }
+
+    const roomIdToLoad = activeRoomId;
+
+    async function loadRoomChat() {
+      try {
+        setLoadingMessages(true);
+        setChatError(null);
+        const data = await fetchRoomChat(roomIdToLoad);
+
+        setRoom(data.room);
+        setCurrentUserId(data.currentUserId);
+        setMessages(
+          data.messages.map((message) =>
+            toDisplayMessage(message, data.currentUserId)
+          )
+        );
+      } catch (error) {
+        console.error("Error loading room chat:", error);
+        setChatError(
+          error instanceof Error ? error.message : "Could not load room chat."
+        );
+      } finally {
+        setLoadingMessages(false);
+      }
+    }
+
+    loadRoomChat();
+  }, [activeRoomId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -151,11 +187,12 @@ function RoomChat() {
       setMessages((current) => [
         ...current,
         {
-          id: Date.now(),
+          id: `system-${predictionRound}`,
           sender: "System",
           text: announcement.text,
-          time: formatMessageTime(new Date()),
+          time: "",
           align: "center",
+          createdAt: Date.now(),
         },
       ]);
       setSelectedPrediction(null);
@@ -167,20 +204,39 @@ function RoomChat() {
     return () => window.clearTimeout(timeoutId);
   }, [predictionBaseSeconds, predictionRound]);
 
-  function handleSendMessage() {
+  useEffect(() => {
+    if (!activeRoomId || !currentUserId) return;
+
+    const unsubscribe = subscribeToRoomMessages(activeRoomId, (message) => {
+      setMessages((current) =>
+        mergeMessages(current, toDisplayMessage(message, currentUserId))
+      );
+    });
+
+    return unsubscribe;
+  }, [activeRoomId, currentUserId]);
+
+  async function handleSendMessage() {
     const trimmedDraft = draft.trim();
-    if (!trimmedDraft) return;
+    if (!trimmedDraft || !activeRoomId || sendingMessage) return;
 
-    const newMessage: ChatMessage = {
-      id: Date.now(),
-      sender: "You",
-      text: trimmedDraft,
-      time: formatMessageTime(new Date()),
-      align: "right",
-    };
+    try {
+      setSendingMessage(true);
+      setChatError(null);
+      const insertedMessage = await sendRoomMessage(activeRoomId, trimmedDraft);
 
-    setMessages((current) => [...current, newMessage]);
-    setDraft("");
+      setMessages((current) =>
+        mergeMessages(current, toDisplayMessage(insertedMessage, currentUserId))
+      );
+      setDraft("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setChatError(
+        error instanceof Error ? error.message : "Could not send message."
+      );
+    } finally {
+      setSendingMessage(false);
+    }
   }
 
   function handlePredictionSelect(prediction: PredictionOption) {
@@ -196,7 +252,7 @@ function RoomChat() {
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={() => navigate("/rooms")}
+                onClick={() => navigate(state?.from ?? "/rooms")}
                 aria-label="Go back"
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/18"
               >
@@ -278,58 +334,84 @@ function RoomChat() {
           )}
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.align === "right"
-                      ? "justify-end"
-                      : message.align === "center"
-                        ? "justify-center"
-                        : "justify-start"
-                  }`}
-                >
-                  {message.align === "center" ? (
-                    <div className="rounded-full bg-[#eef3fb] px-4 py-2 shadow-[0_8px_18px_rgba(27,52,95,0.06)]">
-                      <p className="font-lato text-[0.76rem] font-bold text-[#5b6a80] sm:text-sm">
-                        {message.text}
-                      </p>
-                    </div>
-                  ) : (
-                  <div className="max-w-[82%]">
-                    {message.align === "left" && (
-                      <p className="mb-1 px-1 font-lato text-[0.7rem] text-[#9aa6b8]">
-                        {message.sender}
-                      </p>
+            {loadingMessages ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="font-lato text-sm text-[#8b99ae]">
+                  Loading messages...
+                </p>
+              </div>
+            ) : chatError && messages.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="max-w-[28rem] rounded-2xl bg-[#fff1f2] px-4 py-3 text-center font-lato text-sm text-[#be123c]">
+                  {chatError}
+                </p>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="rounded-2xl bg-[#f6f8fc] px-4 py-3 text-center font-lato text-sm text-[#7b8aa2]">
+                  No messages yet. Start the conversation.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.align === "right"
+                        ? "justify-end"
+                        : message.align === "center"
+                          ? "justify-center"
+                          : "justify-start"
+                    }`}
+                  >
+                    {message.align === "center" ? (
+                      <div className="rounded-full bg-[#eef3fb] px-4 py-2 shadow-[0_8px_18px_rgba(27,52,95,0.06)]">
+                        <p className="font-lato text-[0.76rem] font-bold text-[#5b6a80] sm:text-sm">
+                          {message.text}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="max-w-[82%]">
+                        {message.align === "left" && (
+                          <p className="mb-1 px-1 font-lato text-[0.7rem] text-[#9aa6b8]">
+                            {message.sender}
+                          </p>
+                        )}
+                        <div
+                          className={`rounded-[1.2rem] px-3 py-2 shadow-[0_10px_24px_rgba(15,23,42,0.06)] ${
+                            message.align === "right"
+                              ? "rounded-tr-md bg-secondary text-white"
+                              : "rounded-tl-md border border-[#d5dfef] bg-[#fbfdff] text-[#31435f]"
+                          }`}
+                        >
+                          <p className="font-lato text-sm leading-6 sm:text-[0.95rem]">
+                            {message.text}
+                          </p>
+                        </div>
+                        <p
+                          className={`mt-1 px-1 font-lato text-[0.68rem] text-[#b0bac8] ${
+                            message.align === "right" ? "text-right" : "text-left"
+                          }`}
+                        >
+                          {message.time}
+                        </p>
+                      </div>
                     )}
-                    <div
-                      className={`rounded-[1.2rem] px-3 py-2 shadow-[0_10px_24px_rgba(15,23,42,0.06)] ${
-                        message.align === "right"
-                          ? "rounded-tr-md bg-secondary text-white"
-                          : "rounded-tl-md border border-[#d5dfef] bg-[#fbfdff] text-[#31435f]"
-                      }`}
-                    >
-                      <p className="font-lato text-sm leading-6 sm:text-[0.95rem]">
-                        {message.text}
-                      </p>
-                    </div>
-                    <p
-                      className={`mt-1 px-1 font-lato text-[0.68rem] text-[#b0bac8] ${
-                        message.align === "right" ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {message.time}
-                    </p>
                   </div>
-                  )}
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
 
           <div className="sticky bottom-0 border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
+            {chatError && messages.length > 0 && (
+              <div className="mb-3 rounded-[1rem] border border-[#ffd7dc] bg-[#fff1f2] px-4 py-3">
+                <p className="font-lato text-sm text-[#be123c]">{chatError}</p>
+              </div>
+            )}
+
             {selectedPrediction && (
               <div className="mb-3 rounded-[1rem] border border-[#d5e2f6] bg-[#edf4ff] px-4 py-3 shadow-[0_8px_20px_rgba(30,64,140,0.08)]">
                 <p className="font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
@@ -376,13 +458,15 @@ function RoomChat() {
                   }
                 }}
                 placeholder="Type a message..."
+                disabled={!activeRoomId || sendingMessage}
                 className="w-full bg-transparent font-lato text-sm text-[#334155] placeholder:text-[#9aa6b8] focus:outline-none"
               />
               <button
                 type="button"
                 aria-label="Send message"
                 onClick={handleSendMessage}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d7e5fb] text-secondary transition-colors hover:bg-[#c6daf8]"
+                disabled={!activeRoomId || sendingMessage}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d7e5fb] text-secondary transition-colors hover:bg-[#c6daf8] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <PaperAirplaneIcon className="h-4 w-4" />
               </button>
