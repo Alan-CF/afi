@@ -3,7 +3,7 @@ import {
   InformationCircleIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/solid";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
 import {
@@ -21,6 +21,11 @@ import {
   type PredictionOption,
   type PredictionSelection,
 } from "./chatPredictionMock";
+import {
+  getCurrentMockGameSnapshot,
+  subscribeToMockGameFeed,
+  type MockGameSnapshot,
+} from "../../services/mockRoomGameFeed";
 
 type ChatLocationState = {
   room?: Room;
@@ -44,24 +49,6 @@ const defaultRoom: Room = {
   subtitle: "Live chat is on",
   accent: "#1D428A",
 };
-
-const gameHighlights = [
-  { time: "8:41", text: "Curry hits a 3-pointer!" },
-  { time: "8:39", text: "Davis with the dunk!" },
-  { time: "8:36", text: "Big steal by Wiggins" },
-  { time: "8:33", text: "Green grabs the offensive board" },
-  { time: "8:29", text: "Reaves answers with a corner three" },
-];
-
-function scoreSeed(room: Room) {
-  const base = room.id % 13;
-  return {
-    leftScore: 96 + base,
-    rightScore: 90 + (base % 7),
-    quarter: "4th",
-    time: "8:42",
-  };
-}
 
 function formatMessageTime(date: Date) {
   return date.toLocaleTimeString([], {
@@ -121,6 +108,9 @@ function RoomChat() {
     : state?.room?.id ?? null;
 
   const [room, setRoom] = useState<Room>(state?.room ?? defaultRoom);
+  const [gameState, setGameState] = useState<MockGameSnapshot>(() =>
+    getCurrentMockGameSnapshot()
+  );
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -137,8 +127,6 @@ function RoomChat() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const selectedPredictionRef = useRef<PredictionSelection | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
-
-  const scoreboard = useMemo(() => scoreSeed(room), [room]);
 
   useEffect(() => {
     if (!activeRoomId) {
@@ -174,6 +162,14 @@ function RoomChat() {
 
     loadRoomChat();
   }, [activeRoomId]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMockGameFeed((snapshot) => {
+      setGameState(snapshot);
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -416,52 +412,69 @@ function RoomChat() {
             <div className="grid grid-cols-3 items-center">
               <div className="text-center">
                 <p className="font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] text-secondary/65 sm:text-xs">
-                  Warriors
+                  {gameState.leftTeam}
                 </p>
                 <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
-                  {scoreboard.leftScore}
+                  {gameState.leftScore}
                 </p>
               </div>
 
               <div className="text-center">
                 <p className="font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] text-secondary/65 sm:text-xs">
-                  {scoreboard.quarter}
+                  {gameState.quarterLabel}
                 </p>
                 <p className="mt-0.5 font-barlow-condensed text-[1.35rem] font-semibold leading-none sm:text-[1.8rem]">
-                  {scoreboard.time}
+                  {gameState.clock}
                 </p>
                 <p className="mt-0.5 font-lato text-[0.64rem] font-bold uppercase tracking-[0.18em] text-secondary/70 sm:text-[0.7rem]">
-                  Live
+                  {gameState.statusLabel}
                 </p>
               </div>
 
               <div className="text-center">
                 <p className="font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] text-secondary/65 sm:text-xs">
-                  Lakers
+                  {gameState.rightTeam}
                 </p>
                 <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
-                  {scoreboard.rightScore}
+                  {gameState.rightScore}
                 </p>
               </div>
             </div>
+
+            {gameState.detail && (
+              <div className="mt-2 text-center">
+                <p className="font-lato text-[0.68rem] font-semibold text-secondary/75 sm:text-xs">
+                  {gameState.detail}
+                </p>
+              </div>
+            )}
           </div>
 
           {infoOpen && (
             <div className="border-b border-[#d8e2f1] bg-[#2a4e8e] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:px-5">
               <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
-                {gameHighlights.map((highlight) => (
-                  <div
-                    key={`${highlight.time}-${highlight.text}`}
-                    className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-2 rounded-xl bg-[#244887] px-3 py-2"
-                  >
-                    <span className="font-lato text-xs font-bold text-white/88">
-                      {highlight.time}
-                    </span>
-                    <span className="font-lato text-xs text-white sm:text-sm">
-                      {highlight.text}
-                    </span>
+                {gameState.highlights.length > 0 ? (
+                  gameState.highlights.map((highlight) => (
+                    <div
+                      key={`${highlight.time}-${highlight.text}`}
+                      className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2 rounded-xl bg-[#244887] px-3 py-2"
+                    >
+                      <span className="font-lato text-xs font-bold text-white/88">
+                        {highlight.time}
+                      </span>
+                      <span className="font-lato text-xs text-white sm:text-sm">
+                        {highlight.text}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-xl bg-[#244887] px-3 py-3">
+                    <p className="font-lato text-xs text-white sm:text-sm">
+                      Tip-off is live. Score updates will start rolling in from the
+                      mock game feed.
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
