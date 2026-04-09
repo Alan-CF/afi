@@ -137,9 +137,10 @@ function RoomChat() {
   const selectedPredictionRef = useRef<PredictionSelection | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const clockSeconds = parseClockToSeconds(gameState.clock);
+  const isFinalState = gameState.statusLabel === "Final";
   const isClutchMoment =
     gameState.quarterLabel === "4th" &&
-    gameState.statusLabel !== "Final" &&
+    !isFinalState &&
     clockSeconds !== null &&
     clockSeconds <= 19;
 
@@ -425,7 +426,9 @@ function RoomChat() {
 
           <div
             className={`px-4 py-3 sm:px-5 sm:py-3.5 ${
-              isClutchMoment
+              isFinalState
+                ? "bg-[#d2d7e1] text-secondary"
+                : isClutchMoment
                 ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
                 : "bg-primary text-secondary"
             }`}
@@ -434,7 +437,11 @@ function RoomChat() {
               <div className="text-center">
                 <p
                   className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isClutchMoment ? "text-white/80" : "text-secondary/65"
+                    isFinalState
+                      ? "text-secondary/70"
+                      : isClutchMoment
+                        ? "text-white/80"
+                        : "text-secondary/65"
                   }`}
                 >
                   {gameState.leftTeam}
@@ -447,14 +454,20 @@ function RoomChat() {
               <div className="text-center">
                 <p
                   className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isClutchMoment ? "text-white/80" : "text-secondary/65"
+                    isFinalState
+                      ? "text-secondary/70"
+                      : isClutchMoment
+                        ? "text-white/80"
+                        : "text-secondary/65"
                   }`}
                 >
                   {gameState.quarterLabel}
                 </p>
                 <p
                   className={`mt-0.5 font-barlow-condensed font-semibold leading-none sm:text-[1.8rem] ${
-                    isClutchMoment
+                    isFinalState
+                      ? "text-[1.5rem] text-secondary"
+                      : isClutchMoment
                       ? "text-[1.6rem] text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
                       : "text-[1.35rem]"
                   }`}
@@ -463,7 +476,11 @@ function RoomChat() {
                 </p>
                 <p
                   className={`mt-0.5 font-lato text-[0.64rem] font-bold uppercase tracking-[0.18em] sm:text-[0.7rem] ${
-                    isClutchMoment ? "text-white/85" : "text-secondary/70"
+                    isFinalState
+                      ? "text-secondary/75"
+                      : isClutchMoment
+                        ? "text-white/85"
+                        : "text-secondary/70"
                   }`}
                 >
                   {gameState.statusLabel}
@@ -473,7 +490,11 @@ function RoomChat() {
               <div className="text-center">
                 <p
                   className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isClutchMoment ? "text-white/80" : "text-secondary/65"
+                    isFinalState
+                      ? "text-secondary/70"
+                      : isClutchMoment
+                        ? "text-white/80"
+                        : "text-secondary/65"
                   }`}
                 >
                   {gameState.rightTeam}
@@ -484,11 +505,15 @@ function RoomChat() {
               </div>
             </div>
 
-            {gameState.detail && (
+            {gameState.detail && !isFinalState && (
               <div className="mt-2 text-center">
                 <p
                   className={`font-lato text-[0.68rem] font-semibold sm:text-xs ${
-                    isClutchMoment ? "text-white/88" : "text-secondary/75"
+                    isFinalState
+                      ? "text-secondary/80"
+                      : isClutchMoment
+                        ? "text-white/88"
+                        : "text-secondary/75"
                   }`}
                 >
                   {gameState.detail}
