@@ -5,6 +5,7 @@ export interface UserProfileData {
     username: string;
     avatar_url: string;
     full_name: string;
+    fanatic_coins: number;
 }
 
 export function useProfile() {

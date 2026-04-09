@@ -14,11 +14,18 @@ import {
   CheckIcon as CheckOutline,
   SunIcon as SunOutline,
 } from "@heroicons/react/24/outline";
-
+function getLeague(coins: number): { name: string; emoji: string } {
+  if (coins <= 5000)  return { name: "Bronze", emoji: "🥉" };
+  if (coins <= 10000) return { name: "Silver",  emoji: "🥈" };
+  if (coins <= 15000) return { name: "Gold",    emoji: "🥇" };
+  if (coins <= 20000) return { name: "Sapphire", emoji: "♦️" };
+  return { name: "Diamond", emoji: "💎" };
+}
 export default function MyProfile() {
   const { user } = useProfile();
   const handle = user?.username ?? "username";
   const name = user?.full_name ?? user?.username ?? "Full Name";
+  const league = getLeague(user?.fanatic_coins ?? 0);
 
   const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
   const [isEditing, setIsEditing] = useState(false);
@@ -65,17 +72,17 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <StarIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">25</p>
+                  <p className="text-xl font-extrabold text-secondary">{user?.fanatic_coins ?? 0}</p>
                   <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
                 </div>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
-                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                    <TrophyIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <p className="text-xl font-extrabold text-secondary">⚡</p>
-                  <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">League</p>
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                  <TrophyIcon className="h-5 w-5 text-white" />
                 </div>
+                <p className="text-xl font-extrabold text-secondary">{league.emoji}</p>
+                <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">{league.name}</p>
+              </div>
               </div>
             </div>
 
