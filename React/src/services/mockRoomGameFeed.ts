@@ -3,6 +3,8 @@ export type MockGameHighlight = {
   text: string;
 };
 
+export type PredictionOption = "Triple" | "Double" | "Foul";
+
 export type MockGameSnapshot = {
   leftTeam: string;
   rightTeam: string;
@@ -13,6 +15,8 @@ export type MockGameSnapshot = {
   statusLabel: string;
   detail: string | null;
   highlights: MockGameHighlight[];
+  elapsedSecond: number;
+  cycleStartMs: number;
 };
 
 type MockGameControlState = {
@@ -41,13 +45,35 @@ type ScoreEvent = {
   at: number;
   team: TeamKey;
   points: number;
+  shotType: PredictionOption;
   text: string;
+};
+
+export type MockResolvedPredictionRound = {
+  round: number;
+  result: PredictionOption;
+  scorer: string;
+  points: number;
+  resolvedAtSecond: number;
+  resolvedAtMs: number;
+};
+
+export type MockPredictionState = {
+  activeRound: number | null;
+  closesInSeconds: number | null;
+  resolvedRounds: MockResolvedPredictionRound[];
 };
 
 const teams = {
   warriors: "Warriors",
   lakers: "Lakers",
 };
+
+export const predictionOptions: PredictionOption[] = [
+  "Triple",
+  "Double",
+  "Foul",
+];
 
 const timeline: TimelineSegment[] = [
   {
@@ -244,28 +270,186 @@ const timeline: TimelineSegment[] = [
     clockStart: 0,
     clockEnd: 0,
     statusLabel: "Final",
-    detail: "Warriors close it out.",
+    detail: null,
   },
 ];
 
 const scoreEvents: ScoreEvent[] = [
-  { at: 4, team: "warriors", points: 5, text: "Warriors open with a quick 5-0 burst." },
-  { at: 10, team: "lakers", points: 4, text: "Lakers answer right back with four straight." },
-  { at: 18, team: "warriors", points: 7, text: "Curry ignites a 7-point run." },
-  { at: 29, team: "lakers", points: 6, text: "Lakers settle in and cut the lead." },
-  { at: 45, team: "warriors", points: 8, text: "Warriors finish the quarter strong." },
-  { at: 59, team: "lakers", points: 9, text: "Lakers attack the paint and score nine." },
-  { at: 73, team: "warriors", points: 6, text: "Warriors move the ball and cash in six." },
-  { at: 84, team: "lakers", points: 8, text: "A hot stretch keeps the Lakers close." },
-  { at: 103, team: "warriors", points: 10, text: "Warriors close the half on a 10-2 push." },
-  { at: 135, team: "lakers", points: 8, text: "Lakers come out of halftime aggressive." },
-  { at: 149, team: "warriors", points: 9, text: "Back-to-back threes swing momentum." },
-  { at: 163, team: "lakers", points: 6, text: "Lakers keep pace with six more." },
-  { at: 179, team: "warriors", points: 7, text: "Warriors build breathing room late in the 3rd." },
-  { at: 195, team: "lakers", points: 7, text: "The Lakers make one more push." },
-  { at: 208, team: "warriors", points: 8, text: "A calm 8-point answer keeps control." },
-  { at: 224, team: "lakers", points: 6, text: "Lakers stay alive with a fast response." },
-  { at: 238, team: "warriors", points: 8, text: "Warriors close the game and secure the win." },
+  {
+    at: 7,
+    team: "warriors",
+    points: 3,
+    shotType: "Triple",
+    text: "Curry opens with a quick triple from the wing.",
+  },
+  {
+    at: 14,
+    team: "lakers",
+    points: 2,
+    shotType: "Double",
+    text: "Davis answers with a strong finish inside.",
+  },
+  {
+    at: 21,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "Warriors cut through the lane for two.",
+  },
+  {
+    at: 31,
+    team: "lakers",
+    points: 3,
+    shotType: "Triple",
+    text: "Reaves drills a catch-and-shoot three.",
+  },
+  {
+    at: 39,
+    team: "warriors",
+    points: 1,
+    shotType: "Foul",
+    text: "Warriors get one at the line after the foul.",
+  },
+  {
+    at: 47,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "A quick cut gives the Warriors two more.",
+  },
+  {
+    at: 57,
+    team: "lakers",
+    points: 2,
+    shotType: "Double",
+    text: "Lakers respond with a baseline jumper.",
+  },
+  {
+    at: 66,
+    team: "warriors",
+    points: 3,
+    shotType: "Triple",
+    text: "Warriors hit a transition three.",
+  },
+  {
+    at: 76,
+    team: "lakers",
+    points: 1,
+    shotType: "Foul",
+    text: "One free throw drops for the Lakers.",
+  },
+  {
+    at: 86,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "Warriors get to the rim for two.",
+  },
+  {
+    at: 97,
+    team: "lakers",
+    points: 3,
+    shotType: "Triple",
+    text: "Lakers stay close with a deep triple.",
+  },
+  {
+    at: 108,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "A soft floater puts two on the board.",
+  },
+  {
+    at: 118,
+    team: "lakers",
+    points: 1,
+    shotType: "Foul",
+    text: "Lakers split the trip and take one point.",
+  },
+  {
+    at: 129,
+    team: "warriors",
+    points: 3,
+    shotType: "Triple",
+    text: "Warriors bury another triple from up top.",
+  },
+  {
+    at: 140,
+    team: "lakers",
+    points: 2,
+    shotType: "Double",
+    text: "A quick backdoor cut brings the Lakers two.",
+  },
+  {
+    at: 151,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "Warriors keep the pace with a fast two.",
+  },
+  {
+    at: 162,
+    team: "warriors",
+    points: 1,
+    shotType: "Foul",
+    text: "Warriors add one more from the stripe.",
+  },
+  {
+    at: 174,
+    team: "lakers",
+    points: 3,
+    shotType: "Triple",
+    text: "Lakers heat up again from three.",
+  },
+  {
+    at: 185,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "Warriors answer with a composed midrange two.",
+  },
+  {
+    at: 196,
+    team: "lakers",
+    points: 2,
+    shotType: "Double",
+    text: "The Lakers finish through contact for two.",
+  },
+  {
+    at: 207,
+    team: "warriors",
+    points: 3,
+    shotType: "Triple",
+    text: "Big Warriors triple in the fourth quarter.",
+  },
+  {
+    at: 218,
+    team: "lakers",
+    points: 1,
+    shotType: "Foul",
+    text: "Lakers keep inching closer with one free throw.",
+  },
+  {
+    at: 228,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "Warriors find a clean look for two.",
+  },
+  {
+    at: 236,
+    team: "lakers",
+    points: 3,
+    shotType: "Triple",
+    text: "Late Lakers triple trims the final margin.",
+  },
+  {
+    at: 241,
+    team: "warriors",
+    points: 2,
+    shotType: "Double",
+    text: "Warriors seal it with the last bucket inside.",
+  },
 ];
 
 const resolvedTimeline = timeline.reduce<ResolvedSegment[]>(
@@ -368,6 +552,7 @@ export function getMockGameSnapshot(second: number): MockGameSnapshot {
   const clampedSecond = Math.min(second, finalPlayableSecond);
   const segment = resolveSegment(clampedSecond);
   const score = resolveScore(clampedSecond);
+  const cycleStartMs = getCurrentCycleStartMs();
 
   return {
     leftTeam: teams.warriors,
@@ -379,19 +564,32 @@ export function getMockGameSnapshot(second: number): MockGameSnapshot {
     statusLabel: segment.statusLabel,
     detail: segment.detail,
     highlights: resolveHighlights(clampedSecond),
+    elapsedSecond: clampedSecond,
+    cycleStartMs,
+  };
+}
+
+function getCurrentCycleContext(nowMs = Date.now()) {
+  const controlState = getMockGameControlState();
+  const anchorMs = controlState?.anchorMs ?? sharedMatchEpochMs;
+  const offsetSeconds = controlState?.offsetSeconds ?? 0;
+  const elapsedMs = nowMs - anchorMs + offsetSeconds * 1000;
+  const cycleDurationMs = matchCycleSeconds * 1000;
+  const normalizedMs =
+    ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
+
+  return {
+    cycleStartMs: nowMs - normalizedMs,
+    second: Math.min(Math.floor(normalizedMs / 1000), finalPlayableSecond),
   };
 }
 
 function getSharedMatchSecond(nowMs = Date.now()) {
-  const controlState = getMockGameControlState();
-  const anchorMs = controlState?.anchorMs ?? sharedMatchEpochMs;
-  const offsetSeconds = controlState?.offsetSeconds ?? 0;
-  const elapsedSeconds = Math.floor((nowMs - anchorMs) / 1000) + offsetSeconds;
-  const normalizedSeconds =
-    ((elapsedSeconds % matchCycleSeconds) + matchCycleSeconds) %
-    matchCycleSeconds;
+  return getCurrentCycleContext(nowMs).second;
+}
 
-  return Math.min(normalizedSeconds, finalPlayableSecond);
+function getCurrentCycleStartMs(nowMs = Date.now()) {
+  return getCurrentCycleContext(nowMs).cycleStartMs;
 }
 
 function getMockGameControlState(): MockGameControlState | null {
@@ -432,6 +630,37 @@ function updateMockGameControl(offsetSeconds: number) {
 
 export function getCurrentMockGameSnapshot() {
   return getMockGameSnapshot(getSharedMatchSecond());
+}
+
+export function getMockPredictionState(
+  snapshot: Pick<MockGameSnapshot, "elapsedSecond" | "cycleStartMs">
+): MockPredictionState {
+  const activeEventIndex = scoreEvents.findIndex(
+    (event) => event.at > snapshot.elapsedSecond
+  );
+
+  const activeRound = activeEventIndex === -1 ? null : activeEventIndex;
+  const closesInSeconds =
+    activeRound === null
+      ? null
+      : Math.max(0, scoreEvents[activeRound].at - snapshot.elapsedSecond);
+
+  const resolvedRounds = scoreEvents
+    .filter((event) => event.at <= snapshot.elapsedSecond)
+    .map((event, index) => ({
+      round: index,
+      result: event.shotType,
+      scorer: teams[event.team],
+      points: event.points,
+      resolvedAtSecond: event.at,
+      resolvedAtMs: snapshot.cycleStartMs + event.at * 1000,
+    }));
+
+  return {
+    activeRound,
+    closesInSeconds,
+    resolvedRounds,
+  };
 }
 
 export function resetMockGame() {

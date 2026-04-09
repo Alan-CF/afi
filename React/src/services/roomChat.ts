@@ -1,7 +1,9 @@
 import { supabase } from "../lib/supabaseClient";
 import type { Room } from "../components/ui/RoomCard";
+import type { PredictionOption } from "./mockRoomGameFeed";
 
 export const ROOM_SYSTEM_MESSAGE_PREFIX = "[[system]] ";
+export const ROOM_PREDICTION_MESSAGE_PREFIX = "[[prediction]] ";
 
 export type RoomChatMessageRecord = {
   id: number;
@@ -15,6 +17,16 @@ export type RoomChatBootstrap = {
   room: Room;
   currentUserId: string;
   messages: RoomChatMessageRecord[];
+};
+
+export type RoomPredictionEntryRecord = {
+  id: number;
+  senderProfileId: string;
+  senderName: string;
+  round: number;
+  choice: PredictionOption;
+  cycleStartMs: number;
+  createdAt: string;
 };
 
 type RoomMemberRow = {
@@ -31,6 +43,12 @@ type RoomMessageRow = {
   sender_profile_id: string;
   content: string;
   created_at: string;
+};
+
+type SerializedPredictionPayload = {
+  round: number;
+  choice: PredictionOption;
+  cycleStartMs: number;
 };
 
 function buildQueryError(scope: string, message: string) {
@@ -214,6 +232,87 @@ export async function sendRoomMessage(
     content: message.content,
     createdAt: message.created_at,
   };
+}
+
+function serializePredictionPayload(payload: SerializedPredictionPayload) {
+  return `${ROOM_PREDICTION_MESSAGE_PREFIX}${JSON.stringify(payload)}`;
+}
+
+export function parseRoomPredictionEntry(
+  message: RoomChatMessageRecord
+): RoomPredictionEntryRecord | null {
+  if (!message.content.startsWith(ROOM_PREDICTION_MESSAGE_PREFIX)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(
+      message.content.slice(ROOM_PREDICTION_MESSAGE_PREFIX.length)
+    ) as SerializedPredictionPayload;
+
+    if (
+      typeof payload.round !== "number" ||
+      typeof payload.choice !== "string" ||
+      typeof payload.cycleStartMs !== "number"
+    ) {
+      return null;
+    }
+
+    return {
+      id: message.id,
+      senderProfileId: message.senderProfileId,
+      senderName: message.senderName,
+      round: payload.round,
+      choice: payload.choice,
+      cycleStartMs: payload.cycleStartMs,
+      createdAt: message.createdAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function sendRoomPrediction(
+  roomId: number,
+  round: number,
+  choice: PredictionOption,
+  cycleStartMs: number
+): Promise<RoomPredictionEntryRecord> {
+  const senderProfileId = await getAuthenticatedUserId();
+  const payload = serializePredictionPayload({
+    round,
+    choice,
+    cycleStartMs,
+  });
+
+  const { data, error } = await supabase
+    .from("room_messages")
+    .insert({
+      room_id: roomId,
+      sender_profile_id: senderProfileId,
+      content: payload,
+    })
+    .select("id, sender_profile_id, content, created_at")
+    .single();
+
+  if (error) {
+    throw buildQueryError("room_messages insert failed", error.message);
+  }
+
+  const insertedMessage: RoomChatMessageRecord = {
+    id: data.id,
+    senderProfileId: data.sender_profile_id,
+    senderName: "You",
+    content: data.content,
+    createdAt: data.created_at,
+  };
+
+  const predictionEntry = parseRoomPredictionEntry(insertedMessage);
+  if (!predictionEntry) {
+    throw new Error("Could not parse prediction entry.");
+  }
+
+  return predictionEntry;
 }
 
 export async function leaveRoom(roomId: number): Promise<void> {

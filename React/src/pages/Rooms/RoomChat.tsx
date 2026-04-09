@@ -3,28 +3,29 @@ import {
   InformationCircleIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/solid";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
 import {
   fetchRoomChat,
   fetchRoomMessages,
   leaveRoom,
+  parseRoomPredictionEntry,
   ROOM_SYSTEM_MESSAGE_PREFIX,
   sendRoomMessage,
+  sendRoomPrediction,
   subscribeToRoomMessages,
   type RoomChatMessageRecord,
+  type RoomPredictionEntryRecord,
 } from "../../services/roomChat";
 import {
-  buildPredictionAnnouncement,
-  predictionOptions,
-  type PredictionOption,
-  type PredictionSelection,
-} from "./chatPredictionMock";
-import {
   getCurrentMockGameSnapshot,
+  getMockPredictionState,
+  predictionOptions,
   subscribeToMockGameFeed,
   type MockGameSnapshot,
+  type MockPredictionState,
+  type PredictionOption,
 } from "../../services/mockRoomGameFeed";
 
 type ChatLocationState = {
@@ -86,13 +87,13 @@ function mergeMessages(current: ChatMessage[], nextMessage: ChatMessage) {
   return [...deduped, nextMessage].sort((a, b) => a.createdAt - b.createdAt);
 }
 
-function mergePersistedMessages(
-  current: ChatMessage[],
-  nextMessages: ChatMessage[]
+function mergePredictionEntries(
+  current: RoomPredictionEntryRecord[],
+  nextEntry: RoomPredictionEntryRecord
 ) {
-  return nextMessages.reduce(
-    (merged, message) => mergeMessages(merged, message),
-    current
+  const deduped = current.filter((entry) => entry.id !== nextEntry.id);
+  return [...deduped, nextEntry].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 }
 
@@ -105,8 +106,115 @@ function parseClockToSeconds(clock: string) {
   return minutes * 60 + seconds;
 }
 
+function getLatestRoundEntries(
+  entries: RoomPredictionEntryRecord[],
+  round: number,
+  cycleStartMs: number,
+  resolvedAtMs?: number
+) {
+  const latestByUser = new Map<string, RoomPredictionEntryRecord>();
+
+  for (const entry of entries) {
+    if (entry.cycleStartMs !== cycleStartMs || entry.round !== round) continue;
+
+    const createdAt = new Date(entry.createdAt).getTime();
+    if (resolvedAtMs && createdAt > resolvedAtMs) continue;
+
+    latestByUser.set(entry.senderProfileId, entry);
+  }
+
+  return Array.from(latestByUser.values());
+}
+
+function buildPredictionResultText(
+  correctCount: number,
+  result: PredictionOption
+) {
+  if (correctCount === 0) {
+    return `No one guessed correctly. Result: ${result}.`;
+  }
+
+  if (correctCount === 1) {
+    return `1 person guessed correctly. Result: ${result}.`;
+  }
+
+  return `${correctCount} people guessed correctly. Result: ${result}.`;
+}
+
+function buildPredictionLeaderText(
+  predictionEntries: RoomPredictionEntryRecord[],
+  predictionState: MockPredictionState,
+  cycleStartMs: number
+) {
+  if (predictionState.activeRound !== null) return null;
+
+  const scoreboard = new Map<string, { name: string; correct: number }>();
+
+  for (const round of predictionState.resolvedRounds) {
+    const latestEntries = getLatestRoundEntries(
+      predictionEntries,
+      round.round,
+      cycleStartMs,
+      round.resolvedAtMs
+    );
+
+    for (const entry of latestEntries) {
+      if (entry.choice !== round.result) continue;
+
+      const current = scoreboard.get(entry.senderProfileId);
+      scoreboard.set(entry.senderProfileId, {
+        name: entry.senderName,
+        correct: (current?.correct ?? 0) + 1,
+      });
+    }
+  }
+
+  const leaders = [...scoreboard.values()].sort((a, b) => b.correct - a.correct);
+
+  if (leaders.length === 0 || leaders[0].correct === 0) {
+    return "Prediction leader: no correct guesses this match.";
+  }
+
+  const topScore = leaders[0].correct;
+  const topNames = leaders
+    .filter((leader) => leader.correct === topScore)
+    .map((leader) => leader.name);
+
+  if (topNames.length === 1) {
+    return `Top predictor: ${topNames[0]} with ${topScore} correct.`;
+  }
+
+  return `Top predictors: ${topNames.join(", ")} with ${topScore} correct each.`;
+}
+
+function buildPredictionAnnouncements(
+  predictionEntries: RoomPredictionEntryRecord[],
+  predictionState: MockPredictionState,
+  cycleStartMs: number
+): ChatMessage[] {
+  return predictionState.resolvedRounds.map((round) => {
+    const latestEntries = getLatestRoundEntries(
+      predictionEntries,
+      round.round,
+      cycleStartMs,
+      round.resolvedAtMs
+    );
+    const correctCount = latestEntries.filter(
+      (entry) => entry.choice === round.result
+    ).length;
+
+    return {
+      id: `prediction-round-${cycleStartMs}-${round.round}`,
+      sender: "System",
+      text: buildPredictionResultText(correctCount, round.result),
+      time: "",
+      align: "center" as const,
+      createdAt: round.resolvedAtMs + 250,
+    };
+  });
+}
+
 function RoomChat() {
-  const predictionBaseSeconds = 15;
   const { roomId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -124,18 +232,18 @@ function RoomChat() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [predictionOpen, setPredictionOpen] = useState(true);
-  const [predictionCountdown, setPredictionCountdown] = useState(predictionBaseSeconds);
-  const [selectedPrediction, setSelectedPrediction] = useState<PredictionSelection | null>(null);
-  const [predictionRound, setPredictionRound] = useState(0);
+  const [predictionEntries, setPredictionEntries] = useState<
+    RoomPredictionEntryRecord[]
+  >([]);
   const [currentUserId, setCurrentUserId] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [chatError, setChatError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendingPrediction, setSendingPrediction] = useState(false);
   const [leavingRoom, setLeavingRoom] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const selectedPredictionRef = useRef<PredictionSelection | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+
   const clockSeconds = parseClockToSeconds(gameState.clock);
   const isFinalState = gameState.statusLabel === "Final";
   const isClutchMoment =
@@ -143,6 +251,52 @@ function RoomChat() {
     !isFinalState &&
     clockSeconds !== null &&
     clockSeconds <= 19;
+  const predictionState = useMemo(
+    () => getMockPredictionState(gameState),
+    [gameState]
+  );
+
+  const currentPredictionEntry = useMemo(() => {
+    if (!currentUserId || predictionState.activeRound === null) return null;
+
+    return getLatestRoundEntries(
+      predictionEntries,
+      predictionState.activeRound,
+      gameState.cycleStartMs
+    ).find((entry) => entry.senderProfileId === currentUserId) ?? null;
+  }, [
+    currentUserId,
+    gameState.cycleStartMs,
+    predictionEntries,
+    predictionState.activeRound,
+  ]);
+
+  const predictionAnnouncements = useMemo(
+    () =>
+      buildPredictionAnnouncements(
+        predictionEntries,
+        predictionState,
+        gameState.cycleStartMs
+      ),
+    [gameState.cycleStartMs, predictionEntries, predictionState]
+  );
+  const finalPredictionLeaderText = useMemo(
+    () =>
+      buildPredictionLeaderText(
+        predictionEntries,
+        predictionState,
+        gameState.cycleStartMs
+      ),
+    [gameState.cycleStartMs, predictionEntries, predictionState]
+  );
+
+  const displayMessages = useMemo(
+    () =>
+      [...messages, ...predictionAnnouncements].sort(
+        (a, b) => a.createdAt - b.createdAt
+      ),
+    [messages, predictionAnnouncements]
+  );
 
   useEffect(() => {
     if (!activeRoomId) {
@@ -161,11 +315,23 @@ function RoomChat() {
 
         setRoom(data.room);
         setCurrentUserId(data.currentUserId);
-        setMessages(
-          data.messages.map((message) =>
-            toDisplayMessage(message, data.currentUserId)
-          )
-        );
+        setMessages([]);
+        setPredictionEntries([]);
+
+        for (const message of data.messages) {
+          const predictionEntry = parseRoomPredictionEntry(message);
+
+          if (predictionEntry) {
+            setPredictionEntries((current) =>
+              mergePredictionEntries(current, predictionEntry)
+            );
+            continue;
+          }
+
+          setMessages((current) =>
+            mergeMessages(current, toDisplayMessage(message, data.currentUserId))
+          );
+        }
       } catch (error) {
         console.error("Error loading room chat:", error);
         setChatError(
@@ -176,7 +342,7 @@ function RoomChat() {
       }
     }
 
-    loadRoomChat();
+    void loadRoomChat();
   }, [activeRoomId]);
 
   useEffect(() => {
@@ -189,11 +355,7 @@ function RoomChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    selectedPredictionRef.current = selectedPrediction;
-  }, [selectedPrediction]);
+  }, [displayMessages]);
 
   useEffect(() => {
     if (!actionsOpen) return;
@@ -212,54 +374,18 @@ function RoomChat() {
   }, [actionsOpen]);
 
   useEffect(() => {
-    if (!predictionOpen) return;
-
-    const intervalId = window.setInterval(() => {
-      setPredictionCountdown((current) => (current > 0 ? current - 1 : 0));
-    }, 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [predictionOpen]);
-
-  useEffect(() => {
-    if (!predictionOpen || predictionCountdown !== 0 || selectedPrediction) return;
-
-    setSelectedPrediction("No Choice");
-    setPredictionOpen(false);
-  }, [predictionCountdown, predictionOpen, selectedPrediction]);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const resolvedPrediction = selectedPredictionRef.current ?? "No Choice";
-      const announcement = buildPredictionAnnouncement(
-        resolvedPrediction,
-        predictionRound
-      );
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: `system-${predictionRound}`,
-          sender: "System",
-          text: announcement.text,
-          time: "",
-          align: "center",
-          createdAt: Date.now(),
-        },
-      ]);
-      setSelectedPrediction(null);
-      setPredictionOpen(true);
-      setPredictionCountdown(predictionBaseSeconds);
-      setPredictionRound((current) => current + 1);
-    }, 30000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [predictionBaseSeconds, predictionRound]);
-
-  useEffect(() => {
     if (!activeRoomId || !currentUserId) return;
 
     const unsubscribe = subscribeToRoomMessages(activeRoomId, (message) => {
+      const predictionEntry = parseRoomPredictionEntry(message);
+
+      if (predictionEntry) {
+        setPredictionEntries((current) =>
+          mergePredictionEntries(current, predictionEntry)
+        );
+        return;
+      }
+
       setMessages((current) =>
         mergeMessages(current, toDisplayMessage(message, currentUserId))
       );
@@ -279,17 +405,22 @@ function RoomChat() {
         const latestMessages = await fetchRoomMessages(roomIdToSync);
         if (cancelled) return;
 
-        setMessages((current) =>
-          mergePersistedMessages(
-            current,
-            latestMessages.map((message) =>
-              toDisplayMessage(message, currentUserId)
-            )
-          )
-        );
+        for (const message of latestMessages) {
+          const predictionEntry = parseRoomPredictionEntry(message);
+
+          if (predictionEntry) {
+            setPredictionEntries((current) =>
+              mergePredictionEntries(current, predictionEntry)
+            );
+            continue;
+          }
+
+          setMessages((current) =>
+            mergeMessages(current, toDisplayMessage(message, currentUserId))
+          );
+        }
       } catch (error) {
         if (cancelled) return;
-
         console.error("Error syncing room messages:", error);
       }
     }
@@ -328,9 +459,34 @@ function RoomChat() {
     }
   }
 
-  function handlePredictionSelect(prediction: PredictionOption) {
-    setSelectedPrediction(prediction);
-    setPredictionOpen(false);
+  async function handlePredictionSelect(prediction: PredictionOption) {
+    if (
+      !activeRoomId ||
+      predictionState.activeRound === null ||
+      sendingPrediction
+    ) {
+      return;
+    }
+
+    try {
+      setSendingPrediction(true);
+      setChatError(null);
+      const entry = await sendRoomPrediction(
+        activeRoomId,
+        predictionState.activeRound,
+        prediction,
+        gameState.cycleStartMs
+      );
+
+      setPredictionEntries((current) => mergePredictionEntries(current, entry));
+    } catch (error) {
+      console.error("Error sending prediction:", error);
+      setChatError(
+        error instanceof Error ? error.message : "Could not send prediction."
+      );
+    } finally {
+      setSendingPrediction(false);
+    }
   }
 
   function handleToggleInfo() {
@@ -429,8 +585,8 @@ function RoomChat() {
               isFinalState
                 ? "bg-[#d2d7e1] text-secondary"
                 : isClutchMoment
-                ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
-                : "bg-primary text-secondary"
+                  ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
+                  : "bg-primary text-secondary"
             }`}
           >
             <div className="grid grid-cols-3 items-center">
@@ -468,8 +624,8 @@ function RoomChat() {
                     isFinalState
                       ? "text-[1.5rem] text-secondary"
                       : isClutchMoment
-                      ? "text-[1.6rem] text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
-                      : "text-[1.35rem]"
+                        ? "text-[1.6rem] text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
+                        : "text-[1.35rem]"
                   }`}
                 >
                   {gameState.clock}
@@ -522,6 +678,17 @@ function RoomChat() {
             )}
           </div>
 
+          {isFinalState && finalPredictionLeaderText && (
+            <div className="border-b border-[#d7dfec] bg-[#edf4ff] px-4 py-2.5 sm:px-5">
+              <p className="font-lato text-[0.72rem] font-bold uppercase tracking-[0.16em] text-secondary/55">
+                Winner:
+              </p>
+              <p className="mt-1 font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
+                {finalPredictionLeaderText.replace(/^Top predictor:\s*/i, "").replace(/^Top predictors:\s*/i, "").replace(/^Prediction leader:\s*/i, "")}
+              </p>
+            </div>
+          )}
+
           {infoOpen && (
             <div className="border-b border-[#d8e2f1] bg-[#2a4e8e] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:px-5">
               <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
@@ -558,13 +725,13 @@ function RoomChat() {
                   Loading messages...
                 </p>
               </div>
-            ) : chatError && messages.length === 0 ? (
+            ) : chatError && displayMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <p className="max-w-[28rem] rounded-2xl bg-[#fff1f2] px-4 py-3 text-center font-lato text-sm text-[#be123c]">
                   {chatError}
                 </p>
               </div>
-            ) : messages.length === 0 ? (
+            ) : displayMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <p className="rounded-2xl bg-[#f6f8fc] px-4 py-3 text-center font-lato text-sm text-[#7b8aa2]">
                   No messages yet. Start the conversation.
@@ -572,7 +739,7 @@ function RoomChat() {
               </div>
             ) : (
               <div className="space-y-4">
-                {messages.map((message) => (
+                {displayMessages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${
@@ -624,28 +791,28 @@ function RoomChat() {
           </div>
 
           <div className="sticky bottom-0 border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
-            {chatError && messages.length > 0 && (
+            {chatError && displayMessages.length > 0 && (
               <div className="mb-3 rounded-[1rem] border border-[#ffd7dc] bg-[#fff1f2] px-4 py-3">
                 <p className="font-lato text-sm text-[#be123c]">{chatError}</p>
               </div>
             )}
 
-            {selectedPrediction && (
+            {currentPredictionEntry && (
               <div className="mb-3 rounded-[1rem] border border-[#d5e2f6] bg-[#edf4ff] px-4 py-3 shadow-[0_8px_20px_rgba(30,64,140,0.08)]">
                 <p className="font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
-                  Prediction: {selectedPrediction}
+                  Prediction: {currentPredictionEntry.choice}
                 </p>
               </div>
             )}
 
-            {predictionOpen && (
+            {predictionState.activeRound !== null && !currentPredictionEntry && (
               <div className="mb-3 overflow-hidden rounded-[1.15rem] border border-[#c7d8f2] bg-[#2d4f8d] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
                 <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 text-white">
                   <p className="font-lato text-[0.72rem] font-bold tracking-[0.02em] sm:text-xs">
                     Next Play: What will it be?
                   </p>
                   <span className="rounded-full bg-white/12 px-2 py-1 font-lato text-[0.68rem] font-bold">
-                    {predictionCountdown}s
+                    {predictionState.closesInSeconds ?? 0}s
                   </span>
                 </div>
 
@@ -654,8 +821,9 @@ function RoomChat() {
                     <button
                       key={option}
                       type="button"
-                      onClick={() => handlePredictionSelect(option)}
-                      className="rounded-[0.9rem] bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-[#eef4ff] sm:text-sm"
+                      onClick={() => void handlePredictionSelect(option)}
+                      disabled={sendingPrediction}
+                      className="rounded-[0.9rem] bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-[#eef4ff] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
                     >
                       {option}
                     </button>
@@ -672,7 +840,7 @@ function RoomChat() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
-                    handleSendMessage();
+                    void handleSendMessage();
                   }
                 }}
                 placeholder="Type a message..."
@@ -682,7 +850,7 @@ function RoomChat() {
               <button
                 type="button"
                 aria-label="Send message"
-                onClick={handleSendMessage}
+                onClick={() => void handleSendMessage()}
                 disabled={!activeRoomId || sendingMessage}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d7e5fb] text-secondary transition-colors hover:bg-[#c6daf8] disabled:cursor-not-allowed disabled:opacity-60"
               >
