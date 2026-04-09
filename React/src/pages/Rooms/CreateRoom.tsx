@@ -1,39 +1,50 @@
 import { ArrowLeftIcon, CheckIcon } from "@heroicons/react/24/solid";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../../components/layout/NavBar";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
-import type { Room } from "../../components/ui/RoomCard";
-
-type Friend = {
-  id: number;
-  name: string;
-  accent: string;
-};
-
-const friends: Friend[] = [
-  { id: 1, name: "Cesar", accent: "#8FB3E8" },
-  { id: 2, name: "Luis", accent: "#B8C9E8" },
-  { id: 3, name: "Maria", accent: "#9CB6E6" },
-  { id: 4, name: "John", accent: "#C8D6F2" },
-  { id: 5, name: "Sarah", accent: "#A4BCE9" },
-  { id: 6, name: "Alex", accent: "#8CA8DB" },
-  { id: 7, name: "Emma", accent: "#B5C4E0" },
-  { id: 8, name: "Mike", accent: "#9FB3D8" },
-];
+import {
+  createRoomWithMembers,
+  fetchMyFriends,
+  type FriendOption,
+} from "../../services/rooms";
 
 function CreateRoom() {
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState("");
-  const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
+  const [friends, setFriends] = useState<FriendOption[]>([]);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+  const [creatingRoom, setCreatingRoom] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedCount = selectedFriendIds.length;
   const canCreateRoom = roomName.trim().length > 0 && selectedCount > 0;
 
   const selectedSet = useMemo(() => new Set(selectedFriendIds), [selectedFriendIds]);
 
-  function toggleFriend(friendId: number) {
+  useEffect(() => {
+    async function loadFriends() {
+      try {
+        setLoadingFriends(true);
+        setError(null);
+        const data = await fetchMyFriends();
+        setFriends(data);
+      } catch (err) {
+        console.error("Error loading friends:", err);
+        setError(
+          err instanceof Error ? err.message : "Could not load friends."
+        );
+      } finally {
+        setLoadingFriends(false);
+      }
+    }
+
+    loadFriends();
+  }, []);
+
+  function toggleFriend(friendId: string) {
     setSelectedFriendIds((current) =>
       current.includes(friendId)
         ? current.filter((id) => id !== friendId)
@@ -41,22 +52,21 @@ function CreateRoom() {
     );
   }
 
-  function handleCreateRoom() {
+  async function handleCreateRoom() {
     if (!canCreateRoom) return;
-
-    const selectedFriends = friends.filter((friend) => selectedSet.has(friend.id));
-    const createdRoom: Room = {
-      id: Date.now(),
-      title: roomName.trim(),
-      status: "live",
-      members: selectedFriends.map((friend) => friend.name).join(", "),
-      subtitle: `${selectedCount} friend${selectedCount === 1 ? "" : "s"} joined the room`,
-      accent: "#2563EB",
-    };
-
-    navigate("/rooms", {
-      state: { createdRoom },
-    });
+    try {
+      setCreatingRoom(true);
+      setError(null);
+      await createRoomWithMembers(roomName, selectedFriendIds);
+      navigate("/rooms");
+    } catch (err) {
+      console.error("Error creating room:", err);
+      setError(
+        err instanceof Error ? err.message : "Could not create room."
+      );
+    } finally {
+      setCreatingRoom(false);
+    }
   }
 
   return (
@@ -109,6 +119,18 @@ function CreateRoom() {
 
               <div className="flex-1 overflow-hidden rounded-[1.5rem] border-2 border-[#cfd9ea] bg-[#fdfefe]">
                 <div className="max-h-[46vh] overflow-y-auto lg:max-h-[52vh]">
+                  {loadingFriends && (
+                    <div className="px-4 py-6 text-center font-lato text-sm text-[#6b7a90]">
+                      Loading friends...
+                    </div>
+                  )}
+
+                  {!loadingFriends && friends.length === 0 && (
+                    <div className="px-4 py-6 text-center font-lato text-sm text-[#6b7a90]">
+                      No accepted friends found.
+                    </div>
+                  )}
+
                   {friends.map((friend, index) => {
                     const isSelected = selectedSet.has(friend.id);
 
@@ -150,14 +172,22 @@ function CreateRoom() {
             </div>
           </div>
 
+          {error && (
+            <div className="mt-4 rounded-[1rem] bg-[#fff1f2] px-4 py-3 font-lato text-sm text-[#be123c]">
+              {error}
+            </div>
+          )}
+
           <div className="sticky bottom-0 mt-5 bg-white/92 pt-2">
             <Button
               variant="primary"
               onClick={handleCreateRoom}
-              disabled={!canCreateRoom}
+              disabled={!canCreateRoom || loadingFriends || creatingRoom}
               className="w-full rounded-[1.2rem] border-transparent py-3 text-sm font-bold text-secondary disabled:bg-[#b7c8df] disabled:text-white sm:py-4 sm:text-base"
             >
-              Create Room ({selectedCount} Friend{selectedCount === 1 ? "" : "s"})
+              {creatingRoom
+                ? "Creating Room..."
+                : `Create Room (${selectedCount} Friend${selectedCount === 1 ? "" : "s"})`}
             </Button>
           </div>
         </section>

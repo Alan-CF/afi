@@ -9,6 +9,12 @@ export type RoomCardData = {
   accent: string;
 };
 
+export type FriendOption = {
+  id: string;
+  name: string;
+  accent: string;
+};
+
 function formatMembers(usernames: string[]) {
   if (usernames.length <= 3) return usernames.join(", ");
   return `${usernames.slice(0, 3).join(", ")} +${usernames.length - 3}`;
@@ -18,21 +24,143 @@ function buildQueryError(scope: string, message: string) {
   return new Error(`${scope}: ${message}`);
 }
 
-export async function fetchMyRooms(): Promise<RoomCardData[]> {
+const friendAccents = [
+  "#8FB3E8",
+  "#B8C9E8",
+  "#9CB6E6",
+  "#C8D6F2",
+  "#A4BCE9",
+  "#8CA8DB",
+  "#B5C4E0",
+  "#9FB3D8",
+];
+
+const roomAccents = ["#1D4ED8", "#2563EB", "#0F766E", "#7C3AED", "#C2410C"];
+
+async function getAuthenticatedUserId() {
   const {
     data: { user },
-    error: userError,
+    error,
   } = await supabase.auth.getUser();
 
-  if (userError) throw userError;
-  if (!user) return [];
+  if (error) throw error;
+  if (!user) throw new Error("You must be signed in.");
 
-  console.log("Authenticated user:", user.id);
+  return user.id;
+}
+
+export async function fetchMyFriends(): Promise<FriendOption[]> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: friendships, error: friendshipsError } = await supabase
+    .from("friendships")
+    .select("requester_id, addressee_id")
+    .eq("status", "accepted")
+    .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+  if (friendshipsError) {
+    console.error("friendships error:", friendshipsError);
+    throw buildQueryError("friendships query failed", friendshipsError.message);
+  }
+
+  const friendIds = Array.from(
+    new Set(
+      (friendships ?? []).map((friendship) =>
+        friendship.requester_id === userId
+          ? friendship.addressee_id
+          : friendship.requester_id
+      )
+    )
+  );
+
+  if (friendIds.length === 0) return [];
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", friendIds)
+    .order("username", { ascending: true });
+
+  if (profilesError) {
+    console.error("friend profiles error:", profilesError);
+    throw buildQueryError("friend profiles query failed", profilesError.message);
+  }
+
+  return (profiles ?? []).map((profile, index) => ({
+    id: profile.id,
+    name: profile.username,
+    accent: friendAccents[index % friendAccents.length],
+  }));
+}
+
+export async function createRoomWithMembers(
+  title: string,
+  memberIds: string[]
+): Promise<number> {
+  const ownerProfileId = await getAuthenticatedUserId();
+  const uniqueMemberIds = Array.from(new Set(memberIds)).filter(Boolean);
+
+  if (!title.trim()) {
+    throw new Error("Room name is required.");
+  }
+
+  if (uniqueMemberIds.length === 0) {
+    throw new Error("Select at least one friend.");
+  }
+
+  const accent =
+    roomAccents[(title.trim().length + uniqueMemberIds.length) % roomAccents.length];
+
+  const { data: createdRoom, error: roomInsertError } = await supabase
+    .from("rooms")
+    .insert({
+      title: title.trim(),
+      owner_profile_id: ownerProfileId,
+      status: "live",
+      accent,
+    })
+    .select("id")
+    .single();
+
+  if (roomInsertError) {
+    console.error("create room error:", roomInsertError);
+    throw buildQueryError("rooms insert failed", roomInsertError.message);
+  }
+
+  const roomId = createdRoom.id;
+  const memberRows = [
+    { room_id: roomId, profile_id: ownerProfileId, role: "owner" },
+    ...uniqueMemberIds.map((profileId) => ({
+      room_id: roomId,
+      profile_id: profileId,
+      role: "member" as const,
+    })),
+  ];
+
+  const { error: memberInsertError } = await supabase
+    .from("room_members")
+    .insert(memberRows);
+
+  if (memberInsertError) {
+    console.error("create room members error:", memberInsertError);
+    throw buildQueryError(
+      "room_members insert failed",
+      memberInsertError.message
+    );
+  }
+
+  return roomId;
+}
+
+export async function fetchMyRooms(): Promise<RoomCardData[]> {
+  const userId = await getAuthenticatedUserId();
+
+  console.log("Authenticated user:", userId);
 
   const { data: myMemberships, error: membershipsError } = await supabase
     .from("room_members")
     .select("room_id")
-    .eq("profile_id", user.id);
+    .eq("profile_id", userId);
 
   if (membershipsError) {
     console.error("room_members error:", membershipsError);
