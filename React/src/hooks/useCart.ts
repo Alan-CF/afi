@@ -2,6 +2,16 @@ import { useEffect, useState } from "react";
 import { getSession } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
 
+const CART_UPDATED_EVENT = "cart:updated";
+
+function notifyCartUpdated() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new Event(CART_UPDATED_EVENT));
+}
+
 export interface CartItem {
   id: number;
   product_name: string;
@@ -11,6 +21,26 @@ export interface CartItem {
   price: number;
   discount: number;
   image_url: string | null;
+}
+
+export async function addItemToCart(pricedProductId: number) {
+  const session = await getSession();
+  const profileId = session?.user?.id;
+
+  if (!profileId) {
+    throw new Error("You must be signed in to add items to your cart.");
+  }
+
+  const { error } = await supabase.rpc("add_item_to_active_cart", {
+    p_profile_id: profileId,
+    p_priced_product_id: pricedProductId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  notifyCartUpdated();
 }
 
 export function useCart() {
@@ -54,6 +84,20 @@ export function useCart() {
 
   useEffect(() => {
     fetchCart();
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleCartUpdated = () => {
+      void fetchCart();
+    };
+
+    window.addEventListener(CART_UPDATED_EVENT, handleCartUpdated);
+
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated);
+    };
   }, []);
 
   return {

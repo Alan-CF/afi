@@ -20,13 +20,13 @@ function CartSkeleton() {
 }
 
 export default function Cart({ isOpen, onClose }: CartProps) {
-  if (!isOpen) return null;
-
   const {
     cartItems,
     loading: loadingCart,
     error: cartError,
   } = useCart();
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50">
