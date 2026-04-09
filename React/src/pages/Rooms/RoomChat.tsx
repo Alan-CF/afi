@@ -8,6 +8,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
 import {
   fetchRoomChat,
+  fetchRoomMessages,
   sendRoomMessage,
   subscribeToRoomMessages,
   type RoomChatMessageRecord,
@@ -86,6 +87,16 @@ function toDisplayMessage(
 function mergeMessages(current: ChatMessage[], nextMessage: ChatMessage) {
   const deduped = current.filter((message) => message.id !== nextMessage.id);
   return [...deduped, nextMessage].sort((a, b) => a.createdAt - b.createdAt);
+}
+
+function mergePersistedMessages(
+  current: ChatMessage[],
+  nextMessages: ChatMessage[]
+) {
+  return nextMessages.reduce(
+    (merged, message) => mergeMessages(merged, message),
+    current
+  );
 }
 
 function RoomChat() {
@@ -214,6 +225,43 @@ function RoomChat() {
     });
 
     return unsubscribe;
+  }, [activeRoomId, currentUserId]);
+
+  useEffect(() => {
+    if (!activeRoomId || !currentUserId) return;
+
+    const roomIdToSync = activeRoomId;
+    let cancelled = false;
+
+    async function syncMessages() {
+      try {
+        const latestMessages = await fetchRoomMessages(roomIdToSync);
+        if (cancelled) return;
+
+        setMessages((current) =>
+          mergePersistedMessages(
+            current,
+            latestMessages.map((message) =>
+              toDisplayMessage(message, currentUserId)
+            )
+          )
+        );
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("Error syncing room messages:", error);
+      }
+    }
+
+    void syncMessages();
+    const intervalId = window.setInterval(() => {
+      void syncMessages();
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
   }, [activeRoomId, currentUserId]);
 
   async function handleSendMessage() {

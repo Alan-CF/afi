@@ -133,6 +133,37 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
   };
 }
 
+export async function fetchRoomMessages(
+  roomId: number
+): Promise<RoomChatMessageRecord[]> {
+  const { data: messages, error: messagesError } = await supabase
+    .from("room_messages")
+    .select("id, sender_profile_id, content, created_at")
+    .eq("room_id", roomId)
+    .order("created_at", { ascending: true });
+
+  if (messagesError) {
+    throw buildQueryError("room_messages query failed", messagesError.message);
+  }
+
+  const senderIds = Array.from(
+    new Set(
+      ((messages ?? []) as RoomMessageRow[]).map(
+        (message) => message.sender_profile_id
+      )
+    )
+  );
+  const profileMap = await fetchProfileMap(senderIds);
+
+  return ((messages ?? []) as RoomMessageRow[]).map((message) => ({
+    id: message.id,
+    senderProfileId: message.sender_profile_id,
+    senderName: profileMap.get(message.sender_profile_id) ?? "User",
+    content: message.content,
+    createdAt: message.created_at,
+  }));
+}
+
 export async function sendRoomMessage(
   roomId: number,
   content: string
