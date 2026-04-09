@@ -1,12 +1,32 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import CartItem from "../ui/shop/CartItem";
+import { useCart } from "../../hooks/useCart";
 
 interface CartProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+function CartSkeleton() {
+  return (
+    <div className="flex animate-pulse items-center gap-4">
+      <div className="h-24 w-24 rounded bg-gray-300" />
+      <div className="flex flex-col gap-2">
+        <div className="h-6 w-48 rounded bg-gray-300" />
+        <div className="h-4 w-64 rounded bg-gray-300" />
+      </div>
+    </div>
+  );
+}
+
 export default function Cart({ isOpen, onClose }: CartProps) {
   if (!isOpen) return null;
+
+  const {
+    cartItems,
+    loading: loadingCart,
+    error: cartError,
+  } = useCart();
 
   return (
     <div className="fixed inset-0 z-50">
@@ -29,9 +49,28 @@ export default function Cart({ isOpen, onClose }: CartProps) {
           </button>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-6 text-center font-lato text-lg text-black/70">
-          Your cart is empty for now.
-        </div>
+        {loadingCart ? (
+          <div className="flex flex-col gap-4 p-6">
+            <CartSkeleton />
+            <CartSkeleton />
+            <CartSkeleton />
+          </div>
+        ) : cartError ? (
+          <div className="flex flex-1 items-center justify-center px-6 text-center font-lato text-lg text-red-600">
+            Error loading cart. Please try again.
+          </div>
+        ) : cartItems.length > 0 ? (
+          <div className="flex flex-col gap-4 p-6">
+            {cartItems.map((item) => (
+              <CartItem key={item.id} {...item} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center px-6 text-center font-lato text-lg text-black/70">
+            Your cart is empty for now.
+          </div>
+        )}
+
       </aside>
     </div>
   );
