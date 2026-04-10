@@ -14,15 +14,21 @@ export default function NavBar() {
             <div className="flex items-center gap-5">
                 <ShoppingBagIcon className="w-6 h-6" aria-hidden="true" />
                 <Bars3Icon className="w-6 h-6" aria-hidden="true" />
-                {user?.avatar_url ? (
-                    <img
-                        src={user.avatar_url}
-                        alt="Avatar"
-                        className="w-10 h-10 rounded-full object-cover"
-                    />
-                ) : (
-                    <UserCircleIcon className="w-10 h-10" aria-hidden="true" />
-                )}
+                <button
+                    type="button"
+                    onClick={() => navigate("/myprofile")}
+                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                    {user?.avatar_url ? (
+                        <img
+                            src={user.avatar_url}
+                            alt="Avatar"
+                            className="w-10 h-10 rounded-full object-cover"
+                        />
+                    ) : (
+                        <UserCircleIcon className="w-10 h-10" aria-hidden="true" />
+                    )}
+                </button>
             </div>
         </nav>
     );
