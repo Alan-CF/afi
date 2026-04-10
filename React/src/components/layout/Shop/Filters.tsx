@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useShopFilters } from "../../../hooks/useShopGroups";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 function FilterSkeleton() {
   return (
@@ -17,7 +18,12 @@ function FilterSkeleton() {
   );
 }
 
-export default function Filters() {
+interface FiltersProps {
+  className?: string;
+  onClose?: () => void;
+}
+
+export default function Filters({ className = "", onClose }: FiltersProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, loading, error } = useShopFilters();
 
@@ -37,9 +43,21 @@ export default function Filters() {
   };
 
   return (
-    <div className="flex max-w-80 self-stretch flex-col gap-4 bg-white p-4">
+    <div
+      className={`flex max-w-80 self-stretch flex-col gap-4 bg-white p-4 ${className}`.trim()}
+    >
       <div className="flex items-center justify-between border-b border-black/10  py-5">
-          <h2 className="text-2xl font-anton font-semibold md:text-3xl">Filters</h2>
+        <h2 className="text-2xl font-anton font-semibold md:text-3xl">Filters</h2>
+        {onClose ? (
+          <button
+            type="button"
+            aria-label="Close filters panel"
+            className="rounded-full p-1 text-black transition-colors hover:bg-black/10 md:hidden"
+            onClick={onClose}
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        ) : null}
       </div>
 
       {loading && (

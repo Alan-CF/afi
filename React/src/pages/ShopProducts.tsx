@@ -4,10 +4,13 @@ import NavBar from "../components/layout/NavBar";
 import { useSearchParams } from "react-router-dom";
 import { useMemo, useState } from "react";
 import Filters from "../components/layout/Shop/Filters";
+import {
+  AdjustmentsHorizontalIcon,
+} from "@heroicons/react/24/outline";
 
 function ProductsSkeleton() {
   return (
-    <div className="mx-auto w-full min-w-60 max-w-96 animate-pulse">
+    <div className="w-full min-w-60 max-w-96 animate-pulse">
       <div className="h-48 w-full rounded-xl bg-gray-300" />
       <div className="mt-4 h-6 w-3/4 rounded bg-gray-300" />
       <div className="mt-2 h-4 w-1/2 rounded bg-gray-300" />
@@ -18,6 +21,7 @@ function ProductsSkeleton() {
 export default function ShopProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(searchParams.get("search") || "");
+  const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -62,17 +66,27 @@ export default function ShopProducts() {
     <div className="flex min-h-screen flex-col bg-secondary/15">
       <NavBar />
       <div className="flex flex-1 items-stretch">
-        <Filters />
+        <div className="hidden md:flex">
+          <Filters className="h-full" />
+        </div>
         <div className="flex-1">
-          <div className="w-full px-6">
+          <div className="mt-6 flex w-full items-center gap-2 px-6">
         <input
           type="text"
           placeholder="Search products..."
-          className="mt-6 w-full bg-white border-4 border-secondary focus:border-primary focus:outline-none rounded-2xl disabled:opacity-50 px-4 py-3 font-lato transition-colors"
+          className="w-full rounded-2xl border-4 border-secondary bg-white px-4 py-3 font-lato transition-colors focus:border-primary focus:outline-none disabled:opacity-50"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleSearchKeyDown}
         />
+            <button
+              type="button"
+              aria-label="Open filters"
+              className="inline-flex items-center justify-center rounded-2xl border-4 border-secondary bg-white p-3 text-black transition-colors hover:border-primary hover:text-primary md:hidden"
+              onClick={() => setIsFiltersDrawerOpen(true)}
+            >
+              <AdjustmentsHorizontalIcon className="h-6 w-6" />
+            </button>
       </div>
       {productsLoading ? (
         <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
@@ -93,6 +107,26 @@ export default function ShopProducts() {
       )}
         </div>
       </div>
+
+      {isFiltersDrawerOpen ? (
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            aria-label="Close filters"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setIsFiltersDrawerOpen(false)}
+          />
+
+          <div className="absolute left-0 top-0 h-full w-80 max-w-[85%] bg-white shadow-xl">
+            <div className="h-full overflow-y-auto pt-4">
+              <Filters
+                className="max-w-none"
+                onClose={() => setIsFiltersDrawerOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
       
     </div>
   );
