@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "../components/layout/NavBar";
 import { useProfile } from "../hooks/useProfile";
+import { supabase } from "../lib/supabaseClient";
 import {
   FireIcon,
   StarIcon,
@@ -14,6 +15,7 @@ import {
   CheckIcon as CheckOutline,
   SunIcon as SunOutline,
 } from "@heroicons/react/24/outline";
+
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze", emoji: "🥉" };
   if (coins <= 10000) return { name: "Silver",  emoji: "🥈" };
@@ -27,11 +29,25 @@ export default function MyProfile() {
   const name = user?.full_name ?? user?.username ?? "Full Name";
   const league = getLeague(user?.fanatic_coins ?? 0);
 
-  const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
+  const [aboutText, setAboutText] = useState<string>("Let us get to know you! Write a short bio about yourself.");
+
+  useEffect(() => {
+    if (user?.caption) {
+      setAboutText(user.caption);
+    }
+  }, [user]);
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleEditSave = () => {
-    setIsEditing((prev) => !prev);
+  const handleEditSave = async () => {
+    if (isEditing) {
+      await supabase
+        .from("profiles")
+        .update({ caption: aboutText })
+        .eq("id", (await supabase.auth.getUser()).data.user?.id ?? "");
+      setIsEditing(false);
+    } else {
+      setIsEditing(true);
+    }
   };
 
   return (
@@ -46,7 +62,7 @@ export default function MyProfile() {
 
             {/* Header azul — avatar + nombre */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
-              <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-secondary/60 border-4 border-white/20 mb-3">
+              <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-secondary/60 border-4 border-white/20 mb-3 overflow-hidden">
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt="Avatar" className="h-[88px] w-[88px] rounded-full object-cover" />
                 ) : (
@@ -64,7 +80,7 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">5</p>
+                  <p className="text-xl font-extrabold text-secondary">{user?.streak ?? 0}</p>
                   <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Streak</p>
                 </div>
 

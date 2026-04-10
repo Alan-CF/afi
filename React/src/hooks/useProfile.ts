@@ -6,6 +6,8 @@ export interface UserProfileData {
     avatar_url: string;
     full_name: string;
     fanatic_coins: number;
+    caption: string | null;
+    streak: number;
 }
 
 export function useProfile() {
@@ -45,9 +47,18 @@ export function useProfile() {
                 setUser(null);
                 setError(profileError);
             } else {
+                // Después del select de profiles, antes del setUser
+                await supabase.rpc("update_login_streak", { user_id: authUser.id });
+
+                // Luego vuelve a leer el perfil actualizado (o haz el select de nuevo)
+                const { data: profile, error: profileError } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", authUser.id)
+                .single();
                 setUser({
                     ...profile,
-                    full_name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? profile.username,
+                    full_name: profile.name ?? profile.username,
                 });
                 setError(null);
             }
