@@ -93,3 +93,25 @@ export function useCategories() {
     refreshCategories: result.refresh,
   };
 }
+
+export function useShopFilters(): Record<string, string[]> {
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      const { data, error } = await supabase.rpc("get_product_filters");
+
+      if (error) {
+        console.error("Error fetching product filters:", error);
+        setFilters({});
+        return;
+      }
+
+      setFilters((data ?? {}) as Record<string, string[]>);
+    };
+
+    fetchFilters();
+  }, []);
+
+  return filters;
+}

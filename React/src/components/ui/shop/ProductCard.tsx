@@ -32,7 +32,7 @@ export default function ProductCard({ product }: { product: PricedProduct }) {
   };
 
   return (
-    <div className="flex h-full flex-col gap-4 shadow-lg bg-white p-4 rounded-xl">
+    <div className="mx-auto flex h-full w-full min-w-60 max-w-96 flex-col gap-4 rounded-xl bg-white p-4 shadow-lg">
       <div className="h-48 w-full overflow-hidden rounded-xl bg-gray-100">
         <img
           src={product.image_url ?? undefined}

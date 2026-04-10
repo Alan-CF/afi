@@ -3,10 +3,11 @@ import ProductCard from "../components/ui/shop/ProductCard";
 import NavBar from "../components/layout/NavBar";
 import { useSearchParams } from "react-router-dom";
 import { useMemo, useState } from "react";
+import Filters from "../components/layout/Shop/Filters";
 
 function ProductsSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div className="mx-auto w-full min-w-60 max-w-96 animate-pulse">
       <div className="h-48 w-full rounded-xl bg-gray-300" />
       <div className="mt-4 h-6 w-3/4 rounded bg-gray-300" />
       <div className="mt-2 h-4 w-1/2 rounded bg-gray-300" />
@@ -61,7 +62,7 @@ export default function ShopProducts() {
     return (
       <div className="flex min-h-screen flex-col bg-secondary/15">
         <NavBar />
-        <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
           <ProductsSkeleton />
           <ProductsSkeleton />
           <ProductsSkeleton />
@@ -84,7 +85,10 @@ export default function ShopProducts() {
   return (
     <div className="flex min-h-screen flex-col bg-secondary/15">
       <NavBar />
-      <div className="w-full px-6">
+      <div className="flex flex-1 items-stretch">
+        <Filters />
+        <div className="flex-1">
+          <div className="w-full px-6">
         <input
           type="text"
           placeholder="Search products..."
@@ -94,11 +98,14 @@ export default function ShopProducts() {
           onKeyDown={handleSearchKeyDown}
         />
       </div>
-      <div className="grid auto-rows-fr grid-cols-1 gap-6 p-6 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
+        </div>
+      </div>
+      
     </div>
   );
 }
