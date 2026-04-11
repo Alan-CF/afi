@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import Filters from "../components/layout/Shop/Filters";
 import {
   AdjustmentsHorizontalIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 function ProductsSkeleton() {
@@ -22,6 +23,13 @@ export default function ShopProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(searchParams.get("search") || "");
   const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
+
+  const handleClearSearch = () => {
+    setInputValue("");
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("search");
+    setSearchParams(nextSearchParams);
+  };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -71,14 +79,26 @@ export default function ShopProducts() {
         </div>
         <div className="flex-1">
           <div className="mt-6 flex w-full items-center gap-2 px-6">
-        <input
-          type="text"
-          placeholder="Search products..."
-          className="w-full rounded-2xl border-4 border-secondary bg-white px-4 py-3 font-lato transition-colors focus:border-primary focus:outline-none disabled:opacity-50"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-        />
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="w-full rounded-2xl border-4 border-secondary bg-white px-4 py-3 pr-12 font-lato transition-colors focus:border-primary focus:outline-none disabled:opacity-50"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+              />
+              {inputValue ? (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-500 transition-colors hover:text-primary"
+                  onClick={handleClearSearch}
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              ) : null}
+            </div>
             <button
               type="button"
               aria-label="Open filters"
@@ -97,6 +117,12 @@ export default function ShopProducts() {
       ) : productsError ? (
         <div className="flex items-center justify-center px-6 py-10 text-center font-lato text-lg text-red-600">
           Error loading products. Please try again.
+        </div>
+      ) : products.length === 0 ? (
+        <div className="flex min-h-64 items-center justify-center px-6 py-10 text-center font-lato text-lg text-gray-700">
+          {searchQuery
+            ? `No products found for "${searchQuery}".`
+            : "No products available at the moment."}
         </div>
       ) : (
         <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">

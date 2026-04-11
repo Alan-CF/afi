@@ -65,7 +65,7 @@ export default function SearchBar({ children, loading, onSearch }: SearchBarProp
         <button
           type="button"
           aria-label="Search products"
-          className="h-full bg-white px-3 text-black transition-colors hover:bg-black hover:text-white"
+          className="h-full bg-white px-3 text-black transition-colors hover:bg-primary hover:text-secondary"
           onClick={() => setIsSearchOpen((currentValue) => !currentValue)}
         >
           <MagnifyingGlassIcon className="h-5 w-5" />
