@@ -88,7 +88,7 @@ function CreateRoom() {
               <p className="font-lato text-[0.7rem] font-bold uppercase tracking-[0.24em] text-secondary/55 sm:text-xs">
                 Room Setup
               </p>
-              <h1 className="font-barlow-condensed text-[2rem] font-semibold leading-[0.92] tracking-[-0.03em] text-[#1f3668] sm:text-[2.4rem] lg:text-[3rem]">
+              <h1 className="font-inter text-[2rem] font-semibold leading-[0.92] tracking-[-0.03em] text-[#1f3668] sm:text-[2.4rem] lg:text-[3rem]">
                 Create New Room
               </h1>
             </div>
