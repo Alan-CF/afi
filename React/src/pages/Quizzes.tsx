@@ -174,7 +174,7 @@ function Quizzes() {
               <p className="font-lato text-sm uppercase tracking-[0.2em] text-gray-500">
                 Fan Community
               </p>
-              <h1 className="font-anton text-5xl text-primary mt-2">Quiz Your Game</h1>
+              <h1 className="font-anton text-5xl text-secondary mt-2">Quiz Your Game</h1>
               <p className="font-lato text-base text-black mt-3">
                 Take a quiz and discover your Warriors identity.
               </p>
@@ -230,111 +230,117 @@ function Quizzes() {
         )}
 
         {screen === "detail" && selectedQuiz && (
-          <div className="flex-1">
-            <div className="relative h-[340px] md:h-[420px]">
-              <img
-                src={selectedQuiz.image_url}
-                alt={selectedQuiz.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+            <div className="flex-1">
+                <div className="relative h-[170px] md:h-[210px] lg:h-[235px]">
+                <img
+                    src={selectedQuiz.image_url}
+                    alt={selectedQuiz.title}
+                    className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-              <div className="absolute top-6 left-6">
-                <Button variant="primary" onClick={() => setScreen("list")}>
-                  Back
-                </Button>
-              </div>
-
-              <div className="absolute bottom-0 left-0 right-0 max-w-5xl mx-auto p-6">
-                <p className="font-lato text-sm uppercase tracking-[0.2em] text-secondary">
-                  Featured Quiz
-                </p>
-                <h1 className="font-anton text-white text-5xl mt-2">
-                  {selectedQuiz.title}
-                </h1>
-              </div>
-            </div>
-
-            <div className="max-w-5xl mx-auto px-6 py-8">
-              <div className="grid grid-cols-3 gap-4 text-center mb-8">
-                <div className="rounded-2xl bg-gray-100 p-4">
-                  <p className="font-anton text-3xl text-primary">
-                    {selectedQuiz.question_count}
-                  </p>
-                  <p className="font-lato text-sm text-black">Questions</p>
+                <div className="absolute top-5 left-5">
+                    <Button
+                        variant="gold"
+                        onClick={() => setScreen("list")}
+                        className="rounded-xl"
+                    >
+                    Back
+                    </Button>
                 </div>
-                <div className="rounded-2xl bg-gray-100 p-4">
-                  <p className="font-anton text-3xl text-primary">1×</p>
-                  <p className="font-lato text-sm text-black">Per week</p>
-                </div>
-                <div className="rounded-2xl bg-gray-100 p-4">
-                  <p className="font-anton text-3xl text-primary">
-                    {selectedQuiz.status === "cooldown" ? "Locked" : "Open"}
-                  </p>
-                  <p className="font-lato text-sm text-black">Status</p>
-                </div>
-              </div>
 
-              <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-6 mb-6">
-                <p className="font-lato text-base text-black leading-7">
-                  {selectedQuiz.description}
-                </p>
-              </div>
-
-              {selectedQuiz.status === "cooldown" && isFutureDate(selectedQuiz.available_again_at) ? (
-                <>
-                  <div className="rounded-3xl bg-secondary text-white p-6 mb-6">
-                    <p className="font-lato text-sm uppercase tracking-[0.2em] opacity-80">
-                      Available again in
+                <div className="absolute bottom-0 left-0 right-0 max-w-5xl mx-auto px-6 pb-5">
+                    <p className="font-lato text-xs md:text-sm uppercase tracking-[0.2em] text-secondary">
+                    Featured Quiz
                     </p>
-                    <p className="font-anton text-4xl mt-2">
-                      {formatRemaining(selectedQuiz.available_again_at)}
+                    <h1 className="font-anton text-white text-4xl md:text-5xl mt-2 leading-none">
+                    {selectedQuiz.title}
+                    </h1>
+                </div>
+                </div>
+
+                <div className="max-w-5xl mx-auto px-6 py-5">
+                <div className="grid grid-cols-3 gap-4 text-center mb-5">
+                    <div className="rounded-2xl bg-gray-100 border border-primary/30 shadow-sm p-3">
+                    <p className="font-anton text-3xl text-secondary">
+                        {selectedQuiz.question_count}
                     </p>
-                  </div>
-
-                  {selectedQuiz.last_result && (
-                    <div className="rounded-3xl overflow-hidden border border-gray-200 shadow-sm bg-white">
-                      <div className="relative h-72">
-                        <img
-                          src={selectedQuiz.last_result.image_url}
-                          alt={selectedQuiz.last_result.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-5">
-                          <p className="font-lato text-white/80 text-sm">Your last result</p>
-                          <h2 className="font-anton text-white text-4xl">
-                            {selectedQuiz.last_result.title}
-                          </h2>
-                          <p className="font-lato text-white mt-1">
-                            {selectedQuiz.last_result.subtitle}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-6">
-                        <p className="font-lato text-black leading-7">
-                          {selectedQuiz.last_result.description}
-                        </p>
-                      </div>
+                    <p className="font-lato text-sm text-black">Questions</p>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="max-w-md mx-auto">
-                  <Button
-                    variant="secondary"
-                    className="w-full font-anton text-2xl py-4"
-                    onClick={handleStartQuiz}
-                    disabled={!isAuthenticated}
-                  >
-                    {!isAuthenticated ? "Login to Start" : "Start Quiz!"}
-                  </Button>
+
+                    <div className="rounded-2xl bg-gray-100 border border-primary/30 shadow-sm p-3">
+                    <p className="font-anton text-3xl text-secondary">1×</p>
+                    <p className="font-lato text-sm text-black">Per week</p>
+                    </div>
+
+                    <div className="rounded-2xl bg-gray-100 border border-primary/30 shadow-sm p-3">
+                    <p className="font-anton text-3xl text-secondary">
+                        {selectedQuiz.status === "cooldown" ? "Locked" : "Open"}
+                    </p>
+                    <p className="font-lato text-sm text-black">Status</p>
+                    </div>
                 </div>
-              )}
+
+                <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-5 mb-5">
+                    <p className="font-lato text-base text-black leading-7 text-center max-w-3xl mx-auto">
+                    {selectedQuiz.description}
+                    </p>
+                </div>
+
+                {selectedQuiz.status === "cooldown" && isFutureDate(selectedQuiz.available_again_at) ? (
+                    <>
+                    <div className="rounded-3xl bg-secondary text-white p-5 mb-5">
+                        <p className="font-lato text-sm uppercase tracking-[0.2em] opacity-80">
+                        Available again in
+                        </p>
+                        <p className="font-anton text-4xl mt-2">
+                        {formatRemaining(selectedQuiz.available_again_at)}
+                        </p>
+                    </div>
+
+                    {selectedQuiz.last_result && (
+                        <div className="rounded-3xl overflow-hidden border border-gray-200 shadow-sm bg-white">
+                        <div className="relative h-72">
+                            <img
+                            src={selectedQuiz.last_result.image_url}
+                            alt={selectedQuiz.last_result.title}
+                            className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-5">
+                            <p className="font-lato text-white/80 text-sm">Your last result</p>
+                            <h2 className="font-anton text-white text-4xl">
+                                {selectedQuiz.last_result.title}
+                            </h2>
+                            <p className="font-lato text-white mt-1">
+                                {selectedQuiz.last_result.subtitle}
+                            </p>
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            <p className="font-lato text-black leading-7">
+                            {selectedQuiz.last_result.description}
+                            </p>
+                        </div>
+                        </div>
+                    )}
+                    </>
+                ) : (
+                    <div className="max-w-md mx-auto">
+                    <Button
+                        variant="secondary"
+                        className="w-full font-anton text-2xl py-4"
+                        onClick={handleStartQuiz}
+                        disabled={!isAuthenticated}
+                    >
+                        {!isAuthenticated ? "Login to Start" : "Start Quiz!"}
+                    </Button>
+                    </div>
+                )}
+                </div>
             </div>
-          </div>
-        )}
+            )}
 
         {screen === "active" && (
           <div className="flex-1">
@@ -352,7 +358,7 @@ function Quizzes() {
               <div className="max-w-5xl mx-auto px-6 py-8">
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-3">
-                    <h2 className="font-anton text-3xl text-primary">
+                    <h2 className="font-anton text-3xl text-secondary">
                       {selectedQuiz?.title}
                     </h2>
                     <p className="font-lato text-sm text-black">
@@ -369,94 +375,81 @@ function Quizzes() {
                 </div>
 
                 {currentQuestion && (
-                  <>
-                    <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-6 mb-6">
-                      <p className="font-lato text-sm uppercase tracking-[0.2em] text-gray-500">
-                        Question {currentQuestionIndex + 1}
-                      </p>
-                      <h3 className="font-anton text-4xl text-black mt-3 leading-tight">
-                        {currentQuestion.question_text}
-                      </h3>
-                    </div>
+                    <>
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5 lg:gap-8 items-center">
+                        {/* QUESTION CARD */}
+                        <div className="relative rounded-[2rem] overflow-hidden border border-gray-200 bg-white shadow-sm min-h-[220px] lg:min-h-[300px]">
+                            {/* Decorative corners */}
+                            <div className="absolute top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-primary/50 rounded-tl-md" />
+                            <div className="absolute top-4 right-4 w-10 h-10 border-r-2 border-t-2 border-primary/50 rounded-tr-md" />
+                            <div className="absolute bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-primary/50 rounded-bl-md" />
+                            <div className="absolute bottom-4 right-4 w-10 h-10 border-r-2 border-b-2 border-primary/50 rounded-br-md" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {currentQuestion.options
-                        .sort((a: any, b: any) => a.option_order - b.option_order)
-                        .map((option: any) => {
-                          const isSelected = selectedOptionForCurrentQuestion === option.id;
+                            <div className="h-full flex items-center justify-center px-8 py-8 lg:px-10">
+                            <h3 className="font-lato text-black text-2xl md:text-3xl text-center leading-snug max-w-[26rem]">
+                                {currentQuestion.question_text}
+                            </h3>
+                            </div>
+                        </div>
+                        <div className="flex flex-col justify-center gap-3">
+                            {currentQuestion.options
+                            .sort((a: any, b: any) => a.option_order - b.option_order)
+                            .map((option: any) => {
+                                const isSelected = selectedOptionForCurrentQuestion === option.id;
 
-                          return (
-                            <button
-                              key={option.id}
-                              onClick={() => handleSelectOption(currentQuestion.id, option.id)}
-                              className={`rounded-3xl overflow-hidden border transition text-left ${
-                                isSelected
-                                  ? "border-secondary ring-4 ring-secondary/20"
-                                  : "border-gray-200 hover:border-primary"
-                              }`}
-                            >
-                              <div className="relative h-56">
-                                {option.image_url ? (
-                                  <img
-                                    src={option.image_url}
-                                    alt={option.option_text}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gray-100" />
-                                )}
-
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                                {isSelected && (
-                                  <div className="absolute top-4 right-4 bg-secondary text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
-                                    ✓
-                                  </div>
-                                )}
-
-                                <div className="absolute bottom-0 left-0 right-0 p-5">
-                                  <p className="font-anton text-3xl text-white leading-none">
+                                return (
+                                <button
+                                    key={option.id}
+                                    onClick={() => handleSelectOption(currentQuestion.id, option.id)}
+                                    className={`
+                                    w-full rounded-2xl px-5 py-5 text-center
+                                    font-lato text-lg md:text-xl
+                                    border transition-all duration-200 shadow-sm
+                                    ${
+                                        isSelected
+                                            ? "bg-secondary text-white border-secondary scale-[1.01] shadow-md"
+                                            : "bg-white text-black border-gray-200 hover:bg-gray-50 hover:border-primary"
+                                    }
+                                    `}
+                                >
                                     {option.option_text}
-                                  </p>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                    </div>
+                                </button>
+                                );
+                            })}
+                        </div>
+                        </div>
+                            <div className="flex flex-col md:flex-row gap-4 mt-6">
+                            <Button
+                                variant="secondary"
+                                onClick={handlePreviousQuestion}
+                                disabled={currentQuestionIndex === 0}
+                                className="w-full font-anton text-xl"
+                            >
+                                Back
+                            </Button>
 
-                    <div className="flex flex-col md:flex-row gap-4 mt-8">
-                      <Button
-                        variant="primary"
-                        onClick={handlePreviousQuestion}
-                        disabled={currentQuestionIndex === 0}
-                        className="w-full"
-                      >
-                        Back
-                      </Button>
-
-                      {currentQuestionIndex === questions.length - 1 ? (
-                        <Button
-                          variant="secondary"
-                          onClick={handleSubmit}
-                          disabled={!allQuestionsAnswered || submitLoading}
-                          className="w-full font-anton text-xl"
-                        >
-                          {submitLoading ? "Submitting..." : "Send Answers"}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          onClick={handleNextQuestion}
-                          disabled={!selectedOptionForCurrentQuestion}
-                          className="w-full font-anton text-xl"
-                        >
-                          Next
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                )}
+                            {currentQuestionIndex === questions.length - 1 ? (
+                                <Button
+                                variant="secondary"
+                                onClick={handleSubmit}
+                                disabled={!allQuestionsAnswered || submitLoading}
+                                className="w-full font-anton text-xl"
+                                >
+                                {submitLoading ? "Submitting..." : "Send Answers"}
+                                </Button>
+                            ) : (
+                                <Button
+                                variant="secondary"
+                                onClick={handleNextQuestion}
+                                disabled={!selectedOptionForCurrentQuestion}
+                                className="w-full font-anton text-xl"
+                                >
+                                Next
+                                </Button>
+                            )}
+                            </div>
+                    </>
+                    )}
               </div>
             )}
           </div>
