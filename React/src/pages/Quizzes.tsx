@@ -5,6 +5,7 @@ import Dialog from "../components/ui/Dialog";
 import { useQuizzes } from "../hooks/useQuizzes";
 import { useQuizQuestions } from "../hooks/useQuizQuestion";
 import { useSubmitQuiz } from "../hooks/useSubmitQuiz";
+import ArrowLeftIcon from "@heroicons/react/24/solid/esm/ArrowLeftIcon";
 
 type ScreenState = "list" | "detail" | "active" | "result";
 
@@ -165,7 +166,7 @@ function Quizzes() {
 
   return (
     <>
-      <div className="flex flex-col min-h-screen bg-white">
+      <div className="flex flex-col min-h-screen bg-[var(--color-text-light-soft)]">
         <NavBar />
 
         {screen === "list" && (
@@ -240,13 +241,23 @@ function Quizzes() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
                 <div className="absolute top-5 left-5">
-                    <Button
-                        variant="gold"
+                    <button
+                        type="button"
                         onClick={() => setScreen("list")}
-                        className="rounded-xl"
-                    >
-                    Back
-                    </Button>
+                        aria-label="Go back"
+                        className="
+                            flex h-10 w-10 items-center justify-center
+                            rounded-xl
+                            bg-white/10
+                            text-white
+                            backdrop-blur-sm
+                            border border-white/20
+                            transition
+                            hover:bg-white/20
+                        "
+                        >
+                        <ArrowLeftIcon className="h-5 w-5" />
+                        </button>
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 max-w-5xl mx-auto px-6 pb-5">
