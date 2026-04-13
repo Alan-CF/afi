@@ -2,7 +2,7 @@ import { useState } from "react";
 import Countdown, { type CountdownRenderProps } from "react-countdown";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
-import CarouselCard from "../components/ui/CarouselCard";
+import CarouselCard from "../components/ui/fanatic/CarouselCard";
 import Dialog from "../components/ui/Dialog";
 import type { FanaticAnswer } from "../lib/fanaticApi";
 import {
