@@ -8,7 +8,7 @@ import {
   createRoomWithMembers,
   fetchMyFriends,
   type FriendOption,
-} from "../../services/rooms";
+} from "../../hooks/useRooms";
 
 function CreateRoom() {
   const navigate = useNavigate();

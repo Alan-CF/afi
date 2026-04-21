@@ -14,10 +14,11 @@ import {
   ROOM_SYSTEM_MESSAGE_PREFIX,
   sendRoomMessage,
   sendRoomPrediction,
+  shouldHideRoomMessage,
   subscribeToRoomMessages,
   type RoomChatMessageRecord,
   type RoomPredictionEntryRecord,
-} from "../../services/roomChat";
+} from "../../hooks/useRoomChat";
 import {
   getCurrentMockGameSnapshot,
   getMockPredictionState,
@@ -26,7 +27,7 @@ import {
   type MockGameSnapshot,
   type MockPredictionState,
   type PredictionOption,
-} from "../../services/mockRoomGameFeed";
+} from "../../hooks/useMockRoomGameFeed";
 
 type ChatLocationState = {
   room?: Room;
@@ -63,19 +64,14 @@ function toDisplayMessage(
   currentUserId: string
 ): ChatMessage {
   const createdAt = new Date(message.createdAt);
-  const isSystemMessage = message.content.startsWith(ROOM_SYSTEM_MESSAGE_PREFIX);
-  const displayText = isSystemMessage
-    ? message.content.replace(ROOM_SYSTEM_MESSAGE_PREFIX, "")
-    : message.content;
 
   return {
     id: message.id,
-    sender: isSystemMessage ? "System" : message.senderName,
-    text: displayText,
-    time: isSystemMessage ? "" : formatMessageTime(createdAt),
-    align: isSystemMessage
-      ? "center"
-      : message.senderProfileId === currentUserId
+    sender: message.senderName,
+    text: message.content.replace(ROOM_SYSTEM_MESSAGE_PREFIX, ""),
+    time: formatMessageTime(createdAt),
+    align:
+      message.senderProfileId === currentUserId
         ? "right"
         : "left",
     createdAt: createdAt.getTime(),
@@ -328,6 +324,10 @@ function RoomChat() {
             continue;
           }
 
+          if (shouldHideRoomMessage(message.content)) {
+            continue;
+          }
+
           setMessages((current) =>
             mergeMessages(current, toDisplayMessage(message, data.currentUserId))
           );
@@ -386,6 +386,10 @@ function RoomChat() {
         return;
       }
 
+      if (shouldHideRoomMessage(message.content)) {
+        return;
+      }
+
       setMessages((current) =>
         mergeMessages(current, toDisplayMessage(message, currentUserId))
       );
@@ -412,6 +416,10 @@ function RoomChat() {
             setPredictionEntries((current) =>
               mergePredictionEntries(current, predictionEntry)
             );
+            continue;
+          }
+
+          if (shouldHideRoomMessage(message.content)) {
             continue;
           }
 
@@ -541,7 +549,7 @@ function RoomChat() {
                 <p className="truncate font-lato text-sm font-bold sm:text-base">
                   {room.title}
                 </p>
-                <p className="truncate font-lato text-[0.72rem] text-white/70 sm:text-xs">
+                <p className="font-lato text-[0.72rem] text-white/70 [overflow-wrap:anywhere] sm:text-xs">
                   {room.members}
                 </p>
               </div>
@@ -759,7 +767,7 @@ function RoomChat() {
                     ) : (
                       <div className="max-w-[82%]">
                         {message.align === "left" && (
-                          <p className="mb-1 px-1 font-lato text-[0.7rem] text-[#9aa6b8]">
+                          <p className="mb-1 px-1 font-lato text-[0.7rem] text-[#9aa6b8] [overflow-wrap:anywhere]">
                             {message.sender}
                           </p>
                         )}
@@ -770,7 +778,7 @@ function RoomChat() {
                               : "rounded-tl-md border border-[#d5dfef] bg-[#fbfdff] text-[#31435f]"
                           }`}
                         >
-                          <p className="font-lato text-sm leading-6 sm:text-[0.95rem]">
+                          <p className="font-lato text-sm leading-6 [overflow-wrap:anywhere] sm:text-[0.95rem]">
                             {message.text}
                           </p>
                         </div>

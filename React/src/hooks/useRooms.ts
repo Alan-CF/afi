@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
+import { shouldHideRoomMessage } from "./useRoomChat";
 
 export type RoomCardData = {
   id: number;
@@ -235,7 +236,8 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
       .filter(Boolean) as string[];
 
     const lastMessage = (messages ?? []).find(
-      (message) => message.room_id === room.id
+      (message) =>
+        message.room_id === room.id && !shouldHideRoomMessage(message.content)
     );
 
     const subtitle = lastMessage
