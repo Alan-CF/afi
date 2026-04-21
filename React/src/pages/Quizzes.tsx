@@ -253,9 +253,7 @@ function Quizzes() {
                             backdrop-blur-sm
                             border border-white/20
                             transition
-                            hover:bg-white/20
-                        "
-                        >
+                            hover:bg-white/20">
                         <ArrowLeftIcon className="h-5 w-5" />
                         </button>
                 </div>
@@ -388,9 +386,7 @@ function Quizzes() {
                 {currentQuestion && (
                     <>
                         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5 lg:gap-8 items-center">
-                        {/* QUESTION CARD */}
                         <div className="relative rounded-[2rem] overflow-hidden border border-gray-200 bg-white shadow-sm min-h-[220px] lg:min-h-[300px]">
-                            {/* Decorative corners */}
                             <div className="absolute top-4 left-4 w-10 h-10 border-l-2 border-t-2 border-primary/50 rounded-tl-md" />
                             <div className="absolute top-4 right-4 w-10 h-10 border-r-2 border-t-2 border-primary/50 rounded-tr-md" />
                             <div className="absolute bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-primary/50 rounded-bl-md" />
@@ -469,10 +465,29 @@ function Quizzes() {
         {screen === "result" && latestResult && (
           <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
             <div className="text-center mb-8">
+              <button
+                        type="button"
+                        onClick={() => setScreen("list")}
+                        aria-label="Go back"
+                        className="
+                            flex h-10 w-10 items-center justify-center
+                            rounded-xl
+                            bg-white/10
+                            text-white
+                            backdrop-blur-sm
+                            border border-white/20
+                            transition
+                            hover:bg-white/20
+                        "
+                        >
+                        <ArrowLeftIcon className="h-5 w-5" />
+                        </button>
+              <div className="absolute top-5 left-5">
+                </div>
               <p className="font-lato text-sm uppercase tracking-[0.2em] text-gray-500">
                 Quiz Complete
               </p>
-              <h1 className="font-anton text-5xl text-primary mt-2">Your Results</h1>
+              <h1 className="font-anton text-5xl text-secondary mt-2">Your Results</h1>
             </div>
 
             <div className="rounded-3xl overflow-hidden border border-gray-200 shadow-sm bg-white">
@@ -513,10 +528,10 @@ function Quizzes() {
               </Button>
 
               <Button
-                variant="primary"
-                className="w-full"
+                variant="secondary"
+                className="w-full font-anton text-xl"
                 onClick={() => {
-                  const shareText = `I got "${latestResult.title}" on the Warriors quiz! 🏀`;
+                  const shareText = `I got "${latestResult.title}" on the Warriors quiz!`;
 
                   if (navigator.share) {
                     navigator.share({ text: shareText });
