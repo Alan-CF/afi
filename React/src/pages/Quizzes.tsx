@@ -465,13 +465,29 @@ function Quizzes() {
         {screen === "result" && latestResult && (
           <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
             <div className="text-center mb-8">
-            
+              <button
+                        type="button"
+                        onClick={() => setScreen("list")}
+                        aria-label="Go back"
+                        className="
+                            flex h-10 w-10 items-center justify-center
+                            rounded-xl
+                            bg-white/10
+                            text-white
+                            backdrop-blur-sm
+                            border border-white/20
+                            transition
+                            hover:bg-white/20
+                        "
+                        >
+                        <ArrowLeftIcon className="h-5 w-5" />
+                        </button>
               <div className="absolute top-5 left-5">
                 </div>
               <p className="font-lato text-sm uppercase tracking-[0.2em] text-gray-500">
                 Quiz Complete
               </p>
-              <h1 className="font-anton text-5xl text-primary mt-2">Your Results</h1>
+              <h1 className="font-anton text-5xl text-secondary mt-2">Your Results</h1>
             </div>
 
             <div className="rounded-3xl overflow-hidden border border-gray-200 shadow-sm bg-white">
