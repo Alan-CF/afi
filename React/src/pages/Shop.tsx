@@ -123,17 +123,9 @@ export default function Shop() {
         ) : null}
 
         {isChatOpen ? (
-          <>
-            <button
-              type="button"
-              aria-label="Close chat overlay"
-              className="absolute inset-0 z-30 bg-black/35 lg:hidden"
-              onClick={() => setIsChatOpen(false)}
-            />
-            <aside className="absolute inset-y-0 right-0 z-40 w-full border-l border-secondary/20 bg-white p-4 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[30rem] lg:max-w-none lg:shadow-none">
-              <ThunderChat onClose={() => setIsChatOpen(false)} />
-            </aside>
-          </>
+          <aside className="absolute inset-y-0 right-0 z-40 w-full border-l border-secondary/20 bg-white p-4 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[30rem] lg:max-w-none lg:shadow-none">
+            <ThunderChat onClose={() => setIsChatOpen(false)} />
+          </aside>
         ) : null}
       </div>
     </div>
