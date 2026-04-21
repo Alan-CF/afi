@@ -1,13 +1,19 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import type { ChatMessage } from "../../ui/ChatBubble";
 import ChatBubble from "../../ui/ChatBubble";
+import { useMessages } from "../../../hooks/useThunderAI";
 
 interface ThunderChatProps {
-  messages: ChatMessage[];
   onClose?: () => void;
 }
 
-export default function ThunderChat({ messages, onClose }: ThunderChatProps) {
+export default function ThunderChat({ onClose }: ThunderChatProps) {
+  const { 
+    messages,
+    loading: messagesLoading,
+    error: messagesError,
+    hasLoadedOnce: messagesHaveLoadedOnce 
+  } = useMessages({ enabled: true });
+
   return (
     <section className="flex h-full min-h-0 flex-col bg-white">
       <header className="mb-4 flex items-center gap-3 border-b border-gray-200 pb-3">
@@ -32,9 +38,9 @@ export default function ThunderChat({ messages, onClose }: ThunderChatProps) {
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="overflow-y-auto pr-1">
         {messages.map((msg, idx) => (
-          <ChatBubble key={idx} message={msg.message} isUser={msg.isUser} />
+          <ChatBubble key={idx} message={msg.content} isUser={msg.is_user} />
         ))}
       </div>
     </section>

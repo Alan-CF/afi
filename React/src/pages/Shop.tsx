@@ -55,11 +55,6 @@ export default function Shop() {
     //error: playersError 
   } = usePlayers();
 
-  const chatMessages = [
-    { message: "Hello! How can I help you today?", isUser: false },
-    { message: "I'm looking for a specific product.", isUser: true },
-  ];
-
   return (
     <div className="flex h-screen flex-col">
       <NavBar />
@@ -136,7 +131,7 @@ export default function Shop() {
               onClick={() => setIsChatOpen(false)}
             />
             <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[22rem] border-l border-secondary/20 bg-white p-4 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[22rem] lg:max-w-none lg:shadow-none">
-              <ThunderChat messages={chatMessages} onClose={() => setIsChatOpen(false)} />
+              <ThunderChat onClose={() => setIsChatOpen(false)} />
             </aside>
           </>
         ) : null}
