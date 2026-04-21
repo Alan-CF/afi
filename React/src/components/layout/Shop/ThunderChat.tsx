@@ -11,7 +11,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
     messages,
     loading: messagesLoading,
     error: messagesError,
-    hasLoadedOnce: messagesHaveLoadedOnce 
+    // hasLoadedOnce: messagesHaveLoadedOnce 
   } = useMessages({ enabled: true });
 
   return (
@@ -39,9 +39,27 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
       </header>
 
       <div className="overflow-y-auto pr-1">
-        {messages.map((msg, idx) => (
-          <ChatBubble key={idx} message={msg.content} isUser={msg.is_user} />
-        ))}
+        {messagesLoading ? (
+          <div className="flex h-full items-center justify-center py-10">
+            <div
+              className="h-7 w-7 animate-spin rounded-full border-4 border-gray-200 border-t-secondary"
+              role="status"
+              aria-label="Loading messages"
+            />
+          </div>
+        ) : messagesError ? (
+          <div className="flex h-full items-center justify-center py-10">
+            <p className="max-w-xs text-center font-lato text-sm text-red-600">
+              Error loading messages. Please try again.
+            </p>
+          </div>
+        ) : (
+          messages.map((msg, idx) => (
+            <ChatBubble key={idx} isUser={msg.is_user}>
+              {msg.content}
+            </ChatBubble>
+          ))
+        )}
       </div>
     </section>
   );
