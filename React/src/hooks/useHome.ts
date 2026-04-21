@@ -37,7 +37,7 @@ export function useHome() {
         async function fetchData() {
             try {
                 const session = await getSession();
-                if (!session?.user) return;
+                if (!session?.user) { setLoading(false); return; }
 
                 const userId = session.user.id;
 
