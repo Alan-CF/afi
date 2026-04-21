@@ -16,9 +16,12 @@
   --color-success-dark: #1A9844;
   --color-text: #111111;
   --color-text-light: #BFBFBF;
+  --color-text-light-soft: #F1F5F9;
+  --color-container-border: #E2E8F0;
 
   /* Fonts */
   --font-anton: "Anton", sans-serif;
+  --font-inter: "Inter", sans-serif;
   --font-barlow-condensed: "Barlow Condensed", sans-serif;
   --font-cormorant: "Cormorant Garamond", serif;
   --font-lato: "Lato", sans-serif;

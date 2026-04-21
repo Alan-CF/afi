@@ -15,20 +15,26 @@ export default function NavBar() {
                 <button onClick={() => navigate("/")} className="cursor-pointer">
                     <img src="/logo.png" alt="Logo" className="h-10" />
                 </button>
+
                 <div className="flex items-center gap-5">
                     <button onClick={() => setIsCartOpen(true)} type="button" className="cursor-pointer">
                         <ShoppingBagIcon className="w-6 h-6" aria-hidden="true" />
                     </button>
+
                     <Bars3Icon className="w-6 h-6" aria-hidden="true" />
-                    {user?.avatar_url ? (
-                        <img
-                            src={user.avatar_url}
-                            alt="Avatar"
-                            className="w-10 h-10 rounded-full object-cover"
-                        />
-                    ) : (
-                        <UserCircleIcon className="w-10 h-10" aria-hidden="true" />
-                    )}
+                    <button type="button" onClick={() => navigate("/myprofile")} className="cursor-pointer">
+                        {user?.avatar_url ? (
+                            <img
+                                src={user.avatar_url}
+                                alt="Avatar"
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
+                        ) : (
+                            <UserCircleIcon className="w-10 h-10" aria-hidden="true" />
+                        )}
+                    </button>
+
+                    
                 </div>
             </nav>
             <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

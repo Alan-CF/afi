@@ -1,5 +1,5 @@
 interface ButtonProps {
-    variant: "primary" | "secondary" | "destructive" | "success";
+    variant: "primary" | "secondary" | "destructive" | "success" | "gold";
     children: React.ReactNode;
     onClick: () => void;
     className?: string;
@@ -18,6 +18,8 @@ export default function Button({ variant, children, onClick, className, disabled
                 return "text-white bg-destructive border-transparent enabled:active:bg-destructive-dark";
             case "success":
                 return "text-white bg-success border-transparent enabled:active:bg-success-dark";
+            case "gold":
+                return "font-anton text-white border-secondary bg-secondary enabled:hover:bg-primary enabled:hover:text-white enabled:hover:border-transparent enabled:active:bg-primary-dark";
             default:
                 return "";
         }
