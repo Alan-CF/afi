@@ -239,6 +239,7 @@ function RoomChat() {
   const [leavingRoom, setLeavingRoom] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const isLeavingRoomRef = useRef(false);
 
   const clockSeconds = parseClockToSeconds(gameState.clock);
   const isFinalState = gameState.statusLabel === "Final";
@@ -302,12 +303,14 @@ function RoomChat() {
     }
 
     const roomIdToLoad = activeRoomId;
+    let cancelled = false;
 
     async function loadRoomChat() {
       try {
         setLoadingMessages(true);
         setChatError(null);
         const data = await fetchRoomChat(roomIdToLoad);
+        if (cancelled || isLeavingRoomRef.current) return;
 
         setRoom(data.room);
         setCurrentUserId(data.currentUserId);
@@ -333,16 +336,22 @@ function RoomChat() {
           );
         }
       } catch (error) {
+        if (cancelled || isLeavingRoomRef.current) return;
         console.error("Error loading room chat:", error);
         setChatError(
           error instanceof Error ? error.message : "Could not load room chat."
         );
       } finally {
+        if (cancelled) return;
         setLoadingMessages(false);
       }
     }
 
     void loadRoomChat();
+
+    return () => {
+      cancelled = true;
+    };
   }, [activeRoomId]);
 
   useEffect(() => {
@@ -428,7 +437,7 @@ function RoomChat() {
           );
         }
       } catch (error) {
-        if (cancelled) return;
+        if (cancelled || isLeavingRoomRef.current) return;
         console.error("Error syncing room messages:", error);
       }
     }
@@ -505,13 +514,8 @@ function RoomChat() {
   async function handleLeaveRoom() {
     if (!activeRoomId || leavingRoom) return;
 
-    const confirmed = window.confirm(
-      "Leave this group? It will no longer appear in your rooms list."
-    );
-
-    if (!confirmed) return;
-
     try {
+      isLeavingRoomRef.current = true;
       setLeavingRoom(true);
       setChatError(null);
       await leaveRoom(activeRoomId);
@@ -520,6 +524,7 @@ function RoomChat() {
         state: { removedRoomId: activeRoomId },
       });
     } catch (error) {
+      isLeavingRoomRef.current = false;
       console.error("Error leaving room:", error);
       setChatError(
         error instanceof Error ? error.message : "Could not leave room."

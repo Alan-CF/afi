@@ -60,6 +60,7 @@ function formatMembers(usernames: string[]) {
   return `${usernames.slice(0, 3).join(", ")} +${usernames.length - 3}`;
 }
 
+//yeah, aqui se trata de componer 
 export function isRoomSystemMessage(content: string) {
   return content.startsWith(ROOM_SYSTEM_MESSAGE_PREFIX);
 }
