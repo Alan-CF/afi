@@ -7,6 +7,7 @@ import ShopSeparator from "../components/ui/shop/Separator";
 import SearchBar from "../components/layout/Shop/SearchBar";
 import { useNavigate } from "react-router-dom";
 import ThunderChat from "../components/layout/Shop/ThunderChat";
+import { useState } from "react";
 
 function ProductGroupCardSkeleton() {
   return (
@@ -22,6 +23,7 @@ function ProductGroupCardSkeleton() {
 
 export default function Shop() {
   const navigate = useNavigate();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navigateToProducts = (filterKey: "category" | "player" | "collection", filterValue: string) => {
     const params = new URLSearchParams();
@@ -62,7 +64,7 @@ export default function Shop() {
     <div className="flex h-screen flex-col">
       <NavBar />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-hide">
           <SearchBar loading={categoriesLoading} onSearch={navigateToProductsSearch}>
             {categories.map((category) => (
@@ -114,9 +116,30 @@ export default function Shop() {
           </ShopCarousel>
         </main>
 
-        <aside className="hidden h-full w-[22rem] shrink-0 border-l border-secondary/20 bg-white/70 p-4 lg:block">
-          <ThunderChat messages={chatMessages} />
-        </aside>
+        {!isChatOpen ? (
+          <button
+            type="button"
+            aria-label="Open chat"
+            className="fixed bottom-6 right-6 z-30 h-24 w-24 cursor-pointer rounded-full border-6 border-secondary bg-white shadow-lg"
+            onClick={() => setIsChatOpen(true)}
+          >
+            <img src="/warriors_icon.png" alt="Thunder chat" />
+          </button>
+        ) : null}
+
+        {isChatOpen ? (
+          <>
+            <button
+              type="button"
+              aria-label="Close chat overlay"
+              className="absolute inset-0 z-30 bg-black/35 lg:hidden"
+              onClick={() => setIsChatOpen(false)}
+            />
+            <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[22rem] border-l border-secondary/20 bg-white p-4 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[22rem] lg:max-w-none lg:shadow-none">
+              <ThunderChat messages={chatMessages} onClose={() => setIsChatOpen(false)} />
+            </aside>
+          </>
+        ) : null}
       </div>
     </div>
   );
