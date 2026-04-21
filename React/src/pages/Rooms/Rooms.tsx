@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavBar from "../../components/layout/NavBar";
 import Button from "../../components/ui/Button";
-import { fetchMyRooms } from "../../services/rooms";
+import { fetchMyRooms } from "../../hooks/useRooms";
 import RoomCard, { type Room } from "../../components/ui/RoomCard";
 import {
   jumpToMockGameLastQuarter,
   resetMockGame,
-} from "../../services/mockRoomGameFeed";
+} from "../../hooks/useMockRoomGameFeed";
 
 type RoomsLocationState = {
   removedRoomId?: number;

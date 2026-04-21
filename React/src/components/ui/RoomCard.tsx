@@ -16,9 +16,26 @@ type RoomCardProps = {
   onActionClick?: (room: Room) => void;
 };
 
+function splitSubtitlePreview(subtitle: string) {
+  const separatorIndex = subtitle.indexOf(": ");
+
+  if (separatorIndex === -1) {
+    return {
+      sender: null,
+      message: subtitle,
+    };
+  }
+
+  return {
+    sender: subtitle.slice(0, separatorIndex),
+    message: subtitle.slice(separatorIndex + 2),
+  };
+}
+
 function RoomCard({ room, onActionClick }: RoomCardProps) {
   const isLive = room.status === "live";
   const actionLabel = isLive ? "Join Room" : "See Summary";
+  const subtitlePreview = splitSubtitlePreview(room.subtitle);
 
   return (
     <Card
@@ -28,7 +45,7 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
           : "border border-[#d7dce6] bg-[#f4f6fa]"
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex h-full items-start gap-3">
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
           style={{ backgroundColor: isLive ? room.accent : "#98A2B3" }}
@@ -36,12 +53,12 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
           <UserGroupIcon className="h-6 w-6" />
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
+        <div className="min-w-0 flex flex-1 flex-col self-stretch">
+          <div className="flex min-h-[5.5rem] flex-col gap-3 sm:flex-row sm:items-start sm:justify-between lg:min-h-[6.25rem]">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2
-                  className={`font-lato text-[0.98rem] font-bold leading-5 sm:text-[1.05rem] lg:text-[1.18rem] xl:text-[1.45rem] xl:leading-8 ${
+                  className={`font-lato text-[0.98rem] font-bold leading-5 [overflow-wrap:anywhere] sm:text-[1.05rem] lg:text-[1.18rem] xl:text-[1.45rem] xl:leading-8 ${
                     isLive ? "text-[#22314d]" : "text-[#4b5565]"
                   }`}
                 >
@@ -54,9 +71,15 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
                 )}
               </div>
               <p
-                className={`mt-1 font-lato text-[0.78rem] sm:text-sm lg:text-[0.98rem] xl:text-[1.08rem] ${
+                className={`mt-1 min-h-[2.5rem] font-lato text-[0.78rem] leading-5 [overflow-wrap:anywhere] sm:text-sm lg:min-h-[3rem] lg:text-[0.98rem] lg:leading-6 xl:text-[1.08rem] ${
                   isLive ? "text-[#566173]" : "text-[#8b94a3]"
                 }`}
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
               >
                 {room.members}
               </p>
@@ -76,11 +99,30 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
           </div>
 
           <p
-            className={`mt-3 font-lato text-[0.78rem] sm:text-sm lg:text-[0.98rem] xl:mt-4 xl:text-[1.05rem] ${
+            className={`mt-2.5 font-lato text-[0.78rem] leading-5 [overflow-wrap:anywhere] sm:text-sm lg:mt-3 lg:text-[0.98rem] lg:leading-6 xl:text-[1.05rem] ${
               isLive ? "text-[#8a95a7]" : "text-[#a4acb8]"
             }`}
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
           >
-            {room.subtitle}
+            {subtitlePreview.sender ? (
+              <>
+                <span
+                  className={`font-bold ${
+                    isLive ? "text-[#5f7190]" : "text-[#7f8b9d]"
+                  }`}
+                >
+                  {subtitlePreview.sender}:
+                </span>{" "}
+                <span>{subtitlePreview.message}</span>
+              </>
+            ) : (
+              room.subtitle
+            )}
           </p>
         </div>
       </div>
