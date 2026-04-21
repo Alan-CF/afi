@@ -1,11 +1,12 @@
-import NavBar from "../components/layout/NavBar"
-import { ProductGroupCard } from "../components/ui/shop/ProductGroupCard"; 
+import NavBar from "../components/layout/NavBar";
+import { ProductGroupCard } from "../components/ui/shop/ProductGroupCard";
 import { useCategories, useCollections, usePlayers } from "../hooks/useShopGroups";
 import ShopCarousel from "../components/ui/shop/Carrousel";
 import ShopHero from "../components/ui/shop/Hero";
 import ShopSeparator from "../components/ui/shop/Separator";
 import SearchBar from "../components/layout/Shop/SearchBar";
 import { useNavigate } from "react-router-dom";
+import ThunderChat from "../components/layout/Shop/ThunderChat";
 
 function ProductGroupCardSkeleton() {
   return (
@@ -18,7 +19,6 @@ function ProductGroupCardSkeleton() {
     </div>
   );
 }
-
 
 export default function Shop() {
   const navigate = useNavigate();
@@ -52,56 +52,72 @@ export default function Shop() {
     loading: playersLoading, 
     //error: playersError 
   } = usePlayers();
- 
 
-  return (<>
-  <NavBar />
+  const chatMessages = [
+    { message: "Hello! How can I help you today?", isUser: false },
+    { message: "I'm looking for a specific product.", isUser: true },
+  ];
 
-  <SearchBar loading={categoriesLoading} onSearch={navigateToProductsSearch}>
-    {categories.map(category => (
-      <button
-        key={category.name}
-        onClick={() => navigateToProducts("category", category.name)}
-        className="shrink-0 rounded-full border border-black px-4 py-2 font-lato text-sm font-semibold uppercase text-black transition-colors hover:bg-secondary hover:text-primary hover:border-secondary"
-      >
-        {category.name}
-      </button>
-    ))}
-  </SearchBar>
+  return (
+    <div className="flex h-screen flex-col">
+      <NavBar />
 
-  <ShopHero />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-hide">
+          <SearchBar loading={categoriesLoading} onSearch={navigateToProductsSearch}>
+            {categories.map((category) => (
+              <button
+                key={category.name}
+                onClick={() => navigateToProducts("category", category.name)}
+                className="shrink-0 rounded-full border border-black px-4 py-2 font-lato text-sm font-semibold uppercase text-black transition-colors hover:border-secondary hover:bg-secondary hover:text-primary"
+              >
+                {category.name}
+              </button>
+            ))}
+          </SearchBar>
 
-<h2 className=" px-6 pt-10 text-3xl md:text-4xl font-bold text-black font-anton md:px-8">Shop by Player</h2>
-  <ShopCarousel>
-    {playersLoading
-      ? Array.from({ length: 4 }).map((_, index) => <ProductGroupCardSkeleton key={index} />)
-      : players.map(player => (
-          <ProductGroupCard
-            key={player.name}
-            title={player.name}
-            description={`#${player.number} - ${player.position}`}
-            imageUrl={player.image_url}
-            onClick={() => navigateToProducts("player", player.name)}
-          />
-        ))}
-  </ShopCarousel>
+          <ShopHero />
 
-  <ShopSeparator message="Complete your fit with exclusive team collections" />
+          <h2 className="px-6 pt-10 font-anton text-3xl font-bold text-black md:px-8 md:text-4xl">
+            Shop by Player
+          </h2>
+          <ShopCarousel>
+            {playersLoading
+              ? Array.from({ length: 4 }).map((_, index) => <ProductGroupCardSkeleton key={index} />)
+              : players.map((player) => (
+                  <ProductGroupCard
+                    key={player.name}
+                    title={player.name}
+                    description={`#${player.number} - ${player.position}`}
+                    imageUrl={player.image_url}
+                    onClick={() => navigateToProducts("player", player.name)}
+                  />
+                ))}
+          </ShopCarousel>
 
-  <h2 className=" px-6 pt-10 text-3xl md:text-4xl font-bold text-black font-anton md:px-8">Our Collections</h2>
-  <ShopCarousel>
-    {collectionsLoading
-      ? Array.from({ length: 4 }).map((_, index) => <ProductGroupCardSkeleton key={index} />)
-      : collections.map(collection => (
-          <ProductGroupCard
-            key={collection.name}
-            title={collection.name}
-            imageUrl={collection.image_url}
-            onClick={() => navigateToProducts("collection", collection.name)}
-          />
-        ))}
-  </ShopCarousel>
- 
+          <ShopSeparator message="Complete your fit with exclusive team collections" />
 
-  </>);
+          <h2 className="px-6 pt-10 font-anton text-3xl font-bold text-black md:px-8 md:text-4xl">
+            Our Collections
+          </h2>
+          <ShopCarousel>
+            {collectionsLoading
+              ? Array.from({ length: 4 }).map((_, index) => <ProductGroupCardSkeleton key={index} />)
+              : collections.map((collection) => (
+                  <ProductGroupCard
+                    key={collection.name}
+                    title={collection.name}
+                    imageUrl={collection.image_url}
+                    onClick={() => navigateToProducts("collection", collection.name)}
+                  />
+                ))}
+          </ShopCarousel>
+        </main>
+
+        <aside className="hidden h-full w-[22rem] shrink-0 border-l border-secondary/20 bg-white/70 p-4 lg:block">
+          <ThunderChat messages={chatMessages} />
+        </aside>
+      </div>
+    </div>
+  );
 }
