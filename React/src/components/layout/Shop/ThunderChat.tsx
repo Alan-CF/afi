@@ -2,7 +2,7 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import ChatBubble from "../../ui/ChatBubble";
 import { useMessages } from "../../../hooks/useThunderAI";
 import ChatProductCarrousel from "../../ui/shop/ChatProductCarrousel";
-import type { PricedProduct } from "../../../hooks/useShopProducts";
+import type { ProductRecomendation } from "../../ui/shop/ChatProductCarrousel";
 
 interface ThunderChatProps {
   onClose?: () => void;
@@ -19,32 +19,38 @@ type ThunderJsonReply = {
   };
 };
 
-const PLACEHOLDER_PRODUCTS: PricedProduct[] = [
+const PLACEHOLDER_RECOMMENDATIONS: ProductRecomendation[] = [
   {
-    id: -1,
-    name: "Warriors Gift Set Placeholder",
-    description: "",
-    price: 19.99,
-    discount: 0,
-    is_active: true,
-    stock: 999,
-    image_url:
-      "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Klay%20Thompson%2011%20T-Shirt.jpg",
-    product_details: {},
-    meta_data: {},
+    product: {
+      id: -1,
+      name: "Warriors Gift Set Placeholder",
+      description: "",
+      price: 19.99,
+      discount: 0,
+      is_active: true,
+      stock: 999,
+      image_url:
+        "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Klay%20Thompson%2011%20T-Shirt.jpg",
+      product_details: {},
+      meta_data: {},
+    },
+    description: "Placeholder recommendation for the Warriors Gift Set.",
   },
   {
-    id: -2,
-    name: "Warriors Fan Pack Placeholder",
-    description: "",
-    price: 14.99,
-    discount: 0,
-    is_active: true,
-    stock: 999,
-    image_url:
-      "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Warriors%20Fan%20Pack.jpg",
-    product_details: {},
-    meta_data: {},
+    product: {
+      id: -2,
+      name: "Warriors Fan Pack Placeholder",
+      description: "",
+      price: 14.99,
+      discount: 0,
+      is_active: true,
+      stock: 999,
+      image_url:
+        "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Warriors%20Fan%20Pack.jpg",
+      product_details: {},
+      meta_data: {},
+    },
+    description: "Placeholder recommendation for the Warriors Fan Pack.",
   },
 ];
 
@@ -66,7 +72,7 @@ function ParsedMessage({ content }: { content: string }) {
     return (
       <div className="flex flex-col gap-3">
         {topMessage ? renderText(topMessage) : null}
-        <ChatProductCarrousel products={PLACEHOLDER_PRODUCTS} />
+        <ChatProductCarrousel recommendations={PLACEHOLDER_RECOMMENDATIONS} />
         {bottomMessage ? renderText(bottomMessage) : null}
       </div>
     );

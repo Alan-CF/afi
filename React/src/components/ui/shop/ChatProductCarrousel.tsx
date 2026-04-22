@@ -1,6 +1,11 @@
 import useEmblaCarousel from "embla-carousel-react";
 import type { PricedProduct } from "../../../hooks/useShopProducts";
 
+export type ProductRecomendation = {
+  product: PricedProduct;
+  description: string;
+};
+
 function ChatProductCard({ product }: { product: PricedProduct }) {
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -22,11 +27,11 @@ function ChatProductCard({ product }: { product: PricedProduct }) {
 }
 
 interface ChatProductCarrouselProps {
-  products: PricedProduct[];
+  recommendations: ProductRecomendation[];
 }
 
 export default function ChatProductCarrousel({
-  products,
+  recommendations,
 }: ChatProductCarrouselProps) {
   const [emblaRef] = useEmblaCarousel({
     loop: false,
@@ -34,16 +39,19 @@ export default function ChatProductCarrousel({
     align: "start",
   });
 
-  if (products.length === 0) {
+  if (recommendations.length === 0) {
     return null;
   }
 
   return (
     <div className="overflow-hidden" ref={emblaRef}>
       <div className="flex gap-3">
-        {products.map((product) => (
-          <div key={product.id} className="min-w-52 flex-[0_0_13rem]">
-            <ChatProductCard product={product} />
+        {recommendations.map((rec) => (
+          <div key={rec.product.id} className="min-w-52 flex-[0_0_13rem]">
+            <div className="flex flex-col">
+              <ChatProductCard product={rec.product} />
+              <p>{rec.description}</p>
+            </div>
           </div>
         ))}
       </div>
