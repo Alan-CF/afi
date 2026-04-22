@@ -124,7 +124,7 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{user?.streak ?? 0}</p>
+                  <p className="text-xl font-extrabold text-secondary">{(user?.streak ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Streak</p>
                 </div>
 
@@ -132,7 +132,7 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <StarIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{user?.fanatic_coins ?? 0}</p>
+                  <p className="text-xl font-extrabold text-secondary">{(user?.fanatic_coins ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
                 </div>
 
