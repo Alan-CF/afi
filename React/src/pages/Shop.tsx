@@ -1,6 +1,10 @@
 import NavBar from "../components/layout/NavBar";
 import { ProductGroupCard } from "../components/ui/shop/ProductGroupCard";
-import { useCategories, useCollections, usePlayers } from "../hooks/useShopGroups";
+import {
+  useCategories,
+  useCollections,
+  usePlayers,
+} from "../hooks/useShopGroups";
 import ShopCarousel from "../components/ui/shop/Carrousel";
 import ShopHero from "../components/ui/shop/Hero";
 import ShopSeparator from "../components/ui/shop/Separator";
@@ -25,7 +29,10 @@ export default function Shop() {
   const navigate = useNavigate();
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const navigateToProducts = (filterKey: "category" | "player" | "collection", filterValue: string) => {
+  const navigateToProducts = (
+    filterKey: "category" | "player" | "collection",
+    filterValue: string,
+  ) => {
     const params = new URLSearchParams();
     params.set(filterKey, filterValue);
 
@@ -39,20 +46,20 @@ export default function Shop() {
     navigate(`/shop/products?${params.toString()}`);
   };
 
-  const { 
-    categories, 
-    loading: categoriesLoading, 
-    //error: categoriesError 
+  const {
+    categories,
+    loading: categoriesLoading,
+    //error: categoriesError
   } = useCategories();
-  const { 
-    collections, 
-    loading: collectionsLoading, 
-    //error: collectionsError 
+  const {
+    collections,
+    loading: collectionsLoading,
+    //error: collectionsError
   } = useCollections();
-  const { 
-    players, 
-    loading: playersLoading, 
-    //error: playersError 
+  const {
+    players,
+    loading: playersLoading,
+    //error: playersError
   } = usePlayers();
 
   return (
@@ -61,7 +68,10 @@ export default function Shop() {
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-hide">
-          <SearchBar loading={categoriesLoading} onSearch={navigateToProductsSearch}>
+          <SearchBar
+            loading={categoriesLoading}
+            onSearch={navigateToProductsSearch}
+          >
             {categories.map((category) => (
               <button
                 key={category.name}
@@ -80,7 +90,9 @@ export default function Shop() {
           </h2>
           <ShopCarousel>
             {playersLoading
-              ? Array.from({ length: 4 }).map((_, index) => <ProductGroupCardSkeleton key={index} />)
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <ProductGroupCardSkeleton key={index} />
+                ))
               : players.map((player) => (
                   <ProductGroupCard
                     key={player.name}
@@ -99,13 +111,17 @@ export default function Shop() {
           </h2>
           <ShopCarousel>
             {collectionsLoading
-              ? Array.from({ length: 4 }).map((_, index) => <ProductGroupCardSkeleton key={index} />)
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <ProductGroupCardSkeleton key={index} />
+                ))
               : collections.map((collection) => (
                   <ProductGroupCard
                     key={collection.name}
                     title={collection.name}
                     imageUrl={collection.image_url}
-                    onClick={() => navigateToProducts("collection", collection.name)}
+                    onClick={() =>
+                      navigateToProducts("collection", collection.name)
+                    }
                   />
                 ))}
           </ShopCarousel>

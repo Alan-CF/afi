@@ -38,19 +38,21 @@ export function useMessages(options?: UseThunderAIOptions) {
 
       const { data, error } = await supabase
         .from("thunder_conversations")
-        .select("content, role, created_at")
-        .limit(20);
+        .select("content, role, created_at");
 
       if (error) {
         throw error;
       }
 
       const result =
-        (data as ThunderConversationRow[] | null)?.map((row) => ({
-          content: row.content,
-          is_user: row.role === "user",
-          created_at: row.created_at,
-        }) as ThunderConversationMessage) ?? [];
+        (data as ThunderConversationRow[] | null)?.map(
+          (row) =>
+            ({
+              content: row.content,
+              is_user: row.role === "user",
+              created_at: row.created_at,
+            }) as ThunderConversationMessage,
+        ) ?? [];
 
       setMessages(result);
       setError(null);

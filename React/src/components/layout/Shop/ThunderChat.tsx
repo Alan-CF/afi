@@ -1,17 +1,86 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import ChatBubble from "../../ui/ChatBubble";
 import { useMessages } from "../../../hooks/useThunderAI";
+import ChatProductCarrousel from "../../ui/shop/ChatProductCarrousel";
+import type { PricedProduct } from "../../../hooks/useShopProducts";
 
 interface ThunderChatProps {
   onClose?: () => void;
 }
 
+type ThunderJsonReply = {
+  reply?: {
+    top_message?: string;
+    products?: {
+      product_id: number;
+      description: string;
+    }[];
+    bottom_message?: string;
+  };
+};
+
+const PLACEHOLDER_PRODUCTS: PricedProduct[] = [
+  {
+    id: -1,
+    name: "Warriors Gift Set Placeholder",
+    description: "",
+    price: 19.99,
+    discount: 0,
+    is_active: true,
+    stock: 999,
+    image_url:
+      "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Klay%20Thompson%2011%20T-Shirt.jpg",
+    product_details: {},
+    meta_data: {},
+  },
+  {
+    id: -2,
+    name: "Warriors Fan Pack Placeholder",
+    description: "",
+    price: 14.99,
+    discount: 0,
+    is_active: true,
+    stock: 999,
+    image_url:
+      "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Warriors%20Fan%20Pack.jpg",
+    product_details: {},
+    meta_data: {},
+  },
+];
+
+function ParsedMessage({ content }: { content: string }) {
+  const renderText = (text: string) => (
+    <p className="whitespace-pre-line font-lato text-sm">{text}</p>
+  );
+
+  try {
+    const parsed = JSON.parse(content) as ThunderJsonReply;
+
+    if (!parsed?.reply) {
+      return renderText(content);
+    }
+
+    const topMessage = parsed.reply?.top_message?.trim() ?? "";
+    const bottomMessage = parsed.reply?.bottom_message?.trim() ?? "";
+
+    return (
+      <div className="flex flex-col gap-3">
+        {topMessage ? renderText(topMessage) : null}
+        <ChatProductCarrousel products={PLACEHOLDER_PRODUCTS} />
+        {bottomMessage ? renderText(bottomMessage) : null}
+      </div>
+    );
+  } catch {
+    return renderText(content);
+  }
+}
+
 export default function ThunderChat({ onClose }: ThunderChatProps) {
-  const { 
+  const {
     messages,
     loading: messagesLoading,
     error: messagesError,
-    // hasLoadedOnce: messagesHaveLoadedOnce 
+    // hasLoadedOnce: messagesHaveLoadedOnce
   } = useMessages({ enabled: true });
 
   return (
@@ -24,7 +93,9 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
         />
         <div className="min-w-0 flex-1">
           <h3 className="font-anton text-2xl leading-none">ThunderAI</h3>
-          <p className="font-lato text-xs text-gray-600">Your AI shopping assistant</p>
+          <p className="font-lato text-xs text-gray-600">
+            Your AI shopping assistant
+          </p>
         </div>
         {onClose ? (
           <button
@@ -56,7 +127,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
         ) : (
           messages.map((msg, idx) => (
             <ChatBubble key={idx} isUser={msg.is_user}>
-              {msg.content}
+              <ParsedMessage content={msg.content} />
             </ChatBubble>
           ))
         )}
