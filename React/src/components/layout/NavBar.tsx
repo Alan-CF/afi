@@ -7,7 +7,7 @@ import Cart from "./Cart";
 const PRIMARY_LINKS = [
     { to: "/",        label: "Home" },
     { to: "/shop",    label: "Shop" },
-    { to: "/events",  label: "Events" }, // TODO(step-5-1): /events route created in Step 5.1
+    { to: "/events",  label: "Events" }, 
     { to: "/fanatic", label: "Fanatic" },
     { to: "/rooms",   label: "Rooms" },
     { to: "/ranking", label: "Leaderboard" },
@@ -17,6 +17,7 @@ export default function NavBar() {
     const { user } = useProfile();
     const navigate = useNavigate();
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
         <>
@@ -59,11 +60,11 @@ export default function NavBar() {
                         <ShoppingBagIcon className="w-6 h-6" />
                     </button>
 
-                    <button
+                                        <button
                         type="button"
                         className="md:hidden cursor-pointer"
                         aria-label="Open menu"
-                        // TODO(step-0-3): wire hamburger to drawer
+                        onClick={() => setIsMenuOpen(true)}
                     >
                         <Bars3Icon className="w-6 h-6" />
                     </button>
@@ -87,6 +88,50 @@ export default function NavBar() {
                 </div>
             </nav>
             <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+                            {isMenuOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40 bg-black/40 md:hidden"
+                        onClick={() => setIsMenuOpen(false)}
+                        aria-hidden="true"
+                    />
+                    <aside
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Navigation menu"
+                        className="fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] bg-secondary text-white p-6 md:hidden"
+                    >
+                        <button
+                            onClick={() => setIsMenuOpen(false)}
+                            className="mb-8 font-lato text-sm font-bold uppercase"
+                            aria-label="Close menu"
+                        >
+                            ✕
+                        </button>
+                        <ul className="flex flex-col gap-3">
+                            {PRIMARY_LINKS.map((link) => (
+                                <li key={link.to}>
+                                    <NavLink
+                                        to={link.to}
+                                        end={link.to === "/"}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={({ isActive }) =>
+                                            `block rounded-xl px-4 py-3 font-lato text-base font-bold uppercase tracking-wider ${
+                                                isActive
+                                                    ? "bg-primary text-secondary"
+                                                    : "hover:bg-white/10"
+                                            }`
+                                        }
+                                    >
+                                        {link.label}
+                                    </NavLink>
+                                </li>
+                            ))}
+                        </ul>
+                    </aside>
+                </>
+            )}
+
         </>
     );
 }
