@@ -1,84 +1,110 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import ChatBubble from "../../ui/ChatBubble";
 import { useMessages } from "../../../hooks/useThunderAI";
+import { useShopProductsByIds } from "../../../hooks/useShopProducts";
 import ChatProductCarrousel from "../../ui/shop/ChatProductCarrousel";
 import type { ProductRecomendation } from "../../ui/shop/ChatProductCarrousel";
+import type { PricedProduct } from "../../../hooks/useShopProducts";
 
 interface ThunderChatProps {
   onClose?: () => void;
 }
 
+type ThunderRecommendation = {
+  product_id: number;
+  description: string;
+};
+
 type ThunderJsonReply = {
   reply?: {
     top_message?: string;
-    products?: {
-      product_id: number;
-      description: string;
-    }[];
+    products?: ThunderRecommendation[];
     bottom_message?: string;
   };
 };
 
-const PLACEHOLDER_RECOMMENDATIONS: ProductRecomendation[] = [
-  {
-    product: {
-      id: -1,
-      name: "Warriors Gift Set Placeholder",
-      description: "",
-      price: 19.99,
-      discount: 0,
-      is_active: true,
-      stock: 999,
-      image_url:
-        "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Klay%20Thompson%2011%20T-Shirt.jpg",
-      product_details: {},
-      meta_data: {},
-    },
-    description: "Placeholder recommendation for the Warriors Gift Set.",
-  },
-  {
-    product: {
-      id: -2,
-      name: "Warriors Fan Pack Placeholder",
-      description: "",
-      price: 14.99,
-      discount: 0,
-      is_active: true,
-      stock: 999,
-      image_url:
-        "https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/products/Warriors%20Fan%20Pack.jpg",
-      product_details: {},
-      meta_data: {},
-    },
-    description: "Placeholder recommendation for the Warriors Fan Pack.",
-  },
-];
+function handlePricedProducts(
+  recommendations: ThunderRecommendation[],
+  pricedProducts: PricedProduct[],
+): ProductRecomendation[] {
+  if (recommendations.length === 0 || pricedProducts.length === 0) {
+    return [];
+  }
+
+  const productsById = new Map(
+    pricedProducts.map((product) => [product.id, product]),
+  );
+
+  return recommendations
+    .map((recommendation) => {
+      const product = productsById.get(recommendation.product_id);
+
+      if (!product) {
+        return null;
+      }
+
+      return {
+        product,
+        description: recommendation.description,
+      };
+    })
+    .filter((item): item is ProductRecomendation => item !== null);
+}
 
 function ParsedMessage({ content }: { content: string }) {
   const renderText = (text: string) => (
     <p className="whitespace-pre-line font-lato text-sm">{text}</p>
   );
 
+  let parsedReply: ThunderJsonReply["reply"] | null = null;
+
   try {
     const parsed = JSON.parse(content) as ThunderJsonReply;
-
-    if (!parsed?.reply) {
-      return renderText(content);
-    }
-
-    const topMessage = parsed.reply?.top_message?.trim() ?? "";
-    const bottomMessage = parsed.reply?.bottom_message?.trim() ?? "";
-
-    return (
-      <div className="flex flex-col gap-3">
-        {topMessage ? renderText(topMessage) : null}
-        <ChatProductCarrousel recommendations={PLACEHOLDER_RECOMMENDATIONS} />
-        {bottomMessage ? renderText(bottomMessage) : null}
-      </div>
-    );
+    parsedReply = parsed?.reply ?? null;
   } catch {
+    parsedReply = null;
+  }
+
+  if (!parsedReply) {
     return renderText(content);
   }
+
+  const recommendationProducts: ThunderRecommendation[] = (
+    parsedReply.products ?? []
+  ).map((product) => ({
+    product_id: product.product_id,
+    description: product.description,
+  }));
+
+  const productIds = recommendationProducts.map(
+    (product) => product.product_id,
+  );
+
+  console.log("productIds extracted from message:", productIds);
+  const { products: pricedProducts } = useShopProductsByIds(
+    productIds.length > 0 ? productIds : null,
+  );
+  console.log("Priced products fetched for recommendations:", pricedProducts);
+
+  const mappedRecommendations = handlePricedProducts(
+    recommendationProducts,
+    pricedProducts,
+  );
+
+  console.log(
+    "Mapped recommendations with product details:",
+    mappedRecommendations,
+  );
+  const topMessage = parsedReply.top_message?.trim() ?? "";
+  const bottomMessage = parsedReply.bottom_message?.trim() ?? "";
+
+  return (
+    <div className="flex flex-col gap-3">
+      {topMessage ? renderText(topMessage) : null}
+      <ChatProductCarrousel recommendations={mappedRecommendations} />
+      {bottomMessage ? renderText(bottomMessage) : null}
+    </div>
+  );
 }
 
 export default function ThunderChat({ onClose }: ThunderChatProps) {

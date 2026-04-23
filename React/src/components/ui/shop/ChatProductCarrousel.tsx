@@ -39,6 +39,11 @@ export default function ChatProductCarrousel({
     align: "start",
   });
 
+  console.log(
+    "Rendering ChatProductCarrousel with recommendations:",
+    recommendations,
+  );
+
   if (recommendations.length === 0) {
     return null;
   }
