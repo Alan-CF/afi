@@ -1,5 +1,6 @@
 import useEmblaCarousel from "embla-carousel-react";
 import type { PricedProduct } from "../../../hooks/useShopProducts";
+import Button from "../Button";
 
 export type ProductRecomendation = {
   product: PricedProduct;
@@ -7,13 +8,19 @@ export type ProductRecomendation = {
 };
 
 function ChatProductCard({ product }: { product: PricedProduct }) {
+  const hasDiscount = product.discount > 0;
+  const discountedPrice = product.price * (1 - product.discount);
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(product.price);
+  const formattedDiscountedPrice = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(discountedPrice);
 
   return (
-    <article className="flex h-full flex-col gap-2 rounded-lg bg-secondary p-3 text-white">
+    <article className="flex h-[310px] flex-col gap-2 rounded-lg bg-secondary p-3 text-white">
       <img
         src={product.image_url || "/placeholder-image.jpg"}
         alt={product.name}
@@ -21,7 +28,24 @@ function ChatProductCard({ product }: { product: PricedProduct }) {
       />
       <h3 className="line-clamp-2 text-sm font-bold">{product.name}</h3>
       <p className="line-clamp-2 text-xs opacity-90">{product.description}</p>
-      <p className="mt-auto text-sm font-semibold">{formattedPrice}</p>
+      {hasDiscount ? (
+        <div className="mt-auto flex items-center gap-2 text-sm">
+          <span className="font-semibold">{formattedDiscountedPrice}</span>
+          <span className="line-through opacity-70">{formattedPrice}</span>
+          <span className="font-bold text-primary">
+            {product.discount * 100}% OFF
+          </span>
+        </div>
+      ) : (
+        <p className="mt-auto text-sm font-semibold">{formattedPrice}</p>
+      )}
+      <Button
+        variant="primary"
+        className="w-full rounded-lg"
+        onClick={() => console.log(`Adding ${product.name} to cart`)}
+      >
+        Add to cart
+      </Button>
     </article>
   );
 }
@@ -35,8 +59,8 @@ export default function ChatProductCarrousel({
 }: ChatProductCarrouselProps) {
   const [emblaRef] = useEmblaCarousel({
     loop: false,
-    dragFree: true,
-    align: "start",
+    dragFree: false,
+    align: "center",
   });
 
   console.log(
@@ -52,10 +76,10 @@ export default function ChatProductCarrousel({
     <div className="overflow-hidden" ref={emblaRef}>
       <div className="flex gap-3">
         {recommendations.map((rec) => (
-          <div key={rec.product.id} className="min-w-52 flex-[0_0_13rem]">
-            <div className="flex flex-col">
+          <div key={rec.product.id} className="min-w-60 flex-[0_0_13rem]">
+            <div className="flex flex-col gap-2">
               <ChatProductCard product={rec.product} />
-              <p>{rec.description}</p>
+              <p className="px-2">{rec.description}</p>
             </div>
           </div>
         ))}
