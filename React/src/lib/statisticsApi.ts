@@ -1,4 +1,11 @@
-import { supabase } from './supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const statsSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+  db: { schema: 'statistics_demo' }
+});
 
 export type PlayerStat = {
   name: string;
@@ -28,8 +35,7 @@ export type Standing = {
 };
 
 export async function fetchWarriorsPlayers(): Promise<PlayerStat[]> {
-  const { data, error } = await supabase
-    .schema('statistics_demo')
+  const { data, error } = await statsSupabase
     .from('players')
     .select(`
       first_name,
@@ -61,8 +67,7 @@ export async function fetchWarriorsPlayers(): Promise<PlayerStat[]> {
 }
 
 export async function fetchWarriorsGames(): Promise<Game[]> {
-  const { data, error } = await supabase
-    .schema('statistics_demo')
+  const { data, error } = await statsSupabase
     .from('games')
     .select('*')
     .order('game_date', { ascending: false });
@@ -80,8 +85,7 @@ export async function fetchWarriorsGames(): Promise<Game[]> {
 }
 
 export async function fetchStandings(): Promise<Standing[]> {
-  const { data, error } = await supabase
-    .schema('statistics_demo')
+  const { data, error } = await statsSupabase
     .from('standings')
     .select('*')
     .order('wins', { ascending: false });

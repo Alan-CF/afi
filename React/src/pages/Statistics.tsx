@@ -18,37 +18,59 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "standings", label: "Standings", icon: <TrophyIcon className="h-4 w-4" /> },
 ];
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function RosterTable({ players }: { players: PlayerStat[] }) {
   return (
-    <div className="flex flex-col items-center py-3">
-      <p className="text-lg font-extrabold text-secondary">{value}</p>
-      <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">{label}</p>
-    </div>
-  );
-}
-
-function PlayerCard({ player }: { player: PlayerStat }) {
-  return (
-    <div className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] overflow-hidden">
-      <div className="bg-secondary px-4 py-4 flex items-center justify-between">
-        <div>
-          <p className="text-white font-extrabold text-lg leading-tight">{player.name}</p>
-          <p className="text-white/60 text-xs mt-1 uppercase tracking-wide">
-            {player.position} · {player.gp} GP
-          </p>
-        </div>
-        <span className="text-4xl font-extrabold text-[var(--color-primary)]/30">
-          #{player.jersey_number}
-        </span>
-      </div>
-      <div className="grid grid-cols-3 divide-x divide-[var(--color-container-border)]">
-        {[
-          { label: "PTS", value: player.pts },
-          { label: "REB", value: player.reb },
-          { label: "AST", value: player.ast },
-        ].map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
+    <div className="rounded-2xl border border-[var(--color-container-border)] overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-secondary">
+              {/* Sticky columns */}
+              <th className="sticky left-0 z-10 bg-secondary text-left px-3 py-3 text-xs font-bold uppercase tracking-widest text-white/60 w-10"></th>
+              <th className="sticky left-10 z-10 bg-secondary text-left px-2 py-3 text-xs font-bold uppercase tracking-widest text-white/60 whitespace-nowrap">Player</th>
+              {/* Scrollable columns */}
+              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">GP</th>
+              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widests text-white/60">PTS</th>
+              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">REB</th>
+              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">AST</th>
+              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">POS</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-container-border)]">
+            {players.map((player, i) => (
+              <tr
+                key={i}
+                className="bg-[var(--color-background)] hover:bg-[var(--color-text-light-soft)] transition-colors"
+              >
+                {/* Sticky columns */}
+                <td className="sticky left-0 z-10 bg-inherit px-3 py-3 text-right">
+                  <span className="text-sm font-extrabold text-[var(--color-secondary)]/60">
+                    #{player.jersey_number}
+                  </span>
+                </td>
+                <td className="sticky left-10 z-10 bg-inherit px-2 py-3">
+                  <p className="font-bold text-sm text-secondary whitespace-nowrap">{player.name}</p>
+                </td>
+                {/* Scrollable columns */}
+                <td className="text-center px-5 py-3">
+                  <p className="text-sm text-gray-500 whitespace-nowrap">{player.gp}</p>
+                </td>
+                <td className="text-center px-5 py-3">
+                  <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.pts}</p>
+                </td>
+                <td className="text-center px-5 py-3">
+                  <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.reb}</p>
+                </td>
+                <td className="text-center px-5 py-3">
+                  <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.ast}</p>
+                </td>
+                <td className="text-center px-5 py-3">
+                  <p className="text-sm text-gray-400 uppercase whitespace-nowrap">{player.position}</p>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -159,20 +181,20 @@ export default function Statistics() {
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
 
-        {/* HEADER */}
-        <section className="rounded-2xl bg-secondary overflow-hidden mb-5">
-          <div className="flex flex-col md:flex-row items-center gap-6 px-8 py-8">
+        {/* Header */}
+        <section className="rounded-2xl bg-secondary overflow-hidden mb-4">
+          <div className="flex flex-col md:flex-row items-center gap-2 px-4 py-4">
             <img
               src="https://upload.wikimedia.org/wikipedia/en/0/01/Golden_State_Warriors_logo.svg"
               alt="Warriors"
-              className="h-24 w-24 object-contain"
+              className="h-22 w-22"
             />
             <div className="text-center md:text-left">
               <p className="text-white/60 text-sm uppercase tracking-widest font-semibold">
                 NBA · Western Conference
               </p>
-              <h1 className="text-4xl font-extrabold text-white">Golden State Warriors</h1>
-              <p className="text-[var(--color-primary)] font-bold mt-1">
+              <h1 className="text-3xl font-extrabold text-white mt-2">Golden State Warriors</h1>
+              <p className="text-[var(--color-primary)] font-bold mt-2">
                 Chase Center · San Francisco, CA
               </p>
             </div>
@@ -212,18 +234,18 @@ export default function Statistics() {
 
         {/* ROSTER */}
         {!loading && activeTab === "roster" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div>
             {players.length > 0
-              ? players.map((player, i) => <PlayerCard key={i} player={player} />)
-              : <p className="col-span-full text-center text-gray-400 py-10">No players found.</p>
+              ? <RosterTable players={players} />
+              : <p className="text-center text-gray-400 py-10">No players found.</p>
             }
           </div>
         )}
 
         {/* GAMES */}
         {!loading && activeTab === "games" && (
-          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-4">
-            <div className="space-y-3">
+          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
+            <div className="space-y-2.5">
               {games.length > 0
                 ? games.map((game, i) => <GameRow key={i} game={game} />)
                 : <p className="text-center text-gray-400 py-10">No games found.</p>
@@ -234,8 +256,8 @@ export default function Statistics() {
 
         {/* STANDINGS */}
         {!loading && activeTab === "standings" && (
-          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-4">
-            <div className="space-y-2">
+          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
+            <div className="space-y-2.5">
               {standings
                 .filter((s) => s.conf === "West")
                 .map((s, i) => <StandingRow key={i} standing={s} rank={i + 1} />)
