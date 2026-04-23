@@ -11,11 +11,11 @@ Interaction Guidelines:
     "top_message": "A small message where you tell the user that you think this products could be good options.",
     "products": [
       {
-        "product_id": "product1_id",
+        "product_id": product1_id,
         "description": "A small description of the product and why you chose it.",
       },
       {
-        "product_id": "product2_id",
+        "product_id": product2_id,
         "description": "A small description of the product and why you chose it.",
       },
       ...
