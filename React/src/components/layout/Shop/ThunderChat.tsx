@@ -1,4 +1,5 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useEffect, useRef } from "react";
 import ChatBubble from "../../ui/ChatBubble";
 import { useMessages } from "../../../hooks/useThunderAI";
 import { useShopProductsByIds } from "../../../hooks/useShopProducts";
@@ -114,6 +115,20 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
     error: messagesError,
     // hasLoadedOnce: messagesHaveLoadedOnce
   } = useMessages({ enabled: true });
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (messagesLoading || messagesError) {
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    container.scrollTop = container.scrollHeight;
+  }, [messages, messagesLoading, messagesError]);
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-white">
@@ -141,7 +156,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
         ) : null}
       </header>
 
-      <div className="overflow-y-auto pr-1">
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
         {messagesLoading ? (
           <div className="flex h-full items-center justify-center py-10">
             <div
