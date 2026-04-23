@@ -10,6 +10,7 @@ import RoomChat from './pages/Rooms/RoomChat'
 import Ranking from './pages/Ranking'
 import Shop from './pages/Shop'
 import ShopProducts from './pages/ShopProducts'
+import Events from './pages/Events'
 
 function App() {
 
@@ -27,6 +28,7 @@ function App() {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/shop/products" element={<ShopProducts />} />
+      <Route path="/events" element={<Events />} />
     </Routes>
   );
 }
