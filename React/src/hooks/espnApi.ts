@@ -85,20 +85,19 @@ async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T | null
   }
 }
 
-/** Warriors games in the next `days` days, ascending. Includes in-progress (up to 4h old). */
 export async function fetchUpcomingWarriorsGames(
-  days = 14,
+  days = 30,
   signal?: AbortSignal
 ): Promise<WarriorsGame[]> {
   const data = await fetchJson<{ events: EspnEvent[] }>(
-    `${ESPN_BASE}/teams/gs/schedule`,
+    `${ESPN_BASE}/teams/9/schedule?season=2026&seasontype=2`,
     signal
   );
   if (!data?.events) return [];
 
   const horizon = Date.now() + days * 24 * 60 * 60 * 1000;
 
-  return data.events
+  const upcoming = data.events
     .map(extractWarriorsGame)
     .filter((g): g is WarriorsGame => g !== null)
     .filter((g) => {
@@ -106,7 +105,18 @@ export async function fetchUpcomingWarriorsGames(
       return t >= Date.now() - 4 * 60 * 60 * 1000 && t <= horizon;
     })
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+
+  if (upcoming.length > 0) return upcoming;
+
+  const recent = data.events
+    .map(extractWarriorsGame)
+    .filter((g): g is WarriorsGame => g !== null && g.state === "post")
+    .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime())
+    .slice(0, 4);
+
+  return recent.reverse();
 }
+
 
 export async function fetchLiveWarriorsGame(
   signal?: AbortSignal

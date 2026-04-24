@@ -37,8 +37,8 @@ function SectionTitle({ title, to }: { title: string; to?: string }) {
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: <UserGroupIcon className="h-7 w-7" />, label: "join room", onClick: () => navigate("/rooms") },
-    { icon: <BoltIcon className="h-7 w-7" />, label: "predict", onClick: () => navigate("/rooms") },
+    { icon: <UserGroupIcon className="h-7 w-7" />, label: "Join room", onClick: () => navigate("/rooms") },
+    { icon: <BoltIcon className="h-7 w-7" />, label: "Predict", onClick: () => navigate("/rooms") },
     {
       icon: <LinkIcon className="h-7 w-7" />,
       label: "invite",
@@ -101,22 +101,22 @@ export default function Home() {
 
         <div className="mt-20 md:mt-24 grid grid-cols-1 gap-16 lg:grid-cols-2">
           <div>
-            <SectionTitle title="rooms" to="/rooms" />
+            <SectionTitle title="Rooms" to="/rooms" />
             <RoomsPreview />
           </div>
           <div>
-            <SectionTitle title="leaderboard" to="/ranking" />
+            <SectionTitle title="Leaderboard" to="/ranking" />
             <LeaderboardPreview />
           </div>
         </div>
 
         <div className="mt-20 md:mt-24">
-          <SectionTitle title="news" />
+          <SectionTitle title="News" />
           <NewsSection />
         </div>
 
         <div className="mt-20 md:mt-24">
-          <SectionTitle title="shop" to="/shop" />
+          <SectionTitle title="Shop" to="/shop" />
           <ShopSpotlight />
         </div>
 

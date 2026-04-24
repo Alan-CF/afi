@@ -1,66 +1,90 @@
 import { useNavigate } from "react-router-dom";
-import Button from "../ui/Button";
-import RoomCard from "../ui/RoomCard";
 import { useRoomsPreview } from "../../hooks/useRoomsPreview";
+import type { RoomCardData } from "../../hooks/useRooms";
+
+function RoomRailCard({ room, onClick }: { room: RoomCardData; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative flex-shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      aria-label={room.title}
+    >
+      <div
+        className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
+        style={{ backgroundColor: room.accent ?? "#1D428A" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+      {room.status === "live" && (
+        <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-destructive px-2 py-1 font-lato text-[0.6rem] font-black uppercase tracking-wider text-white">
+          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+          live
+        </span>
+      )}
+
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <h3 className="font-anton text-2xl text-white lowercase leading-tight line-clamp-1">
+          {room.title}
+        </h3>
+        <p className="font-lato text-xs uppercase tracking-wider text-white/50 mt-1">
+          {room.members}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function CreateRoomCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative flex-shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 hover:border-secondary transition-colors text-left focus:outline-none"
+      aria-label="Create a room"
+    >
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="font-anton text-2xl text-text-light lowercase group-hover:text-secondary transition-colors">
+          create a room →
+        </span>
+      </div>
+    </button>
+  );
+}
 
 export default function RoomsPreview() {
   const navigate = useNavigate();
-  const { rooms, loading, error } = useRoomsPreview(3);
+  const { rooms, loading } = useRoomsPreview(4);
 
   return (
-    <section
-      aria-labelledby="rooms-title"
-      className="flex h-full flex-col gap-3 rounded-3xl border-2 border-gray-100 bg-white p-5 shadow-sm"
-    >
-      <header>
-        <p className="font-lato text-xs uppercase tracking-[0.16em] text-text-light">Community</p>
-        <h2 id="rooms-title" className="font-anton text-2xl text-secondary">Your Rooms</h2>
-      </header>
-
+    <section aria-label="Rooms">
       {loading && (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-xl bg-gray-100" />
+        <div className="flex gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-[280px] h-[200px] animate-pulse rounded-2xl bg-gray-200" />
           ))}
         </div>
       )}
 
-      {!loading && error && (
-        <p className="font-lato text-sm text-destructive">Could not load rooms.</p>
-      )}
-
-      {!loading && !error && rooms.length === 0 && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
-          <p className="font-lato text-sm text-text-light">You haven't joined any rooms yet.</p>
-          <Button variant="primary" onClick={() => navigate("/rooms/create")}>
-            Create a Room
-          </Button>
+      {!loading && (
+        <div className="-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+            {rooms.map((room) => (
+              <div key={room.id} className="snap-start">
+                <RoomRailCard
+                  room={room}
+                  onClick={() =>
+                    navigate(room.status === "live" ? `/rooms/${room.id}` : "/rooms")
+                  }
+                />
+              </div>
+            ))}
+            <div className="snap-start">
+              <CreateRoomCard onClick={() => navigate("/rooms/create")} />
+            </div>
+          </div>
         </div>
       )}
-
-      {!loading && !error && rooms.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {rooms.map((room) => (
-            <li key={room.id}>
-              <RoomCard
-                room={room}
-                onActionClick={(r) =>
-                  navigate(r.status === "live" ? `/rooms/${r.id}` : "/rooms")
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="mt-auto flex gap-2 pt-3">
-        <Button variant="secondary" className="flex-1" onClick={() => navigate("/rooms")}>
-          All rooms
-        </Button>
-        <Button variant="primary" className="flex-1" onClick={() => navigate("/rooms/create")}>
-          + New
-        </Button>
-      </div>
     </section>
   );
 }

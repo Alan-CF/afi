@@ -21,12 +21,15 @@ export default function ShopSpotlight() {
   return (
     <section aria-label="Shop">
       <div className="flex flex-col gap-4">
-        <button
-          type="button"
+        <div
           onClick={() => featured ? goToCollection(featured.name) : navigate("/shop")}
-          className="group relative w-full aspect-[21/9] overflow-hidden rounded-3xl bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary text-left"
+          className="group relative w-full aspect-[21/9] overflow-hidden rounded-3xl bg-secondary cursor-pointer focus-visible:ring-2 focus-visible:ring-primary text-left"
           aria-label={featured?.name ?? "Shop"}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && (featured ? goToCollection(featured.name) : navigate("/shop"))}
         >
+
           {featured?.image_url && (
             <img
               src={featured.image_url}
@@ -46,7 +49,7 @@ export default function ShopSpotlight() {
               Shop now →
             </Button>
           </div>
-        </button>
+        </div>
 
         {topCategories.length > 0 && (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
