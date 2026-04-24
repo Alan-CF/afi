@@ -11,7 +11,6 @@ import {
   PencilIcon,
   CheckIcon,
 } from "@heroicons/react/24/solid";
-
 import {
   HandThumbUpIcon as HandThumbUpOutline,
   StarIcon as StarOutline,
@@ -31,103 +30,74 @@ export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
   const league = getLeague(user?.fanatic_coins ?? 0);
 
-  /* ── About me ── */
-  const [aboutText, setAboutText] = useState<string>(
-    "Let us get to know you! Write a short bio about yourself."
-  );
   const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
-    if (user?.caption) setAboutText(user.caption);
-  }, [user]);
-
-  const handleEditSave = async () => {
-    if (isEditing) {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      await supabase
-        .from("profiles")
-        .update({ caption: aboutText })
-        .eq("id", authUser?.id ?? "");
-      setIsEditing(false);
-    } else {
-      setIsEditing(true);
-    }
-  };
-
-  /* ── Name ── */
-  const [nameText, setNameText] = useState<string>("");
-  const [isEditingName, setIsEditingName] = useState(false);
-
-  useEffect(() => {
-    if (user?.name) setNameText(user.name);
-  }, [user]);
-
-  const handleEditName = async () => {
-    if (isEditingName) {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      await supabase
-        .from("profiles")
-        .update({ name: nameText })
-        .eq("id", authUser?.id ?? "");
-      setIsEditingName(false);
-    } else {
-      setIsEditingName(true);
-    }
-  };
-
-  /* ── Username ── */
-  const [usernameText, setUsernameText] = useState<string>("");
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [nameText, setNameText] = useState("");
+  const [usernameText, setUsernameText] = useState("");
+  const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
   const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [usernameLoading, setUsernameLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (user?.username) setUsernameText(user.username);
+    if (user) {
+      if (user.name) setNameText(user.name);
+      if (user.username) setUsernameText(user.username);
+      if (user.caption) setAboutText(user.caption);
+    }
   }, [user]);
 
-  const handleEditUsername = async () => {
-    if (isEditingUsername) {
-      const trimmed = usernameText.trim();
+  const handleEdit = () => {
+    setUsernameError(null);
+    setIsEditing(true);
+  };
 
-      if (!trimmed) {
-        setUsernameError("Username cannot be empty.");
-        return;
-      }
+  const handleSave = async () => {
+    const trimmedUsername = usernameText.trim();
 
-      if (trimmed === user?.username) {
-        setIsEditingUsername(false);
-        setUsernameError(null);
-        return;
-      }
+    if (!trimmedUsername) {
+      setUsernameError("Username cannot be empty.");
+      return;
+    }
 
-      setUsernameLoading(true);
+    setSaving(true);
 
+    // Verificar si el username ya existe (solo si cambió)
+    if (trimmedUsername !== user?.username) {
       const { data: existing } = await supabase
         .from("profiles")
         .select("id")
-        .eq("username", trimmed)
+        .eq("username", trimmedUsername)
         .maybeSingle();
 
       if (existing) {
-        setUsernameError("That username is already taken. Please choose another.");
-        setUsernameLoading(false);
+        setUsernameError("That username is already taken.");
+        setSaving(false);
         return;
       }
-
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      await supabase
-        .from("profiles")
-        .update({ username: trimmed })
-        .eq("id", authUser?.id ?? "");
-
-      await refreshProfile();
-      setIsEditingUsername(false);
-      setUsernameError(null);
-      setUsernameLoading(false);
-    } else {
-      setUsernameError(null);
-      setIsEditingUsername(true);
     }
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    await supabase
+      .from("profiles")
+      .update({
+        name: nameText,
+        username: trimmedUsername,
+        caption: aboutText,
+      })
+      .eq("id", authUser?.id ?? "");
+
+    await refreshProfile();
+    setIsEditing(false);
+    setUsernameError(null);
+    setSaving(false);
+  };
+
+  const handleCancel = () => {
+    // Revertir cambios
+    if (user?.name) setNameText(user.name);
+    if (user?.username) setUsernameText(user.username);
+    if (user?.caption) setAboutText(user.caption);
+    setUsernameError(null);
+    setIsEditing(false);
   };
 
   return (
@@ -140,8 +110,10 @@ export default function MyProfile() {
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
 
-            {/* Header azul — avatar + nombre + username */}
+
+            {/* Header azul */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
+              
               <div className="mb-3">
                 <AvatarUpload
                   avatarUrl={user?.avatar_url}
@@ -150,65 +122,42 @@ export default function MyProfile() {
                 />
               </div>
 
-              {/* Name */}
-              <div className="flex items-center gap-2 mb-1">
-                {isEditingName ? (
-                  <input
-                    type="text"
-                    value={nameText}
-                    onChange={(e) => setNameText(e.target.value)}
-                    maxLength={50}
-                    className="bg-transparent border-b border-white/50 text-2xl font-extrabold text-white outline-none text-center"
-                    autoFocus
-                  />
-                ) : (
-                  <h1 className="text-2xl font-extrabold text-white mb-0">{nameText}</h1>
-                )}
-                <button
-                  className="p-1 rounded-full hover:bg-white/10 transition-colors"
-                  onClick={handleEditName}
-                >
-                  {isEditingName
-                    ? <CheckIcon className="h-4 w-4 text-white/70" />
-                    : <PencilIcon className="h-4 w-4 text-white/50" />
-                  }
-                </button>
-              </div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={nameText}
+                  onChange={(e) => setNameText(e.target.value)}
+                  maxLength={50}
+                  placeholder="Full name"
+                  className="bg-transparent border-b border-white/50 text-2xl font-extrabold text-white outline-none text-center w-full mb-1"
+                  autoFocus
+                />
+              ) : (
+                <h1 className="text-2xl font-extrabold text-white mb-1">{nameText}</h1>
+              )}
 
-              {/* Username */}
-              <div className="flex items-center gap-1">
-                {isEditingUsername ? (
-                  <input
-                    type="text"
-                    value={usernameText}
-                    onChange={(e) => {
-                      setUsernameText(e.target.value);
-                      setUsernameError(null);
-                    }}
-                    maxLength={30}
-                    className="bg-transparent border-b border-white/50 text-sm text-white/80 outline-none text-center w-36 mb-1"
-                    autoFocus
-                    disabled={usernameLoading}
-                  />
-                ) : (
-                  <p className="text-sm text-white/80">@{usernameText}</p>
-                )}
-                <button
-                  className="p-1 rounded-full hover:bg-white/10 transition-colors"
-                  onClick={handleEditUsername}
-                  disabled={usernameLoading}
-                >
-                  {isEditingUsername
-                    ? <CheckIcon className="h-3 w-3 text-white/70" />
-                    : <PencilIcon className="h-3 w-3 text-white/50" />
-                  }
-                </button>
-              </div>
-
-              {usernameError && (
-                <p className="mt-1 text-[12px] text-red-300 font-medium  text-center">
-                  {usernameError}
-                </p>
+              {isEditing ? (
+                <div className="w-full">
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-white/60 text-sm">@</span>
+                    <input
+                      type="text"
+                      value={usernameText}
+                      onChange={(e) => {
+                        setUsernameText(e.target.value);
+                        setUsernameError(null);
+                      }}
+                      maxLength={30}
+                      placeholder="username"
+                      className="bg-transparent border-b border-white/50 text-sm text-white/80 outline-none text-center w-32"
+                    />
+                  </div>
+                  {usernameError && (
+                    <p className="mt-1 text-[11px] text-red-300 font-medium">{usernameError}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-white/80">@{usernameText}</p>
               )}
             </div>
 
@@ -251,13 +200,32 @@ export default function MyProfile() {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2 px-1">
               <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">About me</h2>
-              <button
-                className="text-xs font-bold text-secondary"
-                onClick={handleEditSave}
-                disabled={isEditing && aboutText.length > 200}
-              >
-                {isEditing ? "Save" : "Edit"}
-              </button>
+              {!isEditing ? (
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-1 text-xs font-bold text-secondary"
+                >
+                  <PencilIcon className="h-3 w-3" />
+                  Edit profile
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleCancel}
+                    className="text-xs font-bold text-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-1 text-xs font-bold text-secondary disabled:opacity-50"
+                  >
+                    <CheckIcon className="h-3 w-3" />
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              )}
             </div>
             <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 h-[calc(100%-28px)] flex items-center">
               <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm px-4 py-3 text-sm text-gray-600 w-full">
@@ -268,7 +236,6 @@ export default function MyProfile() {
                     onChange={(e) => setAboutText(e.target.value)}
                     maxLength={200}
                     className="w-full bg-transparent outline-none text-gray-600"
-                    autoFocus
                   />
                 ) : (
                   <div>{aboutText}</div>
