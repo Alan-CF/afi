@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getSession } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
 
@@ -23,7 +23,7 @@ export interface CartItem {
   image_url: string | null;
 }
 
-export async function addItemToCart(pricedProductId: number) {
+async function addItemToCartRequest(pricedProductId: number) {
   const session = await getSession();
   const profileId = session?.user?.id;
 
@@ -41,6 +41,33 @@ export async function addItemToCart(pricedProductId: number) {
   }
 
   notifyCartUpdated();
+}
+
+export function useAddItemToCart() {
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [addToCartError, setAddToCartError] = useState<Error | null>(null);
+
+  const addItemToCart = useCallback(async (pricedProductId: number) => {
+    try {
+      setIsAddingToCart(true);
+      setAddToCartError(null);
+      await addItemToCartRequest(pricedProductId);
+    } catch (error) {
+      const parsedError =
+        error instanceof Error
+          ? error
+          : new Error("Failed to add item to cart.");
+      setAddToCartError(parsedError);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  }, []);
+
+  return {
+    addItemToCart,
+    isAddingToCart,
+    addToCartError,
+  };
 }
 
 export async function removeItemFromCart(cartItemId: number) {
@@ -85,7 +112,7 @@ export function useCart() {
       const { data, error } = await supabase.rpc("get_cart", {
         p_profile_id: profileId,
       });
-    
+
       if (error) {
         throw error;
       }

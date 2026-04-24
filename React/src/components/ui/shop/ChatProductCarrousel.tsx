@@ -1,4 +1,5 @@
 import useEmblaCarousel from "embla-carousel-react";
+import { useAddItemToCart } from "../../../hooks/useCart";
 import type { PricedProduct } from "../../../hooks/useShopProducts";
 import Button from "../Button";
 
@@ -8,6 +9,7 @@ export type ProductRecomendation = {
 };
 
 function ChatProductCard({ product }: { product: PricedProduct }) {
+  const { addItemToCart, isAddingToCart, addToCartError } = useAddItemToCart();
   const hasDiscount = product.discount > 0;
   const discountedPrice = product.price * (1 - product.discount);
   const formattedPrice = new Intl.NumberFormat("en-US", {
@@ -42,10 +44,16 @@ function ChatProductCard({ product }: { product: PricedProduct }) {
       <Button
         variant="primary"
         className="w-full rounded-lg"
-        onClick={() => console.log(`Adding ${product.name} to cart`)}
+        onClick={() => {
+          void addItemToCart(product.id);
+        }}
+        disabled={isAddingToCart}
       >
-        Add to cart
+        {isAddingToCart ? "Adding..." : "Add to cart"}
       </Button>
+      {addToCartError ? (
+        <p className="text-xs text-red-400">{addToCartError.message}</p>
+      ) : null}
     </article>
   );
 }
