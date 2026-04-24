@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { addItemToCart } from "../../../hooks/useCart";
+import { useAddItemToCart } from "../../../hooks/useCart";
 import { type PricedProduct } from "../../../hooks/useShopProducts";
 import Button from "../Button";
 
 export default function ProductCard({ product }: { product: PricedProduct }) {
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [addToCartError, setAddToCartError] = useState<string | null>(null);
+  const { addItemToCart, isAddingToCart, addToCartError } = useAddItemToCart();
   const hasDiscount = product.discount > 0;
   const discountedPrice = product.price * (1 - product.discount);
   const formattedPrice = new Intl.NumberFormat("en-US", {
@@ -16,20 +14,6 @@ export default function ProductCard({ product }: { product: PricedProduct }) {
     style: "currency",
     currency: "USD",
   }).format(discountedPrice);
-
-  const handleAddToCart = async () => {
-    try {
-      setIsAddingToCart(true);
-      setAddToCartError(null);
-      await addItemToCart(product.id);
-    } catch (error) {
-      setAddToCartError(
-        error instanceof Error ? error.message : "Failed to add item to cart.",
-      );
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
 
   return (
     <div className="flex h-full w-full min-w-60 max-w-96 flex-col gap-4 rounded-xl bg-white p-4 shadow-lg">
@@ -49,25 +33,37 @@ export default function ProductCard({ product }: { product: PricedProduct }) {
         </p>
         {hasDiscount ? (
           <div className="mt-auto flex items-center gap-2 text-sm">
-            <span className="text-xl font-bold font-lato">{formattedDiscountedPrice}</span>
-            <span className="font-lato text-gray-400 line-through">{formattedPrice}</span>
+            <span className="text-xl font-bold font-lato">
+              {formattedDiscountedPrice}
+            </span>
+            <span className="font-lato text-gray-400 line-through">
+              {formattedPrice}
+            </span>
             <span className="font-lato text-md font-bold text-red-600">
               {product.discount * 100}% OFF
             </span>
           </div>
         ) : (
-          <p className="mt-auto text-xl font-bold  font-lato">{formattedPrice}</p>
+          <p className="mt-auto text-xl font-bold  font-lato">
+            {formattedPrice}
+          </p>
         )}
         <Button
           variant="primary"
-          onClick={handleAddToCart}
+          onClick={() => {
+            void addItemToCart(product.id);
+          }}
           disabled={isAddingToCart}
           className="text-sm font-semibold"
         >
-          <p className="font-lato">{isAddingToCart ? "Adding..." : "Add to cart"}</p>
+          <p className="font-lato">
+            {isAddingToCart ? "Adding..." : "Add to cart"}
+          </p>
         </Button>
         {addToCartError ? (
-          <p className="text-sm text-red-600 font-lato">{addToCartError}</p>
+          <p className="text-sm text-red-600 font-lato">
+            {addToCartError.message}
+          </p>
         ) : null}
       </div>
     </div>
