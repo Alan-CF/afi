@@ -5,40 +5,40 @@ export default function CTABanner() {
   const navigate = useNavigate();
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-secondary px-8 py-16 text-white md:px-16">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-10"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 80% 50%, #FFC72C 0%, transparent 60%)",
-        }}
-      />
-      <div className="relative z-10 flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:justify-between md:text-left">
-        <div className="flex flex-col gap-3 max-w-xl">
-          <span className="font-lato text-xs font-black uppercase tracking-[0.2em] text-primary">
-            Join the Dub Nation
-          </span>
-          <h2 className="font-anton text-4xl leading-tight md:text-5xl">
-            Be part of the ultimate Warriors fan experience.
+    <div className="flex flex-col gap-3">
+      <section
+        aria-label="Join the Dub Nation"
+        className="relative overflow-hidden rounded-3xl aspect-[21/9] bg-primary flex items-end"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse at 80% 20%, #ffffff 0%, transparent 60%)",
+          }}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" />
+
+        <div className="relative z-10 p-8 md:p-12 flex flex-col gap-4 max-w-lg">
+          <h2 className="font-anton text-5xl md:text-6xl text-secondary lowercase leading-none">
+            join<br />the dub<br />nation
           </h2>
-          <p className="font-lato text-base text-white/70">
-            Predict games, join watch-parties, compete on the leaderboard,
-            and earn rewards — all free.
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
-          <Button variant="primary" onClick={() => navigate("/login")}>
-            Sign up free
+          <Button variant="secondary" onClick={() => navigate("/login")}>
+            Sign up free →
           </Button>
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className="font-lato text-sm text-white/60 hover:text-white transition-colors"
-          >
-            Already a member? Log in
-          </button>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <p className="text-center font-lato text-sm text-text-light">
+        Already a member?{" "}
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
+          className="text-secondary font-bold hover:text-primary transition-colors"
+        >
+          Log in
+        </button>
+      </p>
+    </div>
   );
 }
