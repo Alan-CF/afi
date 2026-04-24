@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { postMessageToThunderAI } from "../lib/thunderAI";
 
 export type ThunderConversationMessage = {
   content: string;
@@ -84,4 +85,31 @@ export function useMessages(options?: UseThunderAIOptions) {
     error,
     getLastMessages,
   };
+}
+
+export function usePostMessage() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const postMessage = useCallback(async (content: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await postMessageToThunderAI(content);
+      return true;
+    } catch (err) {
+      const postMessageError =
+        err instanceof Error
+          ? err
+          : new Error("Failed to post message to ThunderAI");
+      console.error("Error in postMessage:", postMessageError);
+      setError(postMessageError);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { postMessage, loading, error };
 }
