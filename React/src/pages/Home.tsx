@@ -78,7 +78,6 @@ function QuickActions() {
   );
 }
 
-
 export default function Home() {
   const { user, hasLoadedOnce } = useProfile();
   const isLoggedIn = hasLoadedOnce && user !== null;
