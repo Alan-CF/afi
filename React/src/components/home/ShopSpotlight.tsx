@@ -39,10 +39,10 @@ export default function ShopSpotlight() {
             <h2 className="font-anton text-5xl md:text-6xl text-white lowercase leading-none">
               {featured?.name ?? "game day\ncollection"}
             </h2>
-            <Button variant="primary" onClick={(e) => {
-              e.stopPropagation();
-              featured ? goToCollection(featured.name) : navigate("/shop");
-            }}>
+            <Button variant="primary" onClick={() => {
+                  featured ? goToCollection(featured.name) : navigate("/shop");
+                }}
+      >
               Shop now →
             </Button>
           </div>
