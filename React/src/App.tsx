@@ -11,9 +11,9 @@ import Ranking from './pages/Ranking'
 import Shop from './pages/Shop'
 import ShopProducts from './pages/ShopProducts'
 import Events from './pages/Events'
+import Statistics from './pages/Statistics'
 
 function App() {
-
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -29,6 +29,7 @@ function App() {
       <Route path="/shop" element={<Shop />} />
       <Route path="/shop/products" element={<ShopProducts />} />
       <Route path="/events" element={<Events />} />
+      <Route path="/stats" element={<Statistics />} />
     </Routes>
   );
 }

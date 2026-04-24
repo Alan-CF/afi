@@ -4,7 +4,7 @@ const NAV_LINKS = [
     { label: "Home",        to: "/" },
     { label: "Shop",        to: "/shop" },
     { label: "Events",      to: "/events" },
-    { label: "Statistics",  to: "/statistics" },
+    { label: "Stats",  to: "/statistics" },
     { label: "Fanatic",     to: "/fanatic" },
     { label: "Rooms",       to: "/rooms" },
     { label: "Leaderboard", to: "/ranking" },

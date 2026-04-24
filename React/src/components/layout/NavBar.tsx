@@ -8,11 +8,13 @@ const PRIMARY_LINKS = [
     { to: "/",           label: "Home" },
     { to: "/shop",       label: "Shop" },
     { to: "/events",     label: "Events" },
-    { to: "/statistics", label: "Statistics" },
+    { to: "/stats",      label: "Stats" },
+    { to: "/legacy",     label: "Legacy" },
     { to: "/fanatic",    label: "Fanatic" },
     { to: "/rooms",      label: "Rooms" },
     { to: "/ranking",    label: "Leaderboard" },
 ];
+
 
 export default function NavBar() {
     const { user } = useProfile();
