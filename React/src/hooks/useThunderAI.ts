@@ -3,12 +3,14 @@ import { supabase } from "../lib/supabaseClient";
 import { postMessageToThunderAI } from "../lib/thunderAI";
 
 export type ThunderConversationMessage = {
+  id: number;
   content: string;
   is_user: boolean;
   created_at: string;
 };
 
 type ThunderConversationRow = {
+  id: number;
   content: string;
   role: string;
   created_at: string;
@@ -39,7 +41,8 @@ export function useMessages(options?: UseThunderAIOptions) {
 
       const { data, error } = await supabase
         .from("thunder_conversations")
-        .select("content, role, created_at");
+        .select("id, content, role, created_at")
+        .order("created_at", { ascending: true });
 
       if (error) {
         throw error;
@@ -49,6 +52,7 @@ export function useMessages(options?: UseThunderAIOptions) {
         (data as ThunderConversationRow[] | null)?.map(
           (row) =>
             ({
+              id: row.id,
               content: row.content,
               is_user: row.role === "user",
               created_at: row.created_at,

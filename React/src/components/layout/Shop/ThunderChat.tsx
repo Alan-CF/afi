@@ -5,6 +5,7 @@ import { useMessages, usePostMessage } from "../../../hooks/useThunderAI";
 import { useShopProductsByIds } from "../../../hooks/useShopProducts";
 import ChatProductCarrousel from "../../ui/shop/ChatProductCarrousel";
 import type { ProductRecomendation } from "../../ui/shop/ChatProductCarrousel";
+import { TypingIndicator } from "../../ui/TypingIndicator";
 import type { PricedProduct } from "../../../hooks/useShopProducts";
 
 interface ThunderChatProps {
@@ -123,6 +124,8 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
   } = usePostMessage();
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [messageDraft, setMessageDraft] = useState("");
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [isWaitingForReply, setIsWaitingForReply] = useState(false);
 
   const handleSendMessage = async () => {
     const trimmedMessage = messageDraft.trim();
@@ -131,14 +134,22 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
       return;
     }
 
+    setPendingMessage(trimmedMessage);
+    setIsWaitingForReply(true);
+    setMessageDraft("");
+
     const wasPosted = await postMessage(trimmedMessage);
 
     if (!wasPosted) {
+      setPendingMessage(null);
+      setIsWaitingForReply(false);
+      setMessageDraft(trimmedMessage);
       return;
     }
 
-    setMessageDraft("");
     await getLastMessages();
+    setPendingMessage(null);
+    setIsWaitingForReply(false);
   };
 
   useEffect(() => {
@@ -152,7 +163,13 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
     }
 
     container.scrollTop = container.scrollHeight;
-  }, [messages, messagesLoading, messagesError]);
+  }, [
+    messages,
+    pendingMessage,
+    isWaitingForReply,
+    messagesLoading,
+    messagesError,
+  ]);
 
   return (
     <aside className="absolute inset-y-0 right-0 z-40 w-full border-l border-secondary/20 bg-white py-3 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[30rem] lg:max-w-none lg:shadow-none">
@@ -185,7 +202,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
           ref={messagesContainerRef}
           className="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-1"
         >
-          {messagesLoading ? (
+          {messagesLoading && messages.length === 0 && !pendingMessage ? (
             <div className="flex h-full items-center justify-center py-10">
               <div
                 className="h-7 w-7 animate-spin rounded-full border-4 border-gray-200 border-t-secondary"
@@ -193,18 +210,30 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
                 aria-label="Loading messages"
               />
             </div>
-          ) : messagesError ? (
+          ) : messagesError && messages.length === 0 && !pendingMessage ? (
             <div className="flex h-full items-center justify-center py-10">
               <p className="max-w-xs text-center font-lato text-sm text-red-600">
                 Error loading messages. Please try again.
               </p>
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <ChatBubble key={idx} isUser={msg.is_user}>
-                <ParsedMessage content={msg.content} />
-              </ChatBubble>
-            ))
+            <>
+              {messages.map((msg) => (
+                <ChatBubble key={msg.id} isUser={msg.is_user}>
+                  <ParsedMessage content={msg.content} />
+                </ChatBubble>
+              ))}
+              {pendingMessage ? (
+                <ChatBubble key="pending-user" isUser>
+                  <ParsedMessage content={pendingMessage} />
+                </ChatBubble>
+              ) : null}
+              {isWaitingForReply ? (
+                <ChatBubble key="pending-typing" isUser={false}>
+                  <TypingIndicator />
+                </ChatBubble>
+              ) : null}
+            </>
           )}
         </div>
 
@@ -215,14 +244,14 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
             void handleSendMessage();
           }}
         >
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
+          <div className="flex items-end align-center gap-2">
+            <textarea
               value={messageDraft}
               onChange={(event) => setMessageDraft(event.target.value)}
               placeholder="Ask ThunderAI..."
               disabled={postingMessage}
-              className="min-w-0 flex-1 px-4 font-lato text-sm outline-none transition-colors focus:border-secondary"
+              rows={1}
+              className="min-w-0 flex-1 resize-none overflow-y-auto px-4  font-lato text-sm leading-5 outline-none [field-sizing:content] max-h-40 transition-colors focus:border-secondary"
             />
             <button
               type="submit"
