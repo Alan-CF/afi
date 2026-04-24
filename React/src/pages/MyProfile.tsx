@@ -9,7 +9,7 @@ import {
   TrophyIcon,
   ClockIcon,
   PencilIcon,
-  CheckIcon
+  CheckIcon,
 } from "@heroicons/react/24/solid";
 
 import {
@@ -20,44 +20,47 @@ import {
 } from "@heroicons/react/24/outline";
 
 function getLeague(coins: number): { name: string; emoji: string } {
-  if (coins <= 5000)  return { name: "Bronze", emoji: "🥉" };
-  if (coins <= 10000) return { name: "Silver",  emoji: "🥈" };
-  if (coins <= 15000) return { name: "Gold",    emoji: "🥇" };
+  if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
+  if (coins <= 10000) return { name: "Silver",   emoji: "🥈" };
+  if (coins <= 15000) return { name: "Gold",     emoji: "🥇" };
   if (coins <= 20000) return { name: "Sapphire", emoji: "♦️" };
   return { name: "Diamond", emoji: "💎" };
 }
 
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
-  const handle = user?.username ?? "username";
   const league = getLeague(user?.fanatic_coins ?? 0);
 
-  const [aboutText, setAboutText] = useState<string>("Let us get to know you! Write a short bio about yourself.");
-  useEffect(() => {
-    if (user?.caption) {
-      setAboutText(user.caption);
-    }
-  }, [user]);
+  /* ── About me ── */
+  const [aboutText, setAboutText] = useState<string>(
+    "Let us get to know you! Write a short bio about yourself."
+  );
   const [isEditing, setIsEditing] = useState(false);
 
+  useEffect(() => {
+    if (user?.caption) setAboutText(user.caption);
+  }, [user]);
+
+  const handleEditSave = async () => {
+    if (isEditing) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase
+        .from("profiles")
+        .update({ caption: aboutText })
+        .eq("id", authUser?.id ?? "");
+      setIsEditing(false);
+    } else {
+      setIsEditing(true);
+    }
+  };
+
+  /* ── Name ── */
   const [nameText, setNameText] = useState<string>("");
   const [isEditingName, setIsEditingName] = useState(false);
 
   useEffect(() => {
     if (user?.name) setNameText(user.name);
   }, [user]);
-
-  const handleEditSave = async () => {
-    if (isEditing) {
-      await supabase
-        .from("profiles")
-        .update({ caption: aboutText })
-        .eq("id", (await supabase.auth.getUser()).data.user?.id ?? "");
-      setIsEditing(false);
-    } else {
-      setIsEditing(true);
-    }
-  };
 
   const handleEditName = async () => {
     if (isEditingName) {
@@ -72,6 +75,61 @@ export default function MyProfile() {
     }
   };
 
+  /* ── Username ── */
+  const [usernameText, setUsernameText] = useState<string>("");
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameLoading, setUsernameLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.username) setUsernameText(user.username);
+  }, [user]);
+
+  const handleEditUsername = async () => {
+    if (isEditingUsername) {
+      const trimmed = usernameText.trim();
+
+      if (!trimmed) {
+        setUsernameError("Username cannot be empty.");
+        return;
+      }
+
+      if (trimmed === user?.username) {
+        setIsEditingUsername(false);
+        setUsernameError(null);
+        return;
+      }
+
+      setUsernameLoading(true);
+
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", trimmed)
+        .maybeSingle();
+
+      if (existing) {
+        setUsernameError("That username is already taken. Please choose another.");
+        setUsernameLoading(false);
+        return;
+      }
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase
+        .from("profiles")
+        .update({ username: trimmed })
+        .eq("id", authUser?.id ?? "");
+
+      await refreshProfile();
+      setIsEditingUsername(false);
+      setUsernameError(null);
+      setUsernameLoading(false);
+    } else {
+      setUsernameError(null);
+      setIsEditingUsername(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--color-background)] text-text font-[family-name:var(--font-lato)]">
       <NavBar />
@@ -82,7 +140,7 @@ export default function MyProfile() {
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
 
-            {/* Header azul — avatar + nombre */}
+            {/* Header azul — avatar + nombre + username */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
               <div className="mb-3">
                 <AvatarUpload
@@ -91,6 +149,8 @@ export default function MyProfile() {
                   onUploadSuccess={() => refreshProfile()}
                 />
               </div>
+
+              {/* Name */}
               <div className="flex items-center gap-2 mb-1">
                 {isEditingName ? (
                   <input
@@ -114,7 +174,42 @@ export default function MyProfile() {
                   }
                 </button>
               </div>
-              <p className="text-sm text-white/80">@{handle}</p>
+
+              {/* Username */}
+              <div className="flex items-center gap-1">
+                {isEditingUsername ? (
+                  <input
+                    type="text"
+                    value={usernameText}
+                    onChange={(e) => {
+                      setUsernameText(e.target.value);
+                      setUsernameError(null);
+                    }}
+                    maxLength={30}
+                    className="bg-transparent border-b border-white/50 text-sm text-white/80 outline-none text-center w-36 mb-1"
+                    autoFocus
+                    disabled={usernameLoading}
+                  />
+                ) : (
+                  <p className="text-sm text-white/80">@{usernameText}</p>
+                )}
+                <button
+                  className="p-1 rounded-full hover:bg-white/10 transition-colors"
+                  onClick={handleEditUsername}
+                  disabled={usernameLoading}
+                >
+                  {isEditingUsername
+                    ? <CheckIcon className="h-3 w-3 text-white/70" />
+                    : <PencilIcon className="h-3 w-3 text-white/50" />
+                  }
+                </button>
+              </div>
+
+              {usernameError && (
+                <p className="mt-1 text-[12px] text-red-300 font-medium  text-center">
+                  {usernameError}
+                </p>
+              )}
             </div>
 
             {/* Métricas */}
@@ -124,7 +219,7 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{user?.streak ?? 0}</p>
+                  <p className="text-xl font-extrabold text-secondary">{(user?.streak ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Streak</p>
                 </div>
 
@@ -132,24 +227,24 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <StarIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{user?.fanatic_coins ?? 0}</p>
+                  <p className="text-xl font-extrabold text-secondary">{(user?.fanatic_coins ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
                 </div>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                  <TrophyIcon className="h-5 w-5 text-white" />
+                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                    <TrophyIcon className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="text-xl font-extrabold text-secondary">{league.emoji}</p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">{league.name}</p>
                 </div>
-                <p className="text-xl font-extrabold text-secondary">{league.emoji}</p>
-                <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">{league.name}</p>
-              </div>
               </div>
             </div>
 
           </div>
         </section>
 
-        {/* About me + achievements (para vista en computadora) */}
+        {/* About me + Achievements */}
         <div className="flex flex-col md:flex-row gap-5 mb-5">
 
           {/* About me */}
@@ -180,9 +275,9 @@ export default function MyProfile() {
                 )}
               </div>
             </section>
-            {isEditing && aboutText.length >= 200 ? (
+            {isEditing && aboutText.length >= 200 && (
               <p className="mt-2 text-xs font-medium text-red-500">There's a 200 character limit.</p>
-            ) : null}
+            )}
           </div>
 
           {/* Achievements */}
@@ -220,14 +315,12 @@ export default function MyProfile() {
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4">
           <div className="flex flex-col gap-3">
             {(() => {
-              const item = [
-                {
-                  title: "Daily login",
-                  subtitle: "Welcome back to AFI · 2/27/2026",
-                  points: "+10",
-                  icon: <ClockIcon className="h-5 w-5 text-gray-400" />,
-                },
-              ][0]; {/* Para mostrar el mas reciente */}
+              const item = {
+                title: "Daily login",
+                subtitle: "Welcome back to AFI · 2/27/2026",
+                points: "+10",
+                icon: <ClockIcon className="h-5 w-5 text-gray-400" />,
+              };
               return (
                 <div className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3 w-full">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e0e6f0]">
