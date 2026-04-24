@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Rail from "./Rail";
 import { useRoomsPreview } from "../../hooks/useRoomsPreview";
 import type { RoomCardData } from "../../hooks/useRooms";
 
@@ -7,7 +8,7 @@ function RoomRailCard({ room, onClick }: { room: RoomCardData; onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex-shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group relative shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       aria-label={room.title}
     >
       <div
@@ -15,21 +16,15 @@ function RoomRailCard({ room, onClick }: { room: RoomCardData; onClick: () => vo
         style={{ backgroundColor: room.accent ?? "#1D428A" }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-
       {room.status === "live" && (
         <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-destructive px-2 py-1 font-lato text-[0.6rem] font-black uppercase tracking-wider text-white">
           <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
           live
         </span>
       )}
-
       <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="font-anton text-2xl text-white lowercase leading-tight line-clamp-1">
-          {room.title}
-        </h3>
-        <p className="font-lato text-xs uppercase tracking-wider text-white/50 mt-1">
-          {room.members}
-        </p>
+        <h3 className="font-anton text-2xl text-white leading-tight line-clamp-1">{room.title}</h3>
+        <p className="font-lato text-xs uppercase tracking-wider text-white/50 mt-1">{room.members}</p>
       </div>
     </button>
   );
@@ -40,14 +35,12 @@ function CreateRoomCard({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex-shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 hover:border-secondary transition-colors text-left focus:outline-none"
+      className="group shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 hover:border-secondary transition-colors focus:outline-none flex items-center justify-center"
       aria-label="Create a room"
     >
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="font-anton text-2xl text-text-light lowercase group-hover:text-secondary transition-colors">
-          create a room →
-        </span>
-      </div>
+      <span className="font-anton text-2xl text-text-light group-hover:text-secondary transition-colors">
+        Create a Room →
+      </span>
     </button>
   );
 }
@@ -57,34 +50,24 @@ export default function RoomsPreview() {
   const { rooms, loading } = useRoomsPreview(4);
 
   return (
-    <section aria-label="Rooms">
-      {loading && (
-        <div className="flex gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex-shrink-0 w-[280px] h-[200px] animate-pulse rounded-2xl bg-gray-200" />
-          ))}
-        </div>
-      )}
-
-      {!loading && (
-        <div className="-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
-            {rooms.map((room) => (
-              <div key={room.id} className="snap-start">
+    <Rail title="Your Rooms" seeAllTo="/rooms">
+      {loading
+        ? Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="shrink-0 w-[280px] h-[200px] animate-pulse rounded-2xl bg-gray-200" />
+          ))
+        : [
+            ...rooms.map((room) => (
+              <div key={room.id} className="snap-start shrink-0">
                 <RoomRailCard
                   room={room}
-                  onClick={() =>
-                    navigate(room.status === "live" ? `/rooms/${room.id}` : "/rooms")
-                  }
+                  onClick={() => navigate(room.status === "live" ? `/rooms/${room.id}` : "/rooms")}
                 />
               </div>
-            ))}
-            <div className="snap-start">
+            )),
+            <div key="create" className="snap-start shrink-0">
               <CreateRoomCard onClick={() => navigate("/rooms/create")} />
-            </div>
-          </div>
-        </div>
-      )}
-    </section>
+            </div>,
+          ]}
+    </Rail>
   );
 }

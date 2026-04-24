@@ -16,8 +16,8 @@ import { useProfile } from "../hooks/useProfile";
 function SectionTitle({ title, to }: { title: string; to?: string }) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-baseline justify-between mb-4">
-      <h2 className="font-anton text-3xl md:text-4xl text-secondary lowercase tracking-tight">
+    <div className="flex items-baseline justify-between mb-4 md:mb-6">
+      <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
         {title}
       </h2>
       {to && (
@@ -37,17 +37,17 @@ function SectionTitle({ title, to }: { title: string; to?: string }) {
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: <UserGroupIcon className="h-7 w-7" />, label: "Join room", onClick: () => navigate("/rooms") },
-    { icon: <BoltIcon className="h-7 w-7" />, label: "Predict", onClick: () => navigate("/rooms") },
+    { icon: <UserGroupIcon className="h-6 w-6" />, label: "Join Room", onClick: () => navigate("/rooms") },
+    { icon: <BoltIcon className="h-6 w-6" />, label: "Predict", onClick: () => navigate("/rooms") },
     {
-      icon: <LinkIcon className="h-7 w-7" />,
-      label: "invite",
+      icon: <LinkIcon className="h-6 w-6" />,
+      label: "Invite",
       onClick: () => void navigator.clipboard.writeText(`${window.location.origin}/rooms`).catch(() => {}),
     },
   ];
 
   return (
-    <div className="flex justify-around md:justify-start md:gap-16">
+    <div className="grid grid-cols-3 gap-4 md:gap-6">
       {actions.map((a) => (
         <button
           key={a.label}
@@ -58,7 +58,7 @@ function QuickActions() {
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-secondary transition-colors group-hover:bg-primary group-hover:text-white">
             {a.icon}
           </span>
-          <span className="font-anton text-sm text-secondary lowercase group-hover:text-primary transition-colors">
+          <span className="font-lato text-sm font-bold text-secondary group-hover:text-primary transition-colors">
             {a.label}
           </span>
         </button>
@@ -78,57 +78,51 @@ export default function Home() {
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8">
 
         {isLoggedIn && (
-          <div className="pt-4 pb-2">
-            <GreetingStrip />
-          </div>
+          <GreetingStrip />
         )}
 
-        <div className="mt-10">
+        <div className={isLoggedIn ? "mt-6" : "mt-10"}>
           <EventsSlider />
         </div>
 
-        <div className="mt-20 md:mt-24">
+        <div className="mt-16 md:mt-20">
           <QuickActions />
         </div>
 
-        <div className="mt-20 md:mt-24">
+        <div className="mt-16 md:mt-20">
           <FanaticTodayCard />
         </div>
 
-        <div className="mt-20 md:mt-24">
+        <div className="mt-16 md:mt-20">
           <QuizOfTheWeekCard />
         </div>
 
-        <div className="mt-20 md:mt-24 grid grid-cols-1 gap-16 lg:grid-cols-2">
-          <div>
-            <SectionTitle title="Rooms" to="/rooms" />
-            <RoomsPreview />
-          </div>
+        <div className="mt-16 md:mt-20 grid grid-cols-1 gap-16 lg:grid-cols-2">
+          <RoomsPreview />
           <div>
             <SectionTitle title="Leaderboard" to="/ranking" />
             <LeaderboardPreview />
           </div>
         </div>
 
-        <div className="mt-20 md:mt-24">
-          <SectionTitle title="News" />
+        <div className="mt-16 md:mt-20">
           <NewsSection />
         </div>
 
-        <div className="mt-20 md:mt-24">
-          <SectionTitle title="Shop" to="/shop" />
+        <div className="mt-16 md:mt-20">
+          <SectionTitle title="Warriors Shop" to="/shop" />
           <ShopSpotlight />
         </div>
 
         {!isLoggedIn && hasLoadedOnce && (
-          <div className="mt-20 md:mt-24">
+          <div className="mt-16 md:mt-20">
             <CTABanner />
           </div>
         )}
 
       </main>
 
-      <div className="mt-20 md:mt-24">
+      <div className="mt-16 md:mt-20">
         <Footer />
       </div>
     </div>
