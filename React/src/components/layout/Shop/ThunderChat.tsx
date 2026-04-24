@@ -1,12 +1,12 @@
-import { XMarkIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState } from "react";
-import ChatBubble from "../../ui/ChatBubble";
-import { useMessages, usePostMessage } from "../../../hooks/useThunderAI";
-import { useShopProductsByIds } from "../../../hooks/useShopProducts";
-import ChatProductCarrousel from "../../ui/shop/ChatProductCarrousel";
-import type { ProductRecomendation } from "../../ui/shop/ChatProductCarrousel";
-import { TypingIndicator } from "../../ui/TypingIndicator";
-import type { PricedProduct } from "../../../hooks/useShopProducts";
+import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { useEffect, useRef, useState } from 'react';
+import ChatBubble from '../../ui/ChatBubble';
+import { useMessages, usePostMessage } from '../../../hooks/useThunderAI';
+import { useShopProductsByIds } from '../../../hooks/useShopProducts';
+import ChatProductCarrousel from '../../ui/shop/ChatProductCarrousel';
+import type { ProductRecomendation } from '../../ui/shop/ChatProductCarrousel';
+import { TypingIndicator } from '../../ui/TypingIndicator';
+import type { PricedProduct } from '../../../hooks/useShopProducts';
 
 interface ThunderChatProps {
   onClose?: () => void;
@@ -27,14 +27,14 @@ type ThunderJsonReply = {
 
 function handlePricedProducts(
   recommendations: ThunderRecommendation[],
-  pricedProducts: PricedProduct[],
+  pricedProducts: PricedProduct[]
 ): ProductRecomendation[] {
   if (recommendations.length === 0 || pricedProducts.length === 0) {
     return [];
   }
 
   const productsById = new Map(
-    pricedProducts.map((product) => [product.id, product]),
+    pricedProducts.map((product) => [product.id, product])
   );
 
   return recommendations
@@ -58,7 +58,7 @@ function ParsedMessage({ content }: { content: string }) {
     <p className="whitespace-pre-line font-lato text-sm">{text}</p>
   );
 
-  let parsedReply: ThunderJsonReply["reply"] | null = null;
+  let parsedReply: ThunderJsonReply['reply'] | null = null;
 
   try {
     const parsed = JSON.parse(content) as ThunderJsonReply;
@@ -79,26 +79,26 @@ function ParsedMessage({ content }: { content: string }) {
   }));
 
   const productIds = recommendationProducts.map(
-    (product) => product.product_id,
+    (product) => product.product_id
   );
 
-  console.log("productIds extracted from message:", productIds);
+  console.log('productIds extracted from message:', productIds);
   const { products: pricedProducts } = useShopProductsByIds(
-    productIds.length > 0 ? productIds : null,
+    productIds.length > 0 ? productIds : null
   );
-  console.log("Priced products fetched for recommendations:", pricedProducts);
+  console.log('Priced products fetched for recommendations:', pricedProducts);
 
   const mappedRecommendations = handlePricedProducts(
     recommendationProducts,
-    pricedProducts,
+    pricedProducts
   );
 
   console.log(
-    "Mapped recommendations with product details:",
-    mappedRecommendations,
+    'Mapped recommendations with product details:',
+    mappedRecommendations
   );
-  const topMessage = parsedReply.top_message?.trim() ?? "";
-  const bottomMessage = parsedReply.bottom_message?.trim() ?? "";
+  const topMessage = parsedReply.top_message?.trim() ?? '';
+  const bottomMessage = parsedReply.bottom_message?.trim() ?? '';
 
   return (
     <div className="flex flex-col gap-3">
@@ -123,7 +123,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
     error: postingMessageError,
   } = usePostMessage();
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const [messageDraft, setMessageDraft] = useState("");
+  const [messageDraft, setMessageDraft] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [isWaitingForReply, setIsWaitingForReply] = useState(false);
 
@@ -136,7 +136,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
 
     setPendingMessage(trimmedMessage);
     setIsWaitingForReply(true);
-    setMessageDraft("");
+    setMessageDraft('');
 
     const wasPosted = await postMessage(trimmedMessage);
 
