@@ -50,7 +50,7 @@ export default function RoomsPreview() {
   const { rooms, loading } = useRoomsPreview(4);
 
   return (
-    <Rail title="Your Rooms" seeAllTo="/rooms">
+    <Rail title="Your Rooms" seeAllTo="/rooms" edgeBleed={false}>
       {loading
         ? Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="shrink-0 w-[280px] h-[200px] animate-pulse rounded-2xl bg-gray-200" />

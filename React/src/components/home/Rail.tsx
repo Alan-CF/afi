@@ -6,9 +6,10 @@ interface RailProps {
   title: string;
   seeAllTo?: string;
   children: ReactNode;
+  edgeBleed?: boolean;
 }
 
-export default function Rail({ title, seeAllTo, children }: RailProps) {
+export default function Rail({ title, seeAllTo, children, edgeBleed = true }: RailProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -60,14 +61,13 @@ export default function Rail({ title, seeAllTo, children }: RailProps) {
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 right-0 w-20 hidden md:block z-10"
-          style={{
-            background:
-              "linear-gradient(to right, transparent, var(--color-text-light-soft))",
-          }}
+          style={{ background: "linear-gradient(to right, transparent, var(--color-text-light-soft))" }}
         />
         <div
           ref={scrollRef}
-          className="-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+          className={`flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide ${
+            edgeBleed ? "-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8" : ""
+          }`}
         >
           {children}
         </div>

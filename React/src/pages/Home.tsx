@@ -53,9 +53,10 @@ function QuickActions() {
           key={a.label}
           type="button"
           onClick={a.onClick}
-          className="flex flex-col items-center gap-2 group focus:outline-none"
+          className="flex flex-col items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl py-2"
+          
         >
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-secondary transition-colors group-hover:bg-primary group-hover:text-white">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-secondary transition-colors group-hover:bg-primary/20">
             {a.icon}
           </span>
           <span className="font-lato text-sm font-bold text-secondary group-hover:text-primary transition-colors">
