@@ -179,7 +179,7 @@ export default function Statistics() {
     <div className="min-h-screen bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
       <NavBar />
 
-      <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
+      <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
 
         {/* Header */}
         <section className="rounded-2xl bg-secondary overflow-hidden mb-4">
@@ -218,21 +218,21 @@ export default function Statistics() {
           </div>
         </section>
 
-        {/* ERROR */}
+        {/* Error */}
         {error && (
           <div className="rounded-2xl bg-red-50 border border-red-200 p-4 mb-5 text-red-600 text-sm font-semibold">
             {error}
           </div>
         )}
 
-        {/* LOADING */}
+        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="h-10 w-10 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
           </div>
         )}
 
-        {/* ROSTER */}
+        {/* 1. Roster */}
         {!loading && activeTab === "roster" && (
           <div>
             {players.length > 0
@@ -242,7 +242,7 @@ export default function Statistics() {
           </div>
         )}
 
-        {/* GAMES */}
+        {/* 2. Games */}
         {!loading && activeTab === "games" && (
           <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
             <div className="space-y-2.5">
@@ -254,7 +254,7 @@ export default function Statistics() {
           </section>
         )}
 
-        {/* STANDINGS */}
+        {/* Standings */}
         {!loading && activeTab === "standings" && (
           <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
             <div className="space-y-2.5">
