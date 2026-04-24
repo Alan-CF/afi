@@ -22,16 +22,18 @@ export default function QuizOfTheWeekCard() {
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage:
-              "radial-gradient(ellipse at 30% 50%, #2a1a4e 0%, #0d1f3c 100%)",
+            backgroundImage: "radial-gradient(ellipse at 30% 50%, #2a1a4e 0%, #0d1f3c 100%)",
           }}
         />
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
 
       <div className="relative z-10 p-8 md:p-12 flex flex-col gap-4 max-w-lg">
-        <h2 className="font-anton text-5xl md:text-6xl text-white lowercase leading-none">
-          {loading ? "quiz of\nthe week" : (featured?.title ?? "quiz of\nthe week")}
+        <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-primary">
+          Featured Quiz
+        </p>
+        <h2 className="font-anton text-2xl md:text-3xl text-white leading-tight">
+          {loading ? "Quiz of the Week" : (featured?.title ?? "Quiz of the Week")}
         </h2>
         <Button
           variant="primary"

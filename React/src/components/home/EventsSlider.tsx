@@ -7,7 +7,7 @@ export default function EventsSlider() {
 
   if (loading) {
     return (
-      <Rail title="Upcoming Events" seeAllTo="/events">
+      <Rail title="Upcoming Events" seeAllTo="/events" edgeBleed={false}>
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="snap-start shrink-0 w-[280px] h-[320px] animate-pulse rounded-2xl bg-gray-200" />
         ))}
@@ -17,7 +17,7 @@ export default function EventsSlider() {
 
   if (events.length === 0) {
     return (
-      <Rail title="Upcoming Events" seeAllTo="/events">
+      <Rail title="Upcoming Events" seeAllTo="/events" edgeBleed={false}>
         <div className="w-full h-[320px] rounded-2xl bg-gray-100 flex items-center justify-center">
           <p className="font-lato text-sm text-text-light">No upcoming events</p>
         </div>
@@ -26,7 +26,7 @@ export default function EventsSlider() {
   }
 
   return (
-    <Rail title="Upcoming Events" seeAllTo="/events">
+    <Rail title="Upcoming Events" seeAllTo="/events" edgeBleed={false}>
       {events.map((event) => (
         <div key={event.id} className="snap-start shrink-0">
           <EventCard event={event} />

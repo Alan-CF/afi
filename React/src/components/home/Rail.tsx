@@ -24,16 +24,16 @@ export default function Rail({ title, seeAllTo, children, edgeBleed = true }: Ra
     <section aria-label={title}>
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
-          {title}
-          {seeAllTo && (
+          {seeAllTo ? (
             <button
               type="button"
               onClick={() => navigate(seeAllTo)}
-              className="ml-3 inline-block align-middle font-anton text-xl text-secondary hover:text-primary transition-colors"
-              aria-label={`See all ${title}`}
+              className="hover:text-primary transition-colors"
             >
-              →
+              {title}
             </button>
+          ) : (
+            title
           )}
         </h2>
 
@@ -57,20 +57,13 @@ export default function Rail({ title, seeAllTo, children, edgeBleed = true }: Ra
         </div>
       </div>
 
-      <div className="relative">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-20 hidden md:block z-10"
-          style={{ background: "linear-gradient(to right, transparent, var(--color-text-light-soft))" }}
-        />
-        <div
-          ref={scrollRef}
-          className={`flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide ${
-            edgeBleed ? "-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8" : ""
-          }`}
-        >
-          {children}
-        </div>
+      <div
+        ref={scrollRef}
+        className={`flex gap-4 overflow-x-auto pb-2 snap-x snap-proximity scrollbar-hide ${
+          edgeBleed ? "-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8" : ""
+        }`}
+      >
+        {children}
       </div>
     </section>
   );

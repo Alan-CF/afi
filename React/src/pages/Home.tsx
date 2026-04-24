@@ -37,36 +37,47 @@ function SectionTitle({ title, to }: { title: string; to?: string }) {
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: <UserGroupIcon className="h-6 w-6" />, label: "Join Room", onClick: () => navigate("/rooms") },
-    { icon: <BoltIcon className="h-6 w-6" />, label: "Predict", onClick: () => navigate("/rooms") },
+    { icon: <UserGroupIcon className="h-8 w-8" />, label: "Join Room", sub: "Enter a live watch-party", onClick: () => navigate("/rooms") },
+    { icon: <BoltIcon className="h-8 w-8" />, label: "Predict", sub: "Make your picks", onClick: () => navigate("/rooms") },
     {
-      icon: <LinkIcon className="h-6 w-6" />,
+      icon: <LinkIcon className="h-8 w-8" />,
       label: "Invite",
+      sub: "Copy a shareable link",
       onClick: () => void navigator.clipboard.writeText(`${window.location.origin}/rooms`).catch(() => {}),
     },
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4 md:gap-6">
-      {actions.map((a) => (
-        <button
-          key={a.label}
-          type="button"
-          onClick={a.onClick}
-          className="flex flex-col items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl py-2"
-          
-        >
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-secondary transition-colors group-hover:bg-primary/20">
-            {a.icon}
-          </span>
-          <span className="font-lato text-sm font-bold text-secondary group-hover:text-primary transition-colors">
-            {a.label}
-          </span>
-        </button>
-      ))}
+    <div>
+      <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight mb-4 md:mb-6">
+        Quick Actions
+      </h2>
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
+        {actions.map((a) => (
+          <button
+            key={a.label}
+            type="button"
+            onClick={a.onClick}
+            className="group flex flex-col items-center gap-3 rounded-2xl border border-container-border bg-white p-4 md:p-6 text-center shadow-sm hover:border-primary hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <span className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-primary/10 text-secondary group-hover:bg-primary/20 transition-colors">
+              {a.icon}
+            </span>
+            <div>
+              <p className="font-lato text-sm md:text-base font-bold text-secondary group-hover:text-primary transition-colors">
+                {a.label}
+              </p>
+              <p className="font-lato text-xs text-text-light mt-0.5 hidden md:block">
+                {a.sub}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
+
 
 export default function Home() {
   const { user, hasLoadedOnce } = useProfile();

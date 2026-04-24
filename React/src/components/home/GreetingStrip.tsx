@@ -10,13 +10,13 @@ export default function GreetingStrip() {
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <section aria-label="Greeting" className="pt-6 md:pt-8">
-      <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-text-light">
+    <div className="pt-6 md:pt-8">
+      <p className="font-lato text-xs font-bold uppercase tracking-[0.2em] text-text-light">
         {timeLabel}
       </p>
-      <p className="mt-1 font-lato text-lg md:text-xl font-bold text-secondary">
+      <p className="mt-1 font-anton text-2xl md:text-3xl text-secondary leading-tight">
         @{greeting.username}
       </p>
-    </section>
+    </div>
   );
 }
