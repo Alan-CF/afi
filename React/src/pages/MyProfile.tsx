@@ -104,35 +104,8 @@ export default function MyProfile() {
     <div className="min-h-screen bg-[var(--color-background)] text-text font-[family-name:var(--font-lato)]">
       <NavBar />
 
-      <main className="w-full px-4 pb-10 pt-4 md:px-8 lg:px-12">
-        <div className="flex items-center justify-end mb-4 px-1">
-          {!isEditing ? (
-            <button
-              onClick={handleEdit}
-              className="flex items-center gap-1 text-xs font-bold text-secondary"
-            >
-              <PencilIcon className="h-3 w-3" />
-              Edit profile
-            </button>
-          ) : (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleCancel}
-                className="text-xs font-bold text-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-1 text-xs font-bold text-secondary disabled:opacity-50"
-              >
-                <CheckIcon className="h-3 w-3" />
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-          )}
-        </div>
+      <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
+
         {/* Info general */}
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
@@ -227,6 +200,32 @@ export default function MyProfile() {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2 px-1">
               <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">About me</h2>
+              {!isEditing ? (
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-1 text-xs font-bold text-secondary"
+                >
+                  <PencilIcon className="h-3 w-3" />
+                  Edit profile
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleCancel}
+                    className="text-xs font-bold text-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-1 text-xs font-bold text-secondary disabled:opacity-50"
+                  >
+                    <CheckIcon className="h-3 w-3" />
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              )}
             </div>
             <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 h-[calc(100%-28px)] flex items-center">
               <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm px-4 py-3 text-sm text-gray-600 w-full">
