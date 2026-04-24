@@ -18,59 +18,140 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "standings", label: "Standings", icon: <TrophyIcon className="h-4 w-4" /> },
 ];
 
+type SortKey = "pts" | "reb" | "ast" | "gp";
+type SortDir = "asc" | "desc";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+  { key: "gp", label: "GP" },
+];
+
+const POSITIONS = ["G", "F", "C"];
+
 function RosterTable({ players }: { players: PlayerStat[] }) {
+  const [sortKey, setSortKey] = useState<SortKey>("pts");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [posFilter, setPosFilter] = useState<string>("");
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const filtered = players
+    .filter((p) => (posFilter ? p.position === posFilter : true))
+    .sort((a, b) => {
+      const dir = sortDir === "desc" ? -1 : 1;
+      return dir * (Number(a[sortKey]) - Number(b[sortKey]));
+    });
+
   return (
-    <div className="rounded-2xl border border-[var(--color-container-border)] overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-secondary">
-              {/* Sticky columns */}
-              <th className="sticky left-0 z-10 bg-secondary text-left px-3 py-3 text-xs font-bold uppercase tracking-widest text-white/60 w-10"></th>
-              <th className="sticky left-10 z-10 bg-secondary text-left px-2 py-3 text-xs font-bold uppercase tracking-widest text-white/60 whitespace-nowrap">Player</th>
-              {/* Scrollable columns */}
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">GP</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widests text-white/60">PTS</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">REB</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">AST</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">POS</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-container-border)]">
-            {players.map((player, i) => (
-              <tr
-                key={i}
-                className="bg-[var(--color-background)] hover:bg-[var(--color-text-light-soft)] transition-colors"
-              >
-                {/* Sticky columns */}
-                <td className="sticky left-0 z-10 bg-inherit px-3 py-3 text-right">
-                  <span className="text-sm font-extrabold text-[var(--color-secondary)]/60">
-                    #{player.jersey_number}
-                  </span>
-                </td>
-                <td className="sticky left-10 z-10 bg-inherit px-2 py-3">
-                  <p className="font-bold text-sm text-secondary whitespace-nowrap">{player.name}</p>
-                </td>
-                {/* Scrollable columns */}
-                <td className="text-center px-5 py-3">
-                  <p className="text-sm text-gray-500 whitespace-nowrap">{player.gp}</p>
-                </td>
-                <td className="text-center px-5 py-3">
-                  <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.pts}</p>
-                </td>
-                <td className="text-center px-5 py-3">
-                  <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.reb}</p>
-                </td>
-                <td className="text-center px-5 py-3">
-                  <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.ast}</p>
-                </td>
-                <td className="text-center px-5 py-3">
-                  <p className="text-sm text-gray-400 uppercase whitespace-nowrap">{player.position}</p>
-                </td>
+    <div className="space-y-3">
+      {/* Controles con scroll */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {SORT_OPTIONS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => handleSort(key)}
+            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+              sortKey === key
+                ? "bg-secondary text-white border-secondary"
+                : "bg-transparent text-gray-400 border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            {label}
+            {sortKey === key && (
+              <span className="text-[10px]">{sortDir === "desc" ? "↓" : "↑"}</span>
+            )}
+          </button>
+        ))}
+
+        <span className="shrink-0 w-px h-4 bg-gray-200" />
+
+        {/* Filtro de posición */}
+        <select
+          value={posFilter}
+          onChange={(e) => setPosFilter(e.target.value)}
+          className="shrink-0 text-xs font-bold rounded-full px-3 py-1.5 border border-gray-200 bg-transparent text-gray-400 cursor-pointer"
+        >
+          <option value="">Position</option>
+          {POSITIONS.map((pos) => (
+            <option key={pos} value={pos}>{pos}</option>
+          ))}
+        </select>
+
+        <span className="shrink-0 text-xs text-gray-400 ml-auto pl-2">
+          {filtered.length} players
+        </span>
+      </div>
+
+      {/* Tabla*/}
+      <div className="rounded-2xl border border-[var(--color-container-border)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-secondary">
+                <th className="sticky left-0 z-10 bg-secondary text-left px-3 py-3 text-xs font-bold uppercase tracking-widest text-white/60 w-10"></th>
+                <th className="sticky left-10 z-10 bg-secondary text-left px-2 py-3 text-xs font-bold uppercase tracking-widest text-white/60 whitespace-nowrap">
+                  Player
+                </th>
+                {(["pts", "reb", "ast", "gp"] as SortKey[]).map((key) => (
+                  <th
+                    key={key}
+                    onClick={() => handleSort(key)}
+                    className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60 cursor-pointer select-none hover:text-white/90 transition-colors"
+                  >
+                    {key.toUpperCase()}
+                    {sortKey === key && (
+                      <span className="ml-0.5 text-[10px]">{sortDir === "desc" ? "↓" : "↑"}</span>
+                    )}
+                  </th>
+                ))}
+                <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">
+                  POS
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-container-border)]">
+              {filtered.map((player, i) => (
+                <tr
+                  key={i}
+                  className="bg-[var(--color-background)] hover:bg-[var(--color-text-light-soft)] transition-colors"
+                >
+                  <td className="sticky left-0 z-10 bg-inherit px-3 py-3 text-right">
+                    <span className="text-sm font-extrabold text-[var(--color-secondary)]/60">
+                      #{player.jersey_number}
+                    </span>
+                  </td>
+                  <td className="sticky left-10 z-10 bg-inherit px-2 py-3">
+                    <p className="font-bold text-sm text-secondary whitespace-nowrap">{player.name}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.pts}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.reb}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.ast}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm text-gray-500 whitespace-nowrap">{player.gp}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm text-gray-400 uppercase whitespace-nowrap">{player.position}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
