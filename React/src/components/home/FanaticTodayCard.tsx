@@ -20,44 +20,57 @@ export default function FanaticTodayCard() {
   return (
     <section
       aria-label="Fanatic Today"
-      className="flex h-full flex-col gap-3 rounded-3xl border-2 border-gray-100 bg-white p-5 shadow-sm"
+      className="relative overflow-hidden rounded-3xl bg-secondary text-white min-h-[320px] flex flex-col justify-end p-7"
     >
-      <header className="flex items-center justify-between">
-        <p className="font-lato text-xs uppercase tracking-[0.16em] text-text-light">
-          Daily challenge
-        </p>
-        {category && (
-          <span className="rounded-full bg-primary px-3 py-1 font-lato text-[0.6rem] font-black uppercase tracking-[0.14em] text-secondary">
-            {category}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 90% 10%, #FFC72C 0%, transparent 55%)",
+        }}
+      />
+
+      <div className="relative z-10 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <span className="font-lato text-xs font-black uppercase tracking-[0.2em] text-primary">
+            Daily Challenge
           </span>
-        )}
-      </header>
+          {category && (
+            <span className="rounded-full bg-primary/20 border border-primary/40 px-3 py-1 font-lato text-[0.6rem] font-black uppercase tracking-[0.14em] text-primary">
+              {category}
+            </span>
+          )}
+        </div>
 
-      <h2 className="font-anton text-3xl text-secondary">Fanatic Today</h2>
+        <h2 className="font-anton text-4xl uppercase leading-tight">
+          Fanatic Today
+        </h2>
 
-      <div className="rounded-2xl bg-text-light-soft p-4">
-        {!hasActiveGame ? (
-          <p className="font-lato italic text-text-light">
-            No active Fanatic game right now — check back soon.
-          </p>
-        ) : latestRiddle ? (
-          <p className="font-lato italic text-text line-clamp-3">"{latestRiddle}"</p>
-        ) : (
-          <p className="font-lato italic text-text-light">Loading today's clue…</p>
-        )}
+        <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+          {!hasActiveGame ? (
+            <p className="font-lato text-sm italic text-white/60">
+              No active game right now — check back soon.
+            </p>
+          ) : latestRiddle ? (
+            <p className="font-lato text-sm italic text-white/90 line-clamp-3">
+              "{latestRiddle}"
+            </p>
+          ) : (
+            <p className="font-lato text-sm italic text-white/60">Loading today's clue…</p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="font-lato text-xs text-white/50">
+            {hasAuth && triesLeft !== null
+              ? `${triesLeft} tries left today`
+              : "Log in to play"}
+          </span>
+          <Button variant="primary" onClick={() => navigate("/fanatic")}>
+            Play Now
+          </Button>
+        </div>
       </div>
-
-      <div className="font-lato text-xs text-text-light">
-        {hasAuth && triesLeft !== null ? (
-          <span><strong className="text-secondary">{triesLeft}</strong> tries left today</span>
-        ) : (
-          <span>Log in to play</span>
-        )}
-      </div>
-
-      <Button variant="primary" onClick={() => navigate("/fanatic")}>
-        Play Fanatic
-      </Button>
     </section>
   );
 }
