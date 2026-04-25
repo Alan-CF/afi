@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bars3Icon, ShoppingBagIcon, UserCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useProfile } from "../../hooks/useProfile";
@@ -15,16 +15,26 @@ const PRIMARY_LINKS = [
     { to: "/ranking",    label: "Leaderboard" },
 ];
 
-
 export default function NavBar() {
     const { user } = useProfile();
     const navigate = useNavigate();
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+    useEffect(() => {
+        document.body.style.overflow = isMenuOpen ? "hidden" : "";
+        return () => { document.body.style.overflow = ""; };
+    }, [isMenuOpen]);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setIsMenuOpen(false); };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, []);
+
     return (
         <>
-            <nav className="flex items-center justify-between gap-4 px-4 py-3 bg-secondary text-white md:px-6">
+            <nav className="sticky top-0 z-40 flex items-center justify-between gap-4 px-4 py-3 bg-secondary text-white md:px-6">
                 <button onClick={() => navigate("/")} className="shrink-0 cursor-pointer" aria-label="Go to home">
                     <img src="/logo.png" alt="AFI" className="h-10" />
                 </button>
