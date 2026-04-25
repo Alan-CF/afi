@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { UserGroupIcon, BoltIcon, LinkIcon, ChartBarIcon } from "@heroicons/react/24/solid";
 import NavBar from "../components/layout/NavBar";
+import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
 import Footer from "../components/layout/Footer";
 import GreetingStrip from "../components/home/GreetingStrip";
 import EventsSlider from "../components/home/EventsSlider";
@@ -116,6 +117,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <NavBar />
+      <ScoreboardRibbon />
 
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pb-16 md:pb-20">
 
