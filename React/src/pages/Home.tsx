@@ -52,15 +52,15 @@ function QuickActions() {
       <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight mb-4 md:mb-6">
         Quick Actions
       </h2>
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 gap-3 md:gap-6">
         {actions.map((a) => (
           <button
             key={a.label}
             type="button"
             onClick={a.onClick}
-            className="group flex flex-col items-center gap-3 rounded-2xl border border-container-border bg-white p-4 md:p-6 text-center shadow-sm hover:border-primary hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="group flex flex-col items-center gap-3 rounded-2xl border border-container-border bg-white p-4 md:p-8 text-center shadow-sm hover:border-primary hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <span className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-primary/10 text-secondary group-hover:bg-primary/20 transition-colors">
+            <span className="flex h-14 w-14 md:h-20 md:w-20 items-center justify-center rounded-2xl bg-primary/10 text-secondary group-hover:bg-primary/20 transition-colors">
               {a.icon}
             </span>
             <div>
@@ -90,18 +90,14 @@ function StatsPromo() {
     >
       <div
         className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: "radial-gradient(ellipse at 80% 30%, #1a3a6e 0%, #0a1628 100%)",
-        }}
+        style={{ backgroundImage: "radial-gradient(ellipse at 80% 30%, #1a3a6e 0%, #0a1628 100%)" }}
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent" />
       <div className="absolute top-6 right-6 md:top-8 md:right-8 opacity-10 group-hover:opacity-20 transition-opacity">
         <ChartBarIcon className="h-32 w-32 md:h-48 md:w-48 text-primary" />
       </div>
       <div className="relative z-10 p-8 md:p-12 flex flex-col gap-3 max-w-lg">
-        <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-primary">
-          Season Stats
-        </p>
+        <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-primary">Season Stats</p>
         <h2 className="font-anton text-2xl md:text-3xl text-white leading-tight">
           Analyze the 2025–26 Warriors season
         </h2>
@@ -121,11 +117,9 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <NavBar />
 
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pb-16 md:pb-20">
 
-        {isLoggedIn && (
-          <GreetingStrip />
-        )}
+        {isLoggedIn && <GreetingStrip />}
 
         <div className={isLoggedIn ? "mt-6" : "mt-10"}>
           <EventsSlider />
@@ -143,7 +137,7 @@ export default function Home() {
           <QuizOfTheWeekCard />
         </div>
 
-        <div className="mt-16 md:mt-20 grid grid-cols-1 gap-16 lg:grid-cols-2">
+        <div className="mt-16 md:mt-20 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
           <RoomsPreview />
           <div>
             <SectionTitle title="Leaderboard" />
@@ -172,9 +166,7 @@ export default function Home() {
 
       </main>
 
-      <div className="mt-16 md:mt-20">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }

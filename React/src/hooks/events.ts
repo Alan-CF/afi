@@ -1,5 +1,5 @@
-import { fetchUpcomingWarriorsGames, fetchLiveWarriorsGame, type WarriorsGame } from "./espnApi";
 import { fetchUpcomingFanEvents, type FanEvent } from "./fanEvents";
+import { fetchUpcomingGamesFromStats, type Game } from "../lib/statisticsApi";
 
 export type EventType = "game" | "fan";
 
@@ -12,41 +12,34 @@ export interface UnifiedEvent {
   venue: string | null;
   imageUrl: string | null;
   meta: {
-    opponentAbbr?: string;
-    opponentLogo?: string;
-    warriorsLogo?: string;
     isHome?: boolean;
-    broadcast?: string | null;
     isLive?: boolean;
-    warriorsScore?: number;
-    opponentScore?: number;
-    clock?: string;
-    period?: number;
+    warriorsScore?: number | null;
+    opponentScore?: number | null;
+    status?: string;
     goingCount?: number;
     fanEventId?: number;
   };
 }
 
-function gameToUnified(g: WarriorsGame, isLive: boolean): UnifiedEvent {
+function gameToUnified(g: Game): UnifiedEvent {
+  const abbr = g.opponent.split(" ").pop() ?? g.opponent;
+  const isLive = g.status === "live" || g.status === "in_progress";
+
   return {
-    id: `game-${g.eventId}`,
+    id: `game-${g.date}-${g.opponent.replace(/\s/g, "")}`,
     type: "game",
-    title: g.isHome ? `Warriors vs ${g.opponentAbbr}` : `Warriors @ ${g.opponentAbbr}`,
-    subtitle: g.opponentName,
-    startAt: g.startAt,
-    venue: g.venue,
+    title: g.is_home ? `Warriors vs ${abbr}` : `Warriors @ ${abbr}`,
+    subtitle: g.opponent,
+    startAt: g.date,
+    venue: null,
     imageUrl: null,
     meta: {
-      opponentAbbr: g.opponentAbbr,
-      opponentLogo: g.opponentLogo,
-      warriorsLogo: g.warriorsLogo,
-      isHome: g.isHome,
-      broadcast: g.broadcast,
+      isHome: g.is_home,
       isLive,
-      warriorsScore: g.warriorsScore,
-      opponentScore: g.opponentScore,
-      clock: g.clock,
-      period: g.period,
+      warriorsScore: g.warriors_score,
+      opponentScore: g.opponent_score,
+      status: g.status,
     },
   };
 }
@@ -76,14 +69,13 @@ export async function fetchUpcomingEvents(
   const limit = options.limit ?? 4;
   const types = options.types ?? ["game", "fan"];
 
-  const [games, fanEvents, liveGame] = await Promise.all([
-    types.includes("game") ? fetchUpcomingWarriorsGames(30, options.signal) : Promise.resolve([]),
-    types.includes("fan")  ? fetchUpcomingFanEvents(20)                     : Promise.resolve([]),
-    types.includes("game") ? fetchLiveWarriorsGame(options.signal)          : Promise.resolve(null),
+  const [games, fanEvents] = await Promise.all([
+    types.includes("game") ? fetchUpcomingGamesFromStats() : Promise.resolve([]),
+    types.includes("fan")  ? fetchUpcomingFanEvents(20)   : Promise.resolve([]),
   ]);
 
   const combined = [
-    ...games.map((g) => gameToUnified(g, liveGame?.eventId === g.eventId)),
+    ...games.map(gameToUnified),
     ...fanEvents.map(fanEventToUnified),
   ];
 
