@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { setFanEventAttendance } from "../../hooks/fanEvents";
 import type { UnifiedEvent } from "../../hooks/events";
-import GameEventFallback from "./GameEventFallback";
+import GameEventFallback from "./GameEventFallBack";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {

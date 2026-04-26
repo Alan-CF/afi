@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { UnifiedEvent } from "../../hooks/events";
-import GameEventFallback from "./GameEventFallback";
+import GameEventFallback from "./GameEventFallBack";
 import LiveBadge from "../common/LiveBadge";
 import Button from "../ui/Button";
 

@@ -50,7 +50,6 @@ export default function GameEventFallback({
 
   return (
     <div className="absolute inset-0 bg-secondary overflow-hidden">
-      {/* Court line pattern */}
       <svg
         viewBox="0 0 400 250"
         className="absolute inset-0 h-full w-full text-white opacity-[0.04]"
@@ -65,12 +64,10 @@ export default function GameEventFallback({
         <line x1="170" y1="20" x2="230" y2="20" stroke="currentColor" strokeWidth="3" />
       </svg>
 
-      {/* Live tint */}
       {isLive && (
         <div className="absolute inset-0 bg-gradient-to-t from-live/25 via-transparent to-transparent" />
       )}
 
-      {/* Team logos */}
       <div className="absolute inset-0 flex items-center justify-center gap-4 md:gap-8">
         <img
           src={WARRIORS_LOGO}

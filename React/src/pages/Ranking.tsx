@@ -1,5 +1,4 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
-import { ChevronUpIcon, ChevronDownIcon, MinusIcon } from "@heroicons/react/20/solid";
 import NavBar from "../components/layout/NavBar";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
 import Footer from "../components/layout/Footer";
@@ -24,24 +23,6 @@ function LaurelIcon({ className = "" }: { className?: string }) {
       <ellipse cx="23" cy="18" rx="2" ry="1" transform="rotate(-50 23 18)" fill="currentColor" />
       <text x="16" y="21" textAnchor="middle" fontSize="14" fontWeight="900" fill="currentColor">1</text>
     </svg>
-  );
-}
-
-function ClimbIndicator({ delta }: { delta: number }) {
-  if (delta === 0) return (
-    <span className="inline-flex items-center gap-1 font-lato text-xs font-bold text-text-light">
-      <MinusIcon className="h-3 w-3" /> Even
-    </span>
-  );
-  if (delta > 0) return (
-    <span className="inline-flex items-center gap-1 font-lato text-xs font-bold text-green-600">
-      <ChevronUpIcon className="h-3 w-3" /> +{delta} this week
-    </span>
-  );
-  return (
-    <span className="inline-flex items-center gap-1 font-lato text-xs font-bold text-destructive">
-      <ChevronDownIcon className="h-3 w-3" /> {delta} this week
-    </span>
   );
 }
 
@@ -159,17 +140,16 @@ export default function Ranking() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-lato font-bold text-secondary truncate">
-                      @{user?.username ?? myRank.username ?? "you"}
+                      @{user?.username ?? "you"}
                     </p>
                     <p className="font-lato text-sm text-text-light">
-                      {myRank.streak ?? 0} day streak · {(myRank.pointsToFirst ?? 0).toLocaleString()} pts to #1
+                      {myRank.streak} day streak · {myRank.pointsToFirst.toLocaleString()} pts to #1
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="font-anton text-2xl text-primary tabular-nums">
                       {myRank.points.toLocaleString()}
                     </span>
-                    {typeof myRank.weeklyDelta === "number" && <ClimbIndicator delta={myRank.weeklyDelta} />}
                   </div>
                 </div>
               </section>
@@ -194,7 +174,13 @@ export default function Ranking() {
                       <>
                         <li className="border-t-2 border-container-border my-2" aria-hidden />
                         <LeaderboardRow
-                          entry={{ ...myRank, username: user?.username ?? myRank.username ?? "you" }}
+                          entry={{
+                            profile_id: myRank.profile_id,
+                            rank: myRank.rank,
+                            username: user?.username ?? "you",
+                            points: myRank.points,
+                            avatar_url: myRank.avatar_url,
+                          }}
                           isMe
                           tier="me-below"
                         />
