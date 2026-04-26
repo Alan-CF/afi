@@ -9,13 +9,18 @@ export default function HomeLeaderboardPreview() {
   return (
     <section className="mt-16 md:mt-20">
       <div className="flex items-baseline justify-between mb-4 md:mb-6">
-        <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
-          Leaderboard
-        </h2>
+        <div>
+          <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
+            Leaderboard
+          </h2>
+          <p className="font-lato text-sm text-text-light mt-1">
+            Top fans this week
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => navigate("/ranking")}
-          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors"
+          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
         >
           Full leaderboard →
         </button>

@@ -1,5 +1,6 @@
 import { fetchUpcomingFanEvents, type FanEvent } from "./fanEvents";
-import { fetchUpcomingGamesFromStats, type Game } from "../lib/statisticsApi";
+import { fetchUpcomingWarriorsGames, type WarriorsGame } from "./espnApi";
+import { SEED_EVENTS } from "../lib/seedEvents";
 
 export type EventType = "game" | "fan";
 
@@ -14,32 +15,53 @@ export interface UnifiedEvent {
   meta: {
     isHome?: boolean;
     isLive?: boolean;
+    isFinal?: boolean;
     warriorsScore?: number | null;
     opponentScore?: number | null;
     status?: string;
+    statusDetail?: string;
+    period?: number;
+    clock?: string;
+    warriorsLogo?: string;
+    opponentLogo?: string;
+    opponentAbbr?: string;
+    opponentName?: string;
+    broadcast?: string | null;
     goingCount?: number;
     fanEventId?: number;
   };
 }
 
-function gameToUnified(g: Game): UnifiedEvent {
-  const abbr = g.opponent.split(" ").pop() ?? g.opponent;
-  const isLive = g.status === "live" || g.status === "in_progress";
+function espnGameToUnified(g: WarriorsGame): UnifiedEvent {
+  const isLive = g.state === "in";
+  const isFinal = g.state === "post";
+
+  const warriorsScore = Number.isFinite(g.warriorsScore) ? (g.warriorsScore as number) : null;
+  const opponentScore = Number.isFinite(g.opponentScore) ? (g.opponentScore as number) : null;
 
   return {
-    id: `game-${g.date}-${g.opponent.replace(/\s/g, "")}`,
+    id: `game-${g.eventId}`,
     type: "game",
-    title: g.is_home ? `Warriors vs ${abbr}` : `Warriors @ ${abbr}`,
-    subtitle: g.opponent,
-    startAt: g.date,
-    venue: null,
+    title: g.isHome ? `Warriors vs ${g.opponentAbbr}` : `Warriors @ ${g.opponentAbbr}`,
+    subtitle: g.opponentName,
+    startAt: g.startAt,
+    venue: g.venue,
     imageUrl: null,
     meta: {
-      isHome: g.is_home,
+      isHome: g.isHome,
       isLive,
-      warriorsScore: g.warriors_score,
-      opponentScore: g.opponent_score,
-      status: g.status,
+      isFinal,
+      warriorsScore,
+      opponentScore,
+      status: g.state,
+      statusDetail: g.statusDetail,
+      period: g.period,
+      clock: g.clock,
+      warriorsLogo: g.warriorsLogo,
+      opponentLogo: g.opponentLogo,
+      opponentAbbr: g.opponentAbbr,
+      opponentName: g.opponentName,
+      broadcast: g.broadcast,
     },
   };
 }
@@ -61,6 +83,7 @@ export interface FetchEventsOptions {
   limit?: number;
   signal?: AbortSignal;
   types?: EventType[];
+  includeSeed?: boolean;
 }
 
 export async function fetchUpcomingEvents(
@@ -68,16 +91,35 @@ export async function fetchUpcomingEvents(
 ): Promise<UnifiedEvent[]> {
   const limit = options.limit ?? 4;
   const types = options.types ?? ["game", "fan"];
+  const includeSeed = options.includeSeed ?? true;
 
   const [games, fanEvents] = await Promise.all([
-    types.includes("game") ? fetchUpcomingGamesFromStats() : Promise.resolve([]),
-    types.includes("fan")  ? fetchUpcomingFanEvents(20)   : Promise.resolve([]),
+    types.includes("game")
+      ? fetchUpcomingWarriorsGames(30, options.signal).catch(() => [])
+      : Promise.resolve([] as WarriorsGame[]),
+    types.includes("fan")
+      ? fetchUpcomingFanEvents(20).catch(() => [])
+      : Promise.resolve([] as FanEvent[]),
   ]);
 
-  const combined = [
-    ...games.map(gameToUnified),
+  const live: UnifiedEvent[] = [
+    ...games.map(espnGameToUnified),
     ...fanEvents.map(fanEventToUnified),
   ];
+
+  const seen = new Set(
+    live.map((e) => `${e.type}-${e.title}-${e.startAt.slice(0, 10)}`)
+  );
+
+  const seed = includeSeed
+    ? SEED_EVENTS.filter(
+        (e) =>
+          types.includes(e.type) &&
+          !seen.has(`${e.type}-${e.title}-${e.startAt.slice(0, 10)}`)
+      )
+    : [];
+
+  const combined: UnifiedEvent[] = [...live, ...seed];
 
   combined.sort((a, b) => {
     if (a.meta.isLive && !b.meta.isLive) return -1;

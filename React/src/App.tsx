@@ -13,6 +13,7 @@ import ShopProducts from './pages/ShopProducts'
 import Events from './pages/Events'
 import Statistics from './pages/Statistics'
 import News from "./pages/News";
+import NewsDetail from "./pages/NewsDetail";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
       <Route path="/events" element={<Events />} />
       <Route path="/stats" element={<Statistics />} />
       <Route path="/news" element={<News />} />
+      <Route path="/news/:id" element={<NewsDetail />} />
     </Routes>
   );
 }
