@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import type { WarriorsNewsItem } from "../../hooks/warriorsNews";
+import { articleSlug } from "../../hooks/useNewsArticle";
 import NewsImageOrFallback from "./NewsImageOrFallback";
 
 function timeAgo(iso: string): string {
@@ -10,10 +12,8 @@ function timeAgo(iso: string): string {
 
 export default function CompactNewsCard({ article }: { article: WarriorsNewsItem }) {
   return (
-    <a
-      href={article.link}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      to={`/news/${articleSlug(article.id)}`}
       className="group flex items-center gap-3 py-3 border-b border-container-border last:border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
       aria-label={article.title}
     >
@@ -28,6 +28,6 @@ export default function CompactNewsCard({ article }: { article: WarriorsNewsItem
           {timeAgo(article.publishedAt)}
         </p>
       </div>
-    </a>
+    </Link>
   );
 }

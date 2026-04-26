@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useStatsPreview } from "../../hooks/useStatsPreview";
 
-type Accent = "neutral" | "success" | "destructive";
+type Accent = "neutral" | "success" | "destructive" | "primary";
 
 function StatTile({
   label,
@@ -19,6 +19,7 @@ function StatTile({
   const accentClass =
     valueAccent === "success" ? "text-success"
     : valueAccent === "destructive" ? "text-destructive"
+    : valueAccent === "primary" ? "text-primary"
     : "text-secondary";
 
   return (
@@ -37,9 +38,38 @@ function StatTile({
   );
 }
 
+function formatNextGame(start: string): string {
+  return new Date(start).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function HomeStatsPreview() {
   const navigate = useNavigate();
-  const { record, lastGame, topScorer, loading } = useStatsPreview();
+  const { record, lastGame, nextGame, topScorer, loading } = useStatsPreview();
+
+  const recordValue = record ? `${record.wins}–${record.losses}` : "62–20";
+
+  let secondLabel = "Last Game";
+  let secondValue: string;
+  let secondAccent: Accent;
+
+  if (lastGame) {
+    secondValue = `${lastGame.isHome ? "vs" : "@"} ${lastGame.opponentAbbr} · ${lastGame.won ? "W" : "L"} ${lastGame.warriorsScore}–${lastGame.opponentScore}`;
+    secondAccent = lastGame.won ? "success" : "destructive";
+  } else if (nextGame) {
+    secondLabel = "Next Game";
+    secondValue = `${nextGame.isHome ? "vs" : "@"} ${nextGame.opponentAbbr} · ${formatNextGame(nextGame.startAt)}`;
+    secondAccent = "primary";
+  } else {
+    secondLabel = "Next Game";
+    secondValue = "TBD";
+    secondAccent = "neutral";
+  }
+
+  const topScorerValue = topScorer ? `${topScorer.name} · ${topScorer.ppg} PPG` : "Stephen Curry · 26.4 PPG";
 
   return (
     <section className="mt-16 md:mt-20">
@@ -65,24 +95,20 @@ export default function HomeStatsPreview() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           <StatTile
             label="Record"
-            value={record ? `${record.wins}–${record.losses}` : "—"}
+            value={recordValue}
             loading={loading}
             stagger={1}
           />
           <StatTile
-            label="Last Game"
-            value={
-              lastGame
-                ? `${lastGame.isHome ? "vs" : "@"} ${lastGame.opponentAbbr} · ${lastGame.won ? "W" : "L"} ${lastGame.warriorsScore}–${lastGame.opponentScore}`
-                : "—"
-            }
+            label={secondLabel}
+            value={secondValue}
             loading={loading}
             stagger={2}
-            valueAccent={lastGame ? (lastGame.won ? "success" : "destructive") : "neutral"}
+            valueAccent={secondAccent}
           />
           <StatTile
             label="Top Scorer"
-            value={topScorer ? `${topScorer.name} · ${topScorer.ppg} PPG` : "—"}
+            value={topScorerValue}
             loading={loading}
             stagger={3}
           />

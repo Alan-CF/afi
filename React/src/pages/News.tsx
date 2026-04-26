@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import NavBar from "../components/layout/NavBar";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
 import Footer from "../components/layout/Footer";
 import { useWarriorsNews } from "../hooks/useWarriorsNews";
 import type { WarriorsNewsItem } from "../hooks/warriorsNews";
+import { articleSlug } from "../hooks/useNewsArticle";
 import LiveBadge from "../components/common/LiveBadge";
 import EmptyState from "../components/common/EmptyState";
 import FeaturedNewsCard from "../components/home/FeaturedNewsCard";
@@ -20,10 +22,8 @@ function timeAgo(iso: string): string {
 function ArticleCard({ article, className = "" }: { article: WarriorsNewsItem; className?: string }) {
   const breaking = Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
   return (
-    <a
-      href={article.link}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      to={`/news/${articleSlug(article.id)}`}
       className={`group block rounded-3xl overflow-hidden bg-white border border-container-border lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
       aria-label={article.title}
     >
@@ -39,7 +39,7 @@ function ArticleCard({ article, className = "" }: { article: WarriorsNewsItem; c
         </h3>
         <p className="font-lato text-xs text-text-light tabular-nums">{timeAgo(article.publishedAt)}</p>
       </div>
-    </a>
+    </Link>
   );
 }
 

@@ -4,6 +4,7 @@ import {
   fetchWarriorsGames,
   fetchWarriorsPlayers,
 } from "../lib/statisticsApi";
+import { SEED_GAMES } from "../lib/seedEvents";
 
 export interface StatsPreviewLastGame {
   opponent: string;
@@ -14,16 +15,41 @@ export interface StatsPreviewLastGame {
   opponentScore: number;
 }
 
+export interface StatsPreviewNextGame {
+  opponentAbbr: string;
+  opponentName: string;
+  isHome: boolean;
+  startAt: string;
+}
+
 export interface StatsPreview {
   record: { wins: number; losses: number } | null;
   lastGame: StatsPreviewLastGame | null;
+  nextGame: StatsPreviewNextGame | null;
   topScorer: { name: string; ppg: string } | null;
+}
+
+function deriveNextGame(): StatsPreviewNextGame | null {
+  const now = Date.now();
+  const upcoming = SEED_GAMES
+    .map((g) => ({ event: g, time: new Date(g.startAt).getTime() }))
+    .filter(({ time }) => time > now)
+    .sort((a, b) => a.time - b.time)[0];
+  if (!upcoming) return null;
+  const m = upcoming.event.meta;
+  return {
+    opponentAbbr: m.opponentAbbr ?? "?",
+    opponentName: m.opponentName ?? "Opponent",
+    isHome: m.isHome ?? true,
+    startAt: upcoming.event.startAt,
+  };
 }
 
 export function useStatsPreview() {
   const [data, setData] = useState<StatsPreview>({
     record: null,
     lastGame: null,
+    nextGame: deriveNextGame(),
     topScorer: null,
   });
   const [loading, setLoading] = useState(true);
@@ -67,7 +93,7 @@ export function useStatsPreview() {
           ? { name: sorted[0].name, ppg: sorted[0].pts }
           : null;
 
-        setData({ record, lastGame, topScorer });
+        setData({ record, lastGame, nextGame: deriveNextGame(), topScorer });
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -27,7 +27,7 @@ export default function HomeRoomsRail() {
         </button>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
+      <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-proximity scroll-pl-4 md:scroll-pl-6 lg:scroll-pl-8 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div

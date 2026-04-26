@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useWarriorsNews } from "../../hooks/useWarriorsNews";
 import { useProfile } from "../../hooks/useProfile";
 import EmptyState from "../common/EmptyState";
@@ -10,6 +11,28 @@ function getTimeOfDay(): string {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
+}
+
+function SectionHeader() {
+  return (
+    <div className="flex items-baseline justify-between mb-4 md:mb-6">
+      <Link
+        to="/news"
+        className="group inline-flex items-baseline gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+      >
+        <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight group-hover:text-primary transition-colors">
+          Latest News
+        </h2>
+        <span className="font-anton text-2xl md:text-3xl text-secondary/40 group-hover:text-primary transition-colors">→</span>
+      </Link>
+      <Link
+        to="/news"
+        className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
+      >
+        See all
+      </Link>
+    </div>
+  );
 }
 
 export default function HomeTopNews() {
@@ -25,13 +48,14 @@ export default function HomeTopNews() {
 
   if (loading) {
     return (
-      <section aria-label="Top News">
+      <section aria-label="Latest News">
         {greeting}
+        <SectionHeader />
         <div className="hidden md:grid grid-cols-12 gap-6">
           <div className="col-span-7 rounded-3xl aspect-[16/9] skeleton-shimmer" />
-          <div className="col-span-5 flex flex-col gap-4">
+          <div className="col-span-5 grid grid-rows-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-2xl h-[175px] skeleton-shimmer" />
+              <div key={i} className="rounded-2xl skeleton-shimmer" />
             ))}
           </div>
         </div>
@@ -47,28 +71,29 @@ export default function HomeTopNews() {
 
   if (news.length === 0) {
     return (
-      <section aria-label="Top News">
+      <section aria-label="Latest News">
         {greeting}
+        <SectionHeader />
         <EmptyState message="Press box is quiet. New stories drop every game day." />
       </section>
     );
   }
 
   const featured = news[0];
-  const rest = news.slice(1);
-  const secondary = rest.slice(0, 3);
-  const compactDesktop = rest.slice(3, 5);
-  const compactMobile = rest.slice(0, 4);
+  const secondary = news.slice(1, 4);
+  const compactDesktop = news.slice(4, 6);
+  const compactMobile = news.slice(1, 5);
 
   return (
-    <section aria-label="Top News">
+    <section aria-label="Latest News">
       {greeting}
+      <SectionHeader />
 
       <div className="hidden md:grid grid-cols-12 gap-6">
         <div className="col-span-7 fade-in-up stagger-1">
           <FeaturedNewsCard article={featured} />
         </div>
-        <div className="col-span-5 flex flex-col gap-4">
+        <div className="col-span-5 grid grid-rows-3 gap-4">
           {secondary.map((article, i) => (
             <div key={article.id} className={`fade-in-up stagger-${i + 2}`}>
               <SecondaryNewsCard article={article} />
@@ -78,7 +103,7 @@ export default function HomeTopNews() {
       </div>
 
       {compactDesktop.length > 0 && (
-        <div className="hidden md:grid grid-cols-2 gap-4 mt-4">
+        <div className="hidden md:grid grid-cols-2 gap-4 mt-6">
           {compactDesktop.map((article, i) => (
             <div key={article.id} className={`fade-in-up stagger-${i + 5}`}>
               <CompactNewsCard article={article} />

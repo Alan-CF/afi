@@ -12,7 +12,14 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function FanEventCard({ event }: { event: UnifiedEvent }) {
+interface Props {
+  event: UnifiedEvent;
+  className?: string;
+}
+
+const DEFAULT_CLASS = "aspect-[4/5]";
+
+export default function FanEventCard({ event, className = DEFAULT_CLASS }: Props) {
   const navigate = useNavigate();
   const goingCount = event.meta.goingCount ?? 0;
 
@@ -20,7 +27,7 @@ export default function FanEventCard({ event }: { event: UnifiedEvent }) {
     <button
       type="button"
       onClick={() => navigate("/events")}
-      className="group relative block w-full overflow-hidden rounded-3xl aspect-[4/5] bg-secondary text-left lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className={`group relative block w-full overflow-hidden rounded-3xl bg-secondary text-left lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
       aria-label={event.title}
     >
       {event.imageUrl ? (

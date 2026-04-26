@@ -19,13 +19,13 @@ import HomeAuthCTA from "../components/home/HomeAuthCTA";
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: FireIcon,        label: "Fanatic",  desc: "Play the daily challenge",  to: "/fanatic"  },
-    { icon: UserGroupIcon,   label: "Rooms",    desc: "Join a live watch party",   to: "/rooms"    },
-    { icon: AcademicCapIcon, label: "Quizzes",  desc: "Test your Warriors IQ",     to: "/quizzes"  },
+    { icon: FireIcon,        label: "Fanatic",  desc: "Keep playing",          to: "/fanatic"  },
+    { icon: UserGroupIcon,   label: "Rooms",    desc: "Join the conversation", to: "/rooms"    },
+    { icon: AcademicCapIcon, label: "Quizzes",  desc: "Test your IQ",          to: "/quizzes"  },
   ];
 
   return (
-    <section className="mt-16 md:mt-20">
+    <section className="mt-10 md:mt-20">
       <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight mb-4 md:mb-6">
         Jump In
       </h2>
@@ -35,14 +35,17 @@ function QuickActions() {
             key={a.label}
             type="button"
             onClick={() => navigate(a.to)}
-            className={`group flex flex-col items-start gap-3 md:gap-4 rounded-3xl bg-white border border-container-border p-4 md:p-6 text-left lift-on-hover hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-shadow fade-in-up stagger-${i + 1}`}
+            className={`group relative flex flex-col items-start gap-3 md:gap-4 rounded-3xl bg-white border border-container-border p-4 md:p-6 text-left lift-on-hover hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-shadow overflow-hidden fade-in-up stagger-${i + 1}`}
           >
-            <span className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl bg-primary/[0.12] text-secondary transition-colors group-hover:bg-primary/[0.20]">
+            <span className="absolute top-0 left-0 right-0 h-1 bg-primary opacity-80 group-hover:opacity-100 transition-opacity" />
+            <span className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl bg-secondary text-white transition-colors group-hover:bg-secondary/90">
               <a.icon className="h-6 w-6" />
             </span>
             <div>
               <p className="font-anton text-lg md:text-xl text-secondary leading-tight">{a.label}</p>
-              <p className="mt-0.5 font-lato text-xs text-text-light hidden md:block">{a.desc}</p>
+              <p className="mt-1 font-lato text-xs md:text-sm font-bold text-primary">
+                {a.desc} →
+              </p>
             </div>
           </button>
         ))}

@@ -1,76 +1,78 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import { useEventsFeed } from "../../hooks/useEventsFeed";
 import EmptyState from "../common/EmptyState";
 import GameScheduleCard from "./GameScheduleCard";
 import FanEventCard from "./FanEventCard";
 import type { UnifiedEvent } from "../../hooks/events";
 
-function renderEvent(event: UnifiedEvent) {
-  return event.type === "game"
-    ? <GameScheduleCard event={event} />
-    : <FanEventCard event={event} />;
+const CARD_HEIGHT = "h-[280px]";
+
+function RailCard({ event }: { event: UnifiedEvent }) {
+  if (event.type === "game") {
+    return <GameScheduleCard event={event} className="h-full" />;
+  }
+  return <FanEventCard event={event} className="h-full" />;
 }
 
 export default function HomeEventsSection() {
   const navigate = useNavigate();
-  const { events, loading } = useEventsFeed({ limit: 6, pollMs: 60_000 });
+  const { events, loading } = useEventsFeed({ limit: 5, pollMs: 60_000 });
 
   return (
-    <section className="mt-16 md:mt-20">
+    <section className="mt-10 md:mt-20">
       <div className="flex items-baseline justify-between mb-4 md:mb-6">
-        <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
-          Upcoming Events
-        </h2>
-        <button
-          type="button"
-          onClick={() => navigate("/events")}
-          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors"
+        <Link
+          to="/events"
+          className="group inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+        >
+          <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight group-hover:text-primary transition-colors">
+            Upcoming Events
+          </h2>
+        </Link>
+        <Link
+          to="/events"
+          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
         >
           See all →
-        </button>
+        </Link>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className={`rounded-3xl h-[280px] skeleton-shimmer fade-in-up stagger-${i + 1}`}
+              className={`shrink-0 w-[280px] ${CARD_HEIGHT} rounded-3xl skeleton-shimmer fade-in-up stagger-${i + 1}`}
             />
           ))}
         </div>
       ) : events.length === 0 ? (
         <EmptyState message="No games on the calendar. The Warriors will be back." />
-      ) : events.length === 1 ? (
-        <div className="fade-in-up stagger-1">{renderEvent(events[0])}</div>
-      ) : events.length === 2 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ) : (
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-proximity scroll-pl-4 md:scroll-pl-6 lg:scroll-pl-8 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
           {events.map((event, i) => (
-            <div key={event.id} className={`fade-in-up stagger-${i + 1}`}>
-              {renderEvent(event)}
+            <div
+              key={event.id}
+              className={`snap-start shrink-0 w-[280px] ${CARD_HEIGHT} fade-in-up stagger-${Math.min(i + 1, 6)}`}
+            >
+              <RailCard event={event} />
             </div>
           ))}
+          <button
+            type="button"
+            onClick={() => navigate("/events")}
+            className={`group snap-start shrink-0 w-[200px] ${CARD_HEIGHT} rounded-3xl border-2 border-dashed border-container-border bg-text-light-soft hover:border-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary flex flex-col items-center justify-center gap-3`}
+            aria-label="See all events"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/[0.08] text-secondary group-hover:bg-secondary/15 transition-colors">
+              <ArrowRightIcon className="h-5 w-5" />
+            </span>
+            <span className="font-lato text-sm font-bold text-text-light group-hover:text-secondary transition-colors">
+              Show more
+            </span>
+          </button>
         </div>
-      ) : (
-        <>
-          <div className="hidden md:grid grid-cols-3 gap-4">
-            {events.slice(0, 3).map((event, i) => (
-              <div key={event.id} className={`fade-in-up stagger-${i + 1}`}>
-                {renderEvent(event)}
-              </div>
-            ))}
-          </div>
-          <div className="md:hidden flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 pb-1">
-            {events.map((event, i) => (
-              <div
-                key={event.id}
-                className={`snap-start shrink-0 w-[280px] fade-in-up stagger-${Math.min(i + 1, 6)}`}
-              >
-                {renderEvent(event)}
-              </div>
-            ))}
-          </div>
-        </>
       )}
     </section>
   );

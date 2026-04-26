@@ -121,11 +121,17 @@ export async function fetchUpcomingEvents(
 
   const combined: UnifiedEvent[] = [...live, ...seed];
 
-  combined.sort((a, b) => {
+  const HOUR = 60 * 60 * 1000;
+  const future = combined.filter((e) => {
+    if (e.meta.isLive) return true;
+    return new Date(e.startAt).getTime() > Date.now() - HOUR;
+  });
+
+  future.sort((a, b) => {
     if (a.meta.isLive && !b.meta.isLive) return -1;
     if (!a.meta.isLive && b.meta.isLive) return 1;
     return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
   });
 
-  return combined.slice(0, limit);
+  return future.slice(0, limit);
 }

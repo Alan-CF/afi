@@ -1,5 +1,7 @@
+import { Link } from "react-router-dom";
 import LiveBadge from "../common/LiveBadge";
 import type { WarriorsNewsItem } from "../../hooks/warriorsNews";
+import { articleSlug } from "../../hooks/useNewsArticle";
 import NewsImageOrFallback from "./NewsImageOrFallback";
 
 function timeAgo(iso: string): string {
@@ -13,10 +15,8 @@ export default function FeaturedNewsCard({ article }: { article: WarriorsNewsIte
   const isBreaking = Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
 
   return (
-    <a
-      href={article.link}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      to={`/news/${articleSlug(article.id)}`}
       className="group relative block overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[16/9] bg-secondary lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       aria-label={article.title}
     >
@@ -42,6 +42,6 @@ export default function FeaturedNewsCard({ article }: { article: WarriorsNewsIte
           Read article →
         </p>
       </div>
-    </a>
+    </Link>
   );
 }

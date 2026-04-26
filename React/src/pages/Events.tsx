@@ -7,36 +7,45 @@ import EmptyState from "../components/common/EmptyState";
 import GameScheduleCard from "../components/home/GameScheduleCard";
 import FanEventCard from "../components/home/FanEventCard";
 
-function renderEvent(event: UnifiedEvent) {
-  return event.type === "game"
-    ? <GameScheduleCard event={event} />
-    : <FanEventCard event={event} />;
-}
-
-function EventsSkeleton() {
+function Skeleton() {
   return (
-    <>
-      <div className="rounded-3xl h-[280px] md:h-[300px] skeleton-shimmer" />
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className={`h-[300px] rounded-3xl skeleton-shimmer fade-in-up stagger-${Math.min(i + 1, 6)}`} />
-        ))}
-      </div>
-    </>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className={`h-[280px] rounded-3xl skeleton-shimmer fade-in-up stagger-${Math.min(i + 1, 6)}`}
+        />
+      ))}
+    </div>
   );
 }
 
-function EventGroup({ title, events }: { title: string; events: UnifiedEvent[] }) {
+function EventGroup({
+  title,
+  subtitle,
+  events,
+  layout,
+}: {
+  title: string;
+  subtitle?: string;
+  events: UnifiedEvent[];
+  layout: "game" | "fan";
+}) {
   if (events.length === 0) return null;
   return (
-    <section className="mt-16 md:mt-20">
-      <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-text-light mb-4 md:mb-6">
-        {title}
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+    <section className="mt-12 md:mt-16">
+      <header className="mb-4 md:mb-6">
+        <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">{title}</h2>
+        {subtitle && <p className="font-lato text-sm text-text-light mt-1">{subtitle}</p>}
+      </header>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-start">
         {events.map((event, i) => (
           <div key={event.id} className={`fade-in-up stagger-${Math.min(i + 1, 6)}`}>
-            {renderEvent(event)}
+            {layout === "game" ? (
+              <GameScheduleCard event={event} />
+            ) : (
+              <FanEventCard event={event} />
+            )}
           </div>
         ))}
       </div>
@@ -48,26 +57,12 @@ export default function Events() {
   const { events, loading, error } = useEventsFeed({ limit: 50, pollMs: 5 * 60_000 });
 
   const now = Date.now();
-  const DAY = 86_400_000;
-  const futureEvents = events.filter(
+  const future = events.filter(
     (e) => new Date(e.startAt).getTime() >= now - 3 * 60 * 60 * 1000
   );
-  const featured = futureEvents[0] ?? null;
-  const rest = featured ? futureEvents.slice(1) : [];
 
-  const groups = {
-    thisWeek: rest.filter((e) => {
-      const d = new Date(e.startAt).getTime() - now;
-      return d >= 0 && d < 7 * DAY;
-    }),
-    thisMonth: rest.filter((e) => {
-      const d = new Date(e.startAt).getTime() - now;
-      return d >= 7 * DAY && d < 30 * DAY;
-    }),
-    later: rest.filter((e) => new Date(e.startAt).getTime() - now >= 30 * DAY),
-  };
-  const allEmpty =
-    !groups.thisWeek.length && !groups.thisMonth.length && !groups.later.length;
+  const games = future.filter((e) => e.type === "game").slice(0, 12);
+  const fanEvents = future.filter((e) => e.type === "fan").slice(0, 12);
 
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
@@ -83,7 +78,7 @@ export default function Events() {
           </p>
         </header>
 
-        {loading && <EventsSkeleton />}
+        {loading && <Skeleton />}
 
         {!loading && error && (
           <EmptyState
@@ -92,24 +87,24 @@ export default function Events() {
           />
         )}
 
-        {!loading && !error && !featured && (
+        {!loading && !error && games.length === 0 && fanEvents.length === 0 && (
           <EmptyState message="The schedule is clear. New games drop weekly." />
         )}
 
-        {!loading && !error && featured && (
+        {!loading && !error && (games.length > 0 || fanEvents.length > 0) && (
           <>
-            <div className="fade-in-up stagger-2">{renderEvent(featured)}</div>
-            {allEmpty ? (
-              <div className="mt-16">
-                <EmptyState message="No more events on the calendar yet. Check back soon." />
-              </div>
-            ) : (
-              <>
-                <EventGroup title="This Week" events={groups.thisWeek} />
-                <EventGroup title="This Month" events={groups.thisMonth} />
-                <EventGroup title="Later" events={groups.later} />
-              </>
-            )}
+            <EventGroup
+              title="Games"
+              subtitle="Warriors schedule for the next 30 days."
+              events={games}
+              layout="game"
+            />
+            <EventGroup
+              title="Fan Events"
+              subtitle="Watch parties, meetups, and fan-run moments."
+              events={fanEvents}
+              layout="fan"
+            />
           </>
         )}
       </main>
