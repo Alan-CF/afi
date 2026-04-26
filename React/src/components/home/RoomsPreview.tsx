@@ -8,7 +8,7 @@ function RoomRailCard({ room, onClick }: { room: RoomCardData; onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className="group relative shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group relative shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary lift-on-hover"
       aria-label={room.title}
     >
       <div
@@ -35,7 +35,7 @@ function CreateRoomCard({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="group shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 hover:border-secondary transition-colors focus:outline-none flex items-center justify-center"
+      className="group shrink-0 w-[280px] h-[200px] overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 hover:border-secondary transition-colors focus:outline-none flex items-center justify-center lift-on-hover"
       aria-label="Create a room"
     >
       <span className="font-anton text-2xl text-text-light group-hover:text-secondary transition-colors">
@@ -53,18 +53,18 @@ export default function RoomsPreview() {
     <Rail title="Your Rooms" seeAllTo="/rooms" edgeBleed={false}>
       {loading
         ? Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-[280px] h-[200px] animate-pulse rounded-2xl bg-gray-200" />
+            <div key={i} className="shrink-0 w-[280px] h-[200px] rounded-2xl skeleton-shimmer" />
           ))
         : [
-            ...rooms.map((room) => (
-              <div key={room.id} className="snap-start shrink-0">
+            ...rooms.map((room, i) => (
+              <div key={room.id} className={`snap-start shrink-0 fade-in-up stagger-${Math.min(i + 1, 6)}`}>
                 <RoomRailCard
                   room={room}
                   onClick={() => navigate(room.status === "live" ? `/rooms/${room.id}` : "/rooms")}
                 />
               </div>
             )),
-            <div key="create" className="snap-start shrink-0">
+            <div key="create" className={`snap-start shrink-0 fade-in-up stagger-${Math.min(rooms.length + 1, 6)}`}>
               <CreateRoomCard onClick={() => navigate("/rooms/create")} />
             </div>,
           ]}

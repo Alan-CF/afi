@@ -9,7 +9,7 @@ export default function EventsSlider() {
     return (
       <Rail title="Upcoming Events" seeAllTo="/events" edgeBleed={false}>
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="snap-start shrink-0 w-[280px] h-[320px] animate-pulse rounded-2xl bg-gray-200" />
+          <div key={i} className="snap-start shrink-0 w-[280px] h-[320px] rounded-2xl skeleton-shimmer" />
         ))}
       </Rail>
     );
@@ -27,8 +27,8 @@ export default function EventsSlider() {
 
   return (
     <Rail title="Upcoming Events" seeAllTo="/events" edgeBleed={false}>
-      {events.map((event) => (
-        <div key={event.id} className="snap-start shrink-0">
+      {events.map((event, i) => (
+        <div key={event.id} className={`snap-start shrink-0 fade-in-up stagger-${Math.min(i + 1, 6)}`}>
           <EventCard event={event} />
         </div>
       ))}

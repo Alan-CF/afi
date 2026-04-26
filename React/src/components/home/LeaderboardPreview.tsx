@@ -16,14 +16,14 @@ function Avatar({ url, size = "md" }: { url?: string | null; size?: "sm" | "md" 
   );
 }
 
-function PodiumSlot({ entry, position }: { entry: LeaderboardEntry; position: 1 | 2 | 3 }) {
+function PodiumSlot({ entry, position, stagger }: { entry: LeaderboardEntry; position: 1 | 2 | 3; stagger: number }) {
   const barHeight = { 1: "h-32", 2: "h-24", 3: "h-16" };
   const barBg = { 1: "bg-primary", 2: "bg-surface-dark", 3: "bg-secondary" };
   const medal = { 1: "🥇", 2: "🥈", 3: "🥉" };
   const avatarSize: "lg" | "md" | "sm" = position === 1 ? "lg" : "md";
 
   return (
-    <div className="flex flex-col items-center flex-1 min-w-0">
+    <div className={`flex flex-col items-center flex-1 min-w-0 fade-in-up stagger-${stagger}`}>
       <Avatar url={entry.avatarUrl} size={avatarSize} />
       <p className="font-lato text-xs font-bold text-secondary truncate max-w-[90px] text-center mt-2">
         @{entry.username}
@@ -45,7 +45,7 @@ export default function LeaderboardPreview() {
   if (loading) {
     return (
       <div className="rounded-3xl border border-container-border bg-white p-6 md:p-8">
-        <div className="h-48 animate-pulse rounded-2xl bg-gray-100" />
+        <div className="h-48 rounded-2xl skeleton-shimmer" />
       </div>
     );
   }
@@ -60,14 +60,14 @@ export default function LeaderboardPreview() {
 
       {first && (
         <div className="flex items-end gap-2">
-          {second && <PodiumSlot entry={second} position={2} />}
-          <PodiumSlot entry={first} position={1} />
-          {third && <PodiumSlot entry={third} position={3} />}
+          {second && <PodiumSlot entry={second} position={2} stagger={2} />}
+          <PodiumSlot entry={first} position={1} stagger={1} />
+          {third && <PodiumSlot entry={third} position={3} stagger={3} />}
         </div>
       )}
 
       {me && !isInTop && (
-        <div className="mt-4 border-t border-container-border pt-4 flex items-center gap-3">
+        <div className="mt-4 border-t border-container-border pt-4 flex items-center gap-3 fade-in-up stagger-4">
           <span className="font-anton text-xl text-primary w-8 text-right shrink-0 tabular-nums">
             {String(me.rank).padStart(2, "0")}
           </span>

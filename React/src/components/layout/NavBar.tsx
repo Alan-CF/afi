@@ -7,6 +7,7 @@ import Cart from "./Cart";
 const PRIMARY_LINKS = [
     { to: "/",           label: "Home" },
     { to: "/shop",       label: "Shop" },
+    { to: "/news",       label: "News" },
     { to: "/events",     label: "Events" },
     { to: "/stats",      label: "Stats" },
     { to: "/legacy",     label: "Legacy" },

@@ -12,6 +12,7 @@ import Shop from './pages/Shop'
 import ShopProducts from './pages/ShopProducts'
 import Events from './pages/Events'
 import Statistics from './pages/Statistics'
+import News from "./pages/News";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
       <Route path="/shop/products" element={<ShopProducts />} />
       <Route path="/events" element={<Events />} />
       <Route path="/stats" element={<Statistics />} />
+      <Route path="/news" element={<News />} />
     </Routes>
   );
 }

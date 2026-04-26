@@ -15,14 +15,14 @@ function NewsRailCard({ item }: { item: WarriorsNewsItem }) {
       href={item.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative shrink-0 w-[280px] h-[320px] overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group relative shrink-0 w-[280px] h-[320px] overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary lift-on-hover"
       aria-label={item.title}
     >
       {item.thumbnail ? (
         <img
           src={item.thumbnail}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover image-zoom"
           loading="lazy"
         />
       ) : (
@@ -48,7 +48,7 @@ export default function NewsSection() {
     <Rail title="Warriors News">
       {loading
         ? Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-[280px] h-[320px] animate-pulse rounded-2xl bg-gray-200" />
+            <div key={i} className="shrink-0 w-[280px] h-[320px] rounded-2xl skeleton-shimmer" />
           ))
         : news.length === 0
         ? [
@@ -56,8 +56,8 @@ export default function NewsSection() {
               <p className="font-lato text-sm text-text-light">No news available</p>
             </div>,
           ]
-        : news.map((item) => (
-            <div key={item.id} className="snap-start shrink-0">
+        : news.map((item, i) => (
+            <div key={item.id} className={`snap-start shrink-0 fade-in-up stagger-${Math.min(i + 1, 6)}`}>
               <NewsRailCard item={item} />
             </div>
           ))}
