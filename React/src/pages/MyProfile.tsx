@@ -316,7 +316,7 @@ export default function MyProfile() {
             onClick={handleLogout}
             className="text-s font-bold text-red-400 hover:text-red-600 transition-colors"
           >
-            Logout
+            Log out
           </button>
         </div>
       </main>
