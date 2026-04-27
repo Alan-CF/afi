@@ -119,6 +119,7 @@ function RemoveModal({
 // ─── My Friends tab ───────────────────────────────────────────────────────────
 
 function MyFriendsTab() {
+  const navigate = useNavigate();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -199,7 +200,10 @@ function MyFriendsTab() {
               index !== friends.length - 1 ? "border-b border-[#d9e2f0]" : ""
             }`}
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <button
+              onClick={() => navigate(`/profile/${friend.profile.id}`)}
+              className="flex min-w-0 items-center gap-3 text-left"
+            >
               <Avatar
                 username={friend.profile.username}
                 avatarUrl={friend.profile.avatar_url}
@@ -215,7 +219,7 @@ function MyFriendsTab() {
                   </p>
                 )}
               </div>
-            </div>
+            </button>
 
             <button
               onClick={() => setPendingRemove(friend)}

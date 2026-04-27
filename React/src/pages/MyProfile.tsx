@@ -21,6 +21,7 @@ import {
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
+import { fetchPendingFriendRequestCount } from "../lib/friends";
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
@@ -41,15 +42,16 @@ export default function MyProfile() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [friends, setFriends] = useState<FriendOption[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const friendsRowRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0 });
+  const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
 
   const navigate = useNavigate();
 
   const onDragStart = (e: React.MouseEvent) => {
     const el = friendsRowRef.current;
     if (!el) return;
-    dragState.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft };
+    dragState.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false };
     el.style.cursor = "grabbing";
   };
   const onDragEnd = () => {
@@ -61,6 +63,7 @@ export default function MyProfile() {
     e.preventDefault();
     const x = e.pageX - friendsRowRef.current.offsetLeft;
     const walk = x - dragState.current.startX;
+    if (Math.abs(walk) > 4) dragState.current.moved = true;
     friendsRowRef.current.scrollLeft = dragState.current.scrollLeft - walk;
   };
 
@@ -73,10 +76,12 @@ export default function MyProfile() {
   }, [user]);
 
   useEffect(() => {
-    const load = () => fetchMyFriends().then(setFriends).catch(() => {});
-    load();
-    window.addEventListener("friend-accepted", load);
-    return () => window.removeEventListener("friend-accepted", load);
+    const loadFriends = () => fetchMyFriends().then(setFriends).catch(() => {});
+    const loadPending = () => fetchPendingFriendRequestCount().then(setPendingCount).catch(() => {});
+    loadFriends();
+    loadPending();
+    window.addEventListener("friend-accepted", () => { loadFriends(); loadPending(); });
+    return () => window.removeEventListener("friend-accepted", () => { loadFriends(); loadPending(); });
   }, []);
 
   const handleEdit = () => {
@@ -286,9 +291,14 @@ export default function MyProfile() {
           <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">My Friends</h2>
           <button
             onClick={() => navigate("/friends")}
-            className="text-xs font-bold text-secondary"
+            className="relative flex items-center gap-1 text-xs font-bold text-secondary"
           >
             View All
+            {pendingCount > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#be123c] text-[10px] font-bold text-white">
+                {pendingCount > 9 ? "9+" : pendingCount}
+              </span>
+            )}
           </button>
         </div>
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 mb-5">
@@ -313,7 +323,11 @@ export default function MyProfile() {
 
             {/* Friend circles */}
             {friends.map((friend) => (
-              <div key={friend.id} className="flex flex-col items-center gap-1 shrink-0">
+              <button
+                key={friend.id}
+                onClick={() => { if (!dragState.current.moved) navigate(`/profile/${friend.id}`); }}
+                className="flex flex-col items-center gap-1 shrink-0"
+              >
                 {friend.avatar_url ? (
                   <div className="h-14 w-14 rounded-full overflow-hidden shrink-0">
                     <img
@@ -333,7 +347,7 @@ export default function MyProfile() {
                 <span className="text-[10px] font-semibold text-gray-500 max-w-[56px] truncate">
                   @{friend.name}
                 </span>
-              </div>
+              </button>
             ))}
 
             {friends.length === 0 && (

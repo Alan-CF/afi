@@ -13,6 +13,7 @@ import ShopProducts from './pages/ShopProducts'
 import Legacy from './pages/Legacy'
 import Statistics from './pages/Statistics';
 import Friends from './pages/Friends';
+import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/fanatic" element={<Fanatic />} />
         <Route path="/myprofile" element={<MyProfile />} />
         <Route path="/friends" element={<Friends />} />
+        <Route path="/profile/:profileId" element={<PublicProfile />} />
         <Route path="/rooms" element={<Rooms />} />
         <Route path="/rooms/create" element={<CreateRoom />} />
         <Route path="/rooms/chat" element={<RoomChat />} />

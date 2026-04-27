@@ -29,6 +29,23 @@ export type SearchResultProfile = FriendProfile & {
   friendshipStatus: FriendshipStatus;
 };
 
+export type PublicProfile = {
+  id: string;
+  username: string;
+  name: string | null;
+  avatar_url: string | null;
+  fanatic_coins: number;
+  streak: number;
+  caption: string | null;
+};
+
+export type PublicFriend = {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  name: string | null;
+};
+
 // ─── Internal helper ─────────────────────────────────────────────────────────
 
 async function getMyId(): Promise<string> {
@@ -245,4 +262,71 @@ export async function declineFriendInvite(
     .eq("id", friendshipId);
 
   if (error) throw error;
+}
+
+// ─── Public profile ───────────────────────────────────────────────────────────
+
+export async function fetchPendingFriendRequestCount(): Promise<number> {
+  const myId = await getMyId();
+  const { count, error } = await supabase
+    .from("friendships")
+    .select("id", { count: "exact", head: true })
+    .eq("receiver_profile_id", myId)
+    .eq("status", "pending");
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function fetchPublicProfileById(
+  profileId: string
+): Promise<PublicProfile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, name, avatar_url, fanatic_coins, streak, caption")
+    .eq("id", profileId)
+    .single();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    username: data.username,
+    name: data.name ?? null,
+    avatar_url: data.avatar_url ?? null,
+    fanatic_coins: data.fanatic_coins ?? 0,
+    streak: data.streak ?? 0,
+    caption: data.caption ?? null,
+  };
+}
+
+export async function fetchPublicFriendsByProfileId(
+  profileId: string
+): Promise<PublicFriend[]> {
+  const { data: friendships, error: fsError } = await supabase
+    .from("friendships")
+    .select("requester_profile_id, receiver_profile_id")
+    .eq("status", "accepted")
+    .or(
+      `requester_profile_id.eq.${profileId},receiver_profile_id.eq.${profileId}`
+    );
+
+  if (fsError || !friendships || friendships.length === 0) return [];
+
+  const friendIds = friendships.map((f) =>
+    f.requester_profile_id === profileId
+      ? f.receiver_profile_id
+      : f.requester_profile_id
+  );
+
+  const { data: profiles, error: pError } = await supabase
+    .from("profiles")
+    .select("id, username, avatar_url, name")
+    .in("id", friendIds);
+
+  if (pError || !profiles) return [];
+
+  return profiles.map((p) => ({
+    id: p.id,
+    username: p.username,
+    avatar_url: p.avatar_url ?? null,
+    name: p.name ?? null,
+  }));
 }
