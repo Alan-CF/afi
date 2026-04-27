@@ -413,12 +413,23 @@ export default function MyProfile() {
         {/* Logout */}
         <div className="flex justify-center mt-8">
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="text-s font-bold text-red-400 hover:text-red-600 transition-colors"
           >
-            Logout
+            Log out
           </button>
         </div>
+
+        <ConfirmDialog
+          isOpen={showLogoutConfirm}
+          title="Log out of AFI?"
+          message="You'll need to sign in again to access your account."
+          confirmLabel="Log out"
+          cancelLabel="Cancel"
+          destructive
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       </main>
     </div>
   );
