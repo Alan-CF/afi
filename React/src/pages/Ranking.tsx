@@ -1,176 +1,217 @@
-import { UserCircleIcon, TrophyIcon, FireIcon, BoltIcon } from "@heroicons/react/24/solid";
+import { UserCircleIcon } from "@heroicons/react/24/solid";
 import NavBar from "../components/layout/NavBar";
+import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
+import Footer from "../components/layout/Footer";
 import { useLeaderboard } from "../hooks/useRanking";
+import { useProfile } from "../hooks/useProfile";
+import EmptyState from "../components/common/EmptyState";
+import LeaderboardPodium, { type PodiumEntry } from "../components/common/LeaderboardPodium";
 
-function Ranking() {
-    const { leaderboard, myRank, loading, error } = useLeaderboard();
-
-    return (
-        <>
-            <NavBar />
-            <div className="min-h-screen bg-gray-50 px-4 py-8">
-
-                <div className="flex flex-col items-center gap-4 mb-7">
-                    <TrophyIcon className="w-24 h-24 text-primary" />
-                    <h1 className="font-lato font-black text-4xl text-text text-center">
-                        Leaderboard
-                    </h1>
-                    <p className="font-lato font-black text-1xl text-text text-center">
-                        Top Fans of the Month
-                    </p>
-                </div>
-
-                {loading && (
-                    <p className="font-lato text-text-light text-center mt-10">Loading leaderboard...</p>
-                )}
-
-                {error && !loading && (
-                    <p className="font-lato text-destructive text-center mt-10">
-                        Could not load the leaderboard. Please try again.
-                    </p>
-                )}
-
-                {!loading && !error && (
-                    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
-
-                        <div className="flex-1 flex flex-col gap-3 order-1 md:order-2">
-                            {leaderboard.map((entry) => (
-                                <LeaderboardRow
-                                    key={entry.profile_id}
-                                    rank={entry.rank}
-                                    username={entry.username}
-                                    points={entry.points}
-                                    avatar_url={entry.avatar_url}
-                                    isCurrentUser={myRank?.profile_id === entry.profile_id}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="w-full md:w-80 shrink-0 flex flex-col gap-4 order-2 md:order-1">
-                            {myRank ? (
-                                <>
-                                    <div className="bg-secondary rounded-2xl p-6 text-white flex flex-col gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-14 h-14 shrink-0">
-                                                {myRank.avatar_url ? (
-                                                    <img
-                                                        src={myRank.avatar_url}
-                                                        alt="your avatar"
-                                                        className="w-14 h-14 rounded-full object-cover"
-                                                        onError={(e) => { e.currentTarget.style.display = "none"; }}
-                                                    />
-                                                ) : (
-                                                    <UserCircleIcon className="w-14 h-14 text-white" />
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                                <p className="font-lato text-sm text-surface-light">Your standing</p>
-                                                <p className="font-lato font-black text-2xl">Rank #{myRank.rank}</p>
-                                                <span className="font-lato font-black text-xs bg-primary text-text rounded-full px-2 py-0.5 self-start">YOU</span>
-                                            </div>
-                                        </div>
-                                        <div className="border-t border-surface-dark pt-4 flex flex-col gap-3">
-                                            <div className="flex justify-between items-center">
-                                                <span className="font-lato text-sm text-surface-light">Your Points</span>
-                                                <span className="font-lato font-black text-xl text-primary">{myRank.points.toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="font-lato text-sm text-surface-light">Points to #1</span>
-                                                <span className="font-lato font-black text-xl text-white">{myRank.pointsToFirst.toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white border-2 border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <BoltIcon className="w-5 h-5 text-primary" />
-                                            <span className="font-lato font-black text-lg text-text">Current Streak</span>
-                                        </div>
-                                        <div className="flex items-end gap-2">
-                                            <span className="font-lato font-black text-4xl text-secondary">{myRank.streak}</span>
-                                            <span className="font-lato text-md text-text mb-1">days in a row</span>
-                                        </div>
-                                        <p className="font-lato text-sm text-text">
-                                            {myRank.streak >= 7
-                                                ? "You are on fire! Keep it up!"
-                                                : myRank.streak >= 3
-                                                ? "Good momentum — don't break the streak!"
-                                                : "Play daily to build your streak."}
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-secondary rounded-2xl p-5 text-white flex flex-col">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <FireIcon className="w-5 h-5 text-primary" />
-                                            <span className="font-lato font-black text-lg text-white">Keep earning!</span>
-                                        </div>
-                                        <p className="font-lato text-sm text-surface-light mb-3">
-                                            Play more games to climb the leaderboard.
-                                        </p>
-                                        <button className="bg-primary text-text font-lato font-black rounded-xl px-4 py-2 w-full">
-                                            Play Now
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="bg-secondary rounded-2xl p-6 text-white text-center">
-                                    <UserCircleIcon className="w-14 h-14 text-surface-light mx-auto mb-3" />
-                                    <p className="font-lato font-black text-xl mb-1">See your rank</p>
-                                    <p className="font-lato text-sm text-surface-light">
-                                        Log in to see where you stand among the top fans.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                    </div>
-                )}
-
-            </div>
-        </>
-    );
+interface RowEntry {
+  profile_id: string;
+  rank: number;
+  username: string;
+  points: number;
+  avatar_url: string | null;
 }
 
-export default Ranking;
-
-interface LeaderboardRowProps {
-    rank: number;
-    username: string;
-    points: number;
-    avatar_url: string | null;
-    isCurrentUser: boolean;
+function ListRow({ entry, isMe = false }: { entry: RowEntry; isMe?: boolean }) {
+  return (
+    <li
+      className={`flex items-center gap-4 py-3 md:py-4 border-b border-container-border/40 last:border-0 ${isMe ? "bg-primary/[0.06] -mx-2 px-2 rounded-xl" : ""}`}
+    >
+      <span className="font-anton text-lg tabular-nums w-10 text-right shrink-0 text-secondary/60">
+        {String(entry.rank).padStart(2, "0")}
+      </span>
+      <div className="h-10 w-10 md:h-11 md:w-11 shrink-0 rounded-full overflow-hidden bg-secondary">
+        {entry.avatar_url ? (
+          <img
+            src={entry.avatar_url}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : (
+          <UserCircleIcon className="h-full w-full text-white/70" />
+        )}
+      </div>
+      <span className="flex-1 min-w-0 truncate font-lato font-bold text-sm md:text-base text-text">
+        {isMe ? "You" : `@${entry.username}`}
+        {isMe && (
+          <span className="ml-2 inline-flex rounded-md bg-primary px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-secondary">
+            YOU
+          </span>
+        )}
+      </span>
+      <span className="font-anton text-base md:text-lg tabular-nums shrink-0 text-secondary">
+        {entry.points.toLocaleString()}
+      </span>
+    </li>
+  );
 }
 
-function LeaderboardRow({ rank, username, points, avatar_url, isCurrentUser }: LeaderboardRowProps) {
-    const isFirst = rank === 1;
-
-    return (
-        <div className={`flex items-center justify-between rounded-2xl px-4 py-3 bg-white shadow-md ${
-            isFirst ? "border-2 border-primary" : isCurrentUser ? "border-2 border-secondary" : "border-2 border-gray-100"
-        }`}>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isFirst ? "bg-primary" : "bg-secondary"}`}>
-                <span className={`font-lato font-black text-sm ${isFirst ? "text-text" : "text-white"}`}>{rank}</span>
-            </div>
-
-            <div className="flex items-center gap-3 flex-1 px-3 min-w-0">
-                <div className="w-9 h-9 shrink-0">
-                    {avatar_url ? (
-                        <img
-                            src={avatar_url}
-                            alt={username}
-                            className="w-9 h-9 rounded-full object-cover"
-                            onError={(e) => { e.currentTarget.style.display = "none"; }}
-                        />
-                    ) : (
-                        <UserCircleIcon className="w-9 h-9 text-text-light" />
-                    )}
-                </div>
-                <span className="font-lato text-sm font-semibold min-w-0 truncate text-text">{username}</span>
-            </div>
-
-            <div className={`min-w-[4rem] h-9 rounded-lg flex items-center justify-center shrink-0 px-3 ${isFirst ? "bg-primary" : "bg-secondary"}`}>
-                <span className={`font-lato font-black text-sm ${isFirst ? "text-text" : "text-white"}`}>{points.toLocaleString()}</span>
-            </div>
+function Skeleton() {
+  return (
+    <div className="mt-6 flex flex-col gap-6">
+      <div className="h-28 rounded-3xl skeleton-shimmer" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-5 rounded-3xl bg-white border border-container-border p-6 md:p-8">
+          <div className="grid grid-cols-3 items-end gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-full skeleton-shimmer" />
+                <div className="h-3 w-16 rounded skeleton-shimmer" />
+                <div className={`${i === 1 ? "h-24" : i === 0 ? "h-16" : "h-12"} w-full rounded-t-2xl skeleton-shimmer`} />
+              </div>
+            ))}
+          </div>
         </div>
-    );
+        <div className="lg:col-span-7 rounded-3xl bg-white border border-container-border p-6 md:p-8">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 py-3 border-b border-container-border/40">
+              <div className="w-10 h-5 rounded skeleton-shimmer" />
+              <div className="h-10 w-10 rounded-full skeleton-shimmer" />
+              <div className="flex-1 h-4 rounded skeleton-shimmer" />
+              <div className="w-20 h-4 rounded skeleton-shimmer" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Ranking() {
+  const { leaderboard, myRank, loading, error } = useLeaderboard();
+  const { user } = useProfile();
+
+  const top3: PodiumEntry[] = leaderboard.slice(0, 3).map((e) => ({
+    profile_id: e.profile_id,
+    rank: e.rank,
+    username: e.username,
+    points: e.points,
+    avatar_url: e.avatar_url,
+  }));
+
+  const list: RowEntry[] = leaderboard.slice(3, 10).map((e) => ({
+    profile_id: e.profile_id,
+    rank: e.rank,
+    username: e.username,
+    points: e.points,
+    avatar_url: e.avatar_url,
+  }));
+
+  const meInTop = !!myRank && leaderboard.some((e) => e.profile_id === myRank.profile_id);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-text-light-soft">
+      <NavBar />
+      <ScoreboardRibbon />
+
+      <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+
+        <header className="fade-in-up stagger-1">
+          <h1 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">Leaderboard</h1>
+          <p className="mt-2 font-lato text-sm md:text-base text-text-light">Top fans of the season.</p>
+        </header>
+
+        {loading && <Skeleton />}
+
+        {error && !loading && (
+          <div className="mt-8">
+            <EmptyState message="Standings are stuck." cta={{ label: "Try again", onClick: () => window.location.reload() }} />
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {myRank && (
+              <section className="mt-6 rounded-3xl bg-white border border-container-border p-6 md:p-8 fade-in-up stagger-2">
+                <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-text-light mb-4">Your Standing</p>
+                <div className="flex items-center gap-4">
+                  <span className="font-anton text-3xl md:text-4xl text-secondary tabular-nums shrink-0">
+                    #{myRank.rank}
+                  </span>
+                  <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-secondary">
+                    {myRank.avatar_url ? (
+                      <img
+                        src={myRank.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : (
+                      <UserCircleIcon className="h-full w-full text-white/70" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-lato font-bold text-secondary truncate">
+                      @{user?.username ?? "you"}
+                    </p>
+                    <p className="font-lato text-sm text-text-light">
+                      {myRank.streak} day streak · {myRank.pointsToFirst.toLocaleString()} pts to #1
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="font-anton text-2xl text-primary tabular-nums">
+                      {myRank.points.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6 fade-in-up stagger-3">
+              <section className="lg:col-span-5 rounded-3xl bg-white border border-container-border p-6 md:p-8">
+                <h2 className="font-anton text-2xl md:text-3xl text-secondary leading-tight mb-6">
+                  Podium
+                </h2>
+                {top3.length === 0 ? (
+                  <EmptyState message="No fans on the board yet." variant="compact" />
+                ) : (
+                  <LeaderboardPodium top3={top3} meId={myRank?.profile_id ?? null} size="full" />
+                )}
+              </section>
+
+              <section className="lg:col-span-7 rounded-3xl bg-white border border-container-border p-6 md:p-8">
+                <h2 className="font-anton text-2xl md:text-3xl text-secondary leading-tight mb-4">
+                  Top Fans
+                </h2>
+                {list.length === 0 && !meInTop ? (
+                  <EmptyState message="Standings open after the first challenge." variant="compact" />
+                ) : (
+                  <ol className="flex flex-col max-h-[520px] lg:max-h-[420px] overflow-y-auto pr-1 -mr-1">
+                    {list.map((entry) => (
+                      <ListRow
+                        key={entry.profile_id}
+                        entry={entry}
+                        isMe={entry.profile_id === myRank?.profile_id}
+                      />
+                    ))}
+                    {myRank && !meInTop && (
+                      <>
+                        <li className="my-2 border-t-2 border-container-border" aria-hidden />
+                        <ListRow
+                          entry={{
+                            profile_id: myRank.profile_id,
+                            rank: myRank.rank,
+                            username: user?.username ?? "you",
+                            points: myRank.points,
+                            avatar_url: myRank.avatar_url,
+                          }}
+                          isMe
+                        />
+                      </>
+                    )}
+                  </ol>
+                )}
+              </section>
+            </div>
+          </>
+        )}
+      </main>
+
+      <Footer />
+    </div>
+  );
 }

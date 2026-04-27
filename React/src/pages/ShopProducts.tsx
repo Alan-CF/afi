@@ -4,6 +4,7 @@ import NavBar from "../components/layout/NavBar";
 import { useSearchParams } from "react-router-dom";
 import { useMemo, useState } from "react";
 import Filters from "../components/layout/Shop/Filters";
+import ThunderChat from "../components/layout/Shop/ThunderChat";
 import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
@@ -21,8 +22,12 @@ function ProductsSkeleton() {
 
 export default function ShopProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [inputValue, setInputValue] = useState(searchParams.get("search") || "");
+  const [inputValue, setInputValue] = useState(
+    searchParams.get("search") || "",
+  );
   const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
+  const [isDesktopFiltersOpen, setIsDesktopFiltersOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleClearSearch = () => {
     setInputValue("");
@@ -47,7 +52,7 @@ export default function ShopProducts() {
 
     for (const [key, value] of searchParams.entries()) {
       if (key === "search") continue;
-      
+
       const trimmedValue = value.trim();
 
       if (!trimmedValue) {
@@ -63,22 +68,41 @@ export default function ShopProducts() {
   const searchQuery = useMemo(() => {
     return searchParams.get("search") || "";
   }, [searchParams]);
-  
-  const { 
-    products, 
+
+  const {
+    products,
     loading: productsLoading,
-    error: productsError 
+    error: productsError,
   } = useShopProducts({ searchQuery, filters });
 
   return (
-    <div className="flex min-h-screen flex-col bg-secondary/15">
+    <div className="flex h-screen flex-col bg-secondary/15">
       <NavBar />
-      <div className="flex flex-1 items-stretch">
-        <div className="hidden md:flex">
-          <Filters className="h-full" />
-        </div>
-        <div className="flex-1">
+
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        {isDesktopFiltersOpen ? (
+          <div className="hidden md:flex">
+            <Filters
+              className="h-full"
+              onClose={() => setIsDesktopFiltersOpen(false)}
+              showCloseOnDesktop
+            />
+          </div>
+        ) : null}
+
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="mt-6 flex w-full items-center gap-2 px-6">
+            {!isDesktopFiltersOpen ? (
+              <button
+                type="button"
+                aria-label="Open desktop filters"
+                className="hidden items-center justify-center rounded-2xl border-4 border-secondary bg-white p-3 text-black transition-colors hover:border-primary hover:text-primary md:inline-flex"
+                onClick={() => setIsDesktopFiltersOpen(true)}
+              >
+                <AdjustmentsHorizontalIcon className="h-6 w-6" />
+              </button>
+            ) : null}
+
             <div className="relative w-full">
               <input
                 type="text"
@@ -107,35 +131,55 @@ export default function ShopProducts() {
             >
               <AdjustmentsHorizontalIcon className="h-6 w-6" />
             </button>
-      </div>
-      {productsLoading ? (
-        <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
-          <ProductsSkeleton />
-          <ProductsSkeleton />
-          <ProductsSkeleton />
-        </div>
-      ) : productsError ? (
-        <div className="flex items-center justify-center px-6 py-10 text-center font-lato text-lg text-red-600">
-          Error loading products. Please try again.
-        </div>
-      ) : products.length === 0 ? (
-        <div className="flex min-h-64 items-center justify-center px-6 py-10 text-center font-lato text-lg text-gray-700">
-          {searchQuery
-            ? `No products found for "${searchQuery}".`
-            : "No products available at the moment."}
-        </div>
-      ) : (
-        <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
-        </div>
+          </div>
+
+          {productsLoading ? (
+            <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
+              <ProductsSkeleton />
+              <ProductsSkeleton />
+              <ProductsSkeleton />
+            </div>
+          ) : productsError ? (
+            <div className="flex items-center justify-center px-6 py-10 text-center font-lato text-lg text-red-600">
+              Error loading products. Please try again.
+            </div>
+          ) : products.length === 0 ? (
+            <div className="flex min-h-64 items-center justify-center px-6 py-10 text-center font-lato text-lg text-gray-700">
+              {searchQuery
+                ? `No products found for "${searchQuery}".`
+                : "No products available at the moment."}
+            </div>
+          ) : (
+            <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </main>
+
+        {!isChatOpen ? (
+          <button
+            type="button"
+            aria-label="Open chat"
+            className="fixed bottom-6 right-6 z-30 h-24 w-24 cursor-pointer rounded-full border-6 border-secondary bg-white shadow-lg"
+            onClick={() => setIsChatOpen(true)}
+          >
+            <img src="/warriors_icon.png" alt="Thunder chat" />
+          </button>
+        ) : null}
+
+        {isChatOpen ? (
+          <ThunderChat onClose={() => setIsChatOpen(false)} />
+        ) : null}
       </div>
 
       {isFiltersDrawerOpen ? (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          role="dialog"
+          aria-modal="true"
+        >
           <button
             type="button"
             aria-label="Close filters"
@@ -153,7 +197,6 @@ export default function ShopProducts() {
           </div>
         </div>
       ) : null}
-      
     </div>
   );
 }

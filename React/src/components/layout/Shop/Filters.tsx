@@ -1,5 +1,3 @@
-
-
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useShopFilters } from "../../../hooks/useShopGroups";
@@ -21,9 +19,14 @@ function FilterSkeleton() {
 interface FiltersProps {
   className?: string;
   onClose?: () => void;
+  showCloseOnDesktop?: boolean;
 }
 
-export default function Filters({ className = "", onClose }: FiltersProps) {
+export default function Filters({
+  className = "",
+  onClose,
+  showCloseOnDesktop = false,
+}: FiltersProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, loading, error } = useShopFilters();
 
@@ -47,12 +50,16 @@ export default function Filters({ className = "", onClose }: FiltersProps) {
       className={`flex max-w-80 self-stretch flex-col gap-4 bg-white p-4 ${className}`.trim()}
     >
       <div className="flex items-center justify-between border-b border-black/10  py-5">
-        <h2 className="text-2xl font-anton font-semibold md:text-3xl">Filters</h2>
+        <h2 className="text-2xl font-anton font-semibold md:text-3xl">
+          Filters
+        </h2>
         {onClose ? (
           <button
             type="button"
             aria-label="Close filters panel"
-            className="rounded-full p-1 text-black transition-colors hover:bg-black/10 md:hidden"
+            className={`rounded-full p-1 text-black transition-colors hover:bg-black/10 ${
+              showCloseOnDesktop ? "" : "md:hidden"
+            }`}
             onClick={onClose}
           >
             <XMarkIcon className="h-6 w-6" />
@@ -79,32 +86,32 @@ export default function Filters({ className = "", onClose }: FiltersProps) {
       {!loading &&
         !error &&
         Object.entries(filters).map(([group, values]) => (
-        <div key={group} className="flex flex-col gap-2">
-          <h4 className="font-lato text-sm font-semibold uppercase text-black">
-            {group.replaceAll("_", " ")}
-          </h4>
+          <div key={group} className="flex flex-col gap-2">
+            <h4 className="font-lato text-sm font-semibold uppercase text-black">
+              {group.replaceAll("_", " ")}
+            </h4>
 
-          <div className="flex flex-wrap gap-2">
-            {values.map((value) => {
-              const selected = searchParams.get(group) === value;
+            <div className="flex flex-wrap gap-2">
+              {values.map((value) => {
+                const selected = searchParams.get(group) === value;
 
-              return (
-                <button
-                  key={value}
-                  onClick={() => handleFilterClick(group, value)}
-                  className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                    selected
-                      ? "bg-secondary text-primary font-bold"
-                      : "border border-gray-300 bg-white text-gray-700 hover:border-black"
-                  }`}
-                >
-                  {value}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={value}
+                    onClick={() => handleFilterClick(group, value)}
+                    className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                      selected
+                        ? "bg-secondary text-primary font-bold"
+                        : "border border-gray-300 bg-white text-gray-700 hover:border-black"
+                    }`}
+                  >
+                    {value}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
     </div>
   );
 }
