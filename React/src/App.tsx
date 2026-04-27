@@ -15,6 +15,7 @@ import Statistics from './pages/Statistics';
 import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
+import Achievements from './pages/Achievements/Achievements';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/shop/products" element={<ShopProducts />} />
         <Route path="/legacy" element={<Legacy />} />
         <Route path="/stats" element={<Statistics />} />
+        <Route path="/achievements" element={<Achievements />} />
       </Routes>
     </>
   );

@@ -3,6 +3,9 @@ import NavBar from "../components/layout/NavBar";
 import { useProfile } from "../hooks/useProfile";
 import { supabase } from "../lib/supabaseClient";
 import AvatarUpload from "../components/ui/AvatarUpload";
+import AchievementDetailModal from "../components/ui/achievements/AchievementDetailModal";
+import { useAchievements } from "../hooks/useAchievements";
+import type { Achievement, AchievementId } from "../data/achievements";
 import {
   FireIcon,
   StarIcon,
@@ -11,13 +14,23 @@ import {
   PencilIcon,
   CheckIcon,
   PlusIcon,
+  LockClosedIcon,
+  BoltIcon,
+  UserPlusIcon,
+  UsersIcon,
+  HomeIcon,
+  AcademicCapIcon,
 } from "@heroicons/react/24/solid";
-import {
-  HandThumbUpIcon as HandThumbUpOutline,
-  StarIcon as StarOutline,
-  CheckIcon as CheckOutline,
-  SunIcon as SunOutline,
-} from "@heroicons/react/24/outline";
+
+const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
+  "first-spark": FireIcon,
+  "ten-day-flame": BoltIcon,
+  "century-fan": TrophyIcon,
+  "new-teammate": UserPlusIcon,
+  "squad-builder": UsersIcon,
+  "room-rookie": HomeIcon,
+  "quiz-debut": AcademicCapIcon,
+};
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
@@ -34,6 +47,7 @@ function getLeague(coins: number): { name: string; emoji: string } {
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
   const league = getLeague(user?.fanatic_coins ?? 0);
+  const { achievements } = useAchievements();
 
   const [isEditing, setIsEditing] = useState(false);
   const [nameText, setNameText] = useState("");
@@ -43,6 +57,7 @@ export default function MyProfile() {
   const [saving, setSaving] = useState(false);
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
 
@@ -360,26 +375,67 @@ export default function MyProfile() {
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2 px-1">
             <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Achievements</h2>
-            <button className="text-xs font-bold text-secondary">View All</button>
+            <button
+              onClick={() => navigate("/achievements")}
+              className="text-xs font-bold text-secondary"
+            >
+              View All
+            </button>
           </div>
           <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4">
             <div className="grid grid-cols-4 gap-3">
-              {[
-                { icon: <HandThumbUpOutline className="h-6 w-6 text-secondary" /> },
-                { icon: <StarOutline className="h-6 w-6 text-secondary" /> },
-                { icon: <CheckOutline className="h-6 w-6 text-secondary" /> },
-                { icon: <SunOutline className="h-6 w-6 text-secondary" /> },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-center rounded-2xl border-4 border-secondary bg-[var(--color-background)] py-5"
+              {achievements.slice(0, 4).map((achievement) => (
+                <button
+                  key={achievement.id}
+                  onClick={() => setSelectedAchievement(achievement)}
+                  className={`group flex flex-col items-center gap-1.5 rounded-2xl border-2 py-4 transition-all hover:-translate-y-0.5 focus:outline-none ${
+                    achievement.unlocked
+                      ? "border-[#d7dce6] bg-[var(--color-background)] shadow-sm hover:shadow-md"
+                      : "border-[#e8edf5] bg-[#f8fafc]"
+                  }`}
                 >
-                  {item.icon}
-                </div>
+                  <div className="relative">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
+                        achievement.unlocked
+                          ? `${achievement.color} shadow-md`
+                          : "bg-[#edf0f4]"
+                      }`}
+                    >
+                      {(() => {
+                        const Icon = PROFILE_ACHIEVEMENT_ICONS[achievement.id];
+                        return (
+                          <Icon
+                            className={`h-5 w-5 ${achievement.unlocked ? "text-white" : "text-[#b0bac8]"}`}
+                          />
+                        );
+                      })()}
+                    </div>
+                    {!achievement.unlocked && (
+                      <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#d1d9e4]">
+                        <LockClosedIcon className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={`font-lato text-[0.55rem] font-bold leading-tight tracking-tight text-center ${
+                      achievement.unlocked ? "text-secondary" : "text-[#9aa5b4]"
+                    }`}
+                  >
+                    {achievement.name}
+                  </span>
+                </button>
               ))}
             </div>
           </section>
         </div>
+
+        {selectedAchievement && (
+          <AchievementDetailModal
+            achievement={selectedAchievement}
+            onClose={() => setSelectedAchievement(null)}
+          />
+        )}
 
         {/* Points History */}
         <div className="flex items-center justify-between mb-2 px-1">
