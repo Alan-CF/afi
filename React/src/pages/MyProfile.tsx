@@ -19,6 +19,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
@@ -38,6 +39,8 @@ export default function MyProfile() {
   const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const navigate = useNavigate();
 
@@ -313,12 +316,23 @@ export default function MyProfile() {
         {/* Logout */}
         <div className="flex justify-center mt-8">
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="text-s font-bold text-red-400 hover:text-red-600 transition-colors"
           >
-            Logout
+            Log out
           </button>
         </div>
+
+        <ConfirmDialog
+          isOpen={showLogoutConfirm}
+          title="Log out of AFI?"
+          message="You'll need to sign in again to access your account."
+          confirmLabel="Log out"
+          cancelLabel="Cancel"
+          destructive
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       </main>
     </div>
   );
