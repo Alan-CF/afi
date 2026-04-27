@@ -17,6 +17,8 @@ import {
   CheckIcon as CheckOutline,
   SunIcon as SunOutline,
 } from "@heroicons/react/24/outline";
+import { signOut } from "../lib/auth";
+import { useNavigate } from "react-router-dom";
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
@@ -37,6 +39,8 @@ export default function MyProfile() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (user) {
       if (user.name) setNameText(user.name);
@@ -49,7 +53,10 @@ export default function MyProfile() {
     setUsernameError(null);
     setIsEditing(true);
   };
-
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
   const handleSave = async () => {
     const trimmedUsername = usernameText.trim();
 
@@ -303,7 +310,15 @@ export default function MyProfile() {
             })()}
           </div>
         </section>
-
+        {/* Logout */}
+        <div className="flex justify-center mt-8">
+          <button
+            onClick={handleLogout}
+            className="text-s font-bold text-red-400 hover:text-red-600 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </main>
     </div>
   );
