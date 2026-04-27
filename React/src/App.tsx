@@ -11,6 +11,7 @@ import Ranking from './pages/Ranking'
 import Shop from './pages/Shop'
 import ShopProducts from './pages/ShopProducts'
 import Events from './pages/Events'
+import Legacy from './pages/Legacy'
 import Statistics from './pages/Statistics'
 import News from "./pages/News";
 import NewsDetail from "./pages/NewsDetail";
@@ -34,6 +35,7 @@ function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/shop/products" element={<ShopProducts />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/legacy" element={<Legacy />} />
         <Route path="/stats" element={<Statistics />} />
         <Route path="/news" element={<News />} />
         <Route path="/news/:id" element={<NewsDetail />} />

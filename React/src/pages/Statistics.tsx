@@ -19,40 +19,140 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "standings", label: "Standings", icon: <TrophyIcon className="h-4 w-4" /> },
 ];
 
+type SortKey = "pts" | "reb" | "ast" | "gp";
+type SortDir = "asc" | "desc";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+  { key: "gp", label: "GP" },
+];
+
+const POSITIONS = ["G", "F", "C"];
+
 function RosterTable({ players }: { players: PlayerStat[] }) {
+  const [sortKey, setSortKey] = useState<SortKey>("pts");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [posFilter, setPosFilter] = useState<string>("");
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const filtered = players
+    .filter((p) => (posFilter ? p.position === posFilter : true))
+    .sort((a, b) => {
+      const dir = sortDir === "desc" ? -1 : 1;
+      return dir * (Number(a[sortKey]) - Number(b[sortKey]));
+    });
+
   return (
-    <div className="rounded-2xl border border-[var(--color-container-border)] overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-secondary">
-              <th className="sticky left-0 z-10 bg-secondary text-left px-3 py-3 text-xs font-bold uppercase tracking-widest text-white/60 w-10"></th>
-              <th className="sticky left-10 z-10 bg-secondary text-left px-2 py-3 text-xs font-bold uppercase tracking-widest text-white/60 whitespace-nowrap">Player</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">GP</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">PTS</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">REB</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">AST</th>
-              <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">POS</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-container-border)]">
-            {players.map((player, i) => (
-              <tr key={i} className="bg-[var(--color-background)] hover:bg-[var(--color-text-light-soft)] transition-colors">
-                <td className="sticky left-0 z-10 bg-inherit px-3 py-3 text-right">
-                  <span className="text-sm font-extrabold text-[var(--color-secondary)]/60">#{player.jersey_number}</span>
-                </td>
-                <td className="sticky left-10 z-10 bg-inherit px-2 py-3">
-                  <p className="font-bold text-sm text-secondary whitespace-nowrap">{player.name}</p>
-                </td>
-                <td className="text-center px-5 py-3"><p className="text-sm text-gray-500 whitespace-nowrap">{player.gp}</p></td>
-                <td className="text-center px-5 py-3"><p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.pts}</p></td>
-                <td className="text-center px-5 py-3"><p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.reb}</p></td>
-                <td className="text-center px-5 py-3"><p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.ast}</p></td>
-                <td className="text-center px-5 py-3"><p className="text-sm text-gray-400 uppercase whitespace-nowrap">{player.position}</p></td>
+    <div className="space-y-3">
+      {/* Controles con scroll */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {SORT_OPTIONS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => handleSort(key)}
+            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+              sortKey === key
+                ? "bg-secondary text-white border-secondary"
+                : "bg-transparent text-gray-400 border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            {label}
+            {sortKey === key && (
+              <span className="text-[10px]">{sortDir === "desc" ? "↓" : "↑"}</span>
+            )}
+          </button>
+        ))}
+
+        <span className="shrink-0 w-px h-4 bg-gray-200" />
+
+        {/* Filtro de posición */}
+        <select
+          value={posFilter}
+          onChange={(e) => setPosFilter(e.target.value)}
+          className="shrink-0 text-xs font-bold rounded-full px-3 py-1.5 border border-gray-200 bg-transparent text-gray-400 cursor-pointer"
+        >
+          <option value="">Position</option>
+          {POSITIONS.map((pos) => (
+            <option key={pos} value={pos}>{pos}</option>
+          ))}
+        </select>
+
+        <span className="shrink-0 text-xs text-gray-400 ml-auto pl-2">
+          {filtered.length} players
+        </span>
+      </div>
+
+      {/* Tabla*/}
+      <div className="rounded-2xl border border-[var(--color-container-border)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-secondary">
+                <th className="sticky left-0 z-10 bg-secondary text-left px-3 py-3 text-xs font-bold uppercase tracking-widest text-white/60 w-10"></th>
+                <th className="sticky left-10 z-10 bg-secondary text-left px-2 py-3 text-xs font-bold uppercase tracking-widest text-white/60 whitespace-nowrap">
+                  Player
+                </th>
+                {(["pts", "reb", "ast", "gp"] as SortKey[]).map((key) => (
+                  <th
+                    key={key}
+                    onClick={() => handleSort(key)}
+                    className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60 cursor-pointer select-none hover:text-white/90 transition-colors"
+                  >
+                    {key.toUpperCase()}
+                    {sortKey === key && (
+                      <span className="ml-0.5 text-[10px]">{sortDir === "desc" ? "↓" : "↑"}</span>
+                    )}
+                  </th>
+                ))}
+                <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">
+                  POS
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-container-border)]">
+              {filtered.map((player, i) => (
+                <tr
+                  key={i}
+                  className="bg-[var(--color-background)] hover:bg-[var(--color-text-light-soft)] transition-colors"
+                >
+                  <td className="sticky left-0 z-10 bg-inherit px-3 py-3 text-right">
+                    <span className="text-sm font-extrabold text-[var(--color-secondary)]/60">
+                      #{player.jersey_number}
+                    </span>
+                  </td>
+                  <td className="sticky left-10 z-10 bg-inherit px-2 py-3">
+                    <p className="font-bold text-sm text-secondary whitespace-nowrap">{player.name}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.pts}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.reb}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.ast}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm text-gray-500 whitespace-nowrap">{player.gp}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm text-gray-400 uppercase whitespace-nowrap">{player.position}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -61,17 +161,23 @@ function RosterTable({ players }: { players: PlayerStat[] }) {
 function GameRow({ game }: { game: Game }) {
   const isFinished = game.status === "Final";
   const won = isFinished && (game.warriors_score ?? 0) > (game.opponent_score ?? 0);
+
   return (
     <div className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3">
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold ${
-        !isFinished ? "bg-gray-100 text-gray-400" : won ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"
+        !isFinished ? "bg-gray-100 text-gray-400" :
+        won ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"
       }`}>
         {!isFinished ? "—" : won ? "W" : "L"}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm text-secondary">{game.is_home ? "vs" : "@"} {game.opponent}</p>
+        <p className="font-bold text-sm text-secondary">
+          {game.is_home ? "vs" : "@"} {game.opponent}
+        </p>
         <p className="text-xs text-gray-400">
-          {new Date(game.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          {new Date(game.date).toLocaleDateString("en-US", {
+            month: "short", day: "numeric", year: "numeric",
+          })}
         </p>
       </div>
       {isFinished ? (
@@ -87,19 +193,34 @@ function GameRow({ game }: { game: Game }) {
 
 function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
   const isWarriors = standing.team === "Golden State Warriors";
+
   return (
     <div className={`flex items-center gap-3 rounded-xl border shadow-sm p-3 ${
-      isWarriors ? "bg-secondary border-secondary" : "bg-[var(--color-background)] border-[var(--color-container-border)]"
+      isWarriors
+        ? "bg-secondary border-secondary"
+        : "bg-[var(--color-background)] border-[var(--color-container-border)]"
     }`}>
-      <span className={`text-sm font-extrabold w-6 text-center ${isWarriors ? "text-[var(--color-primary)]" : "text-gray-400"}`}>{rank}</span>
+      <span className={`text-sm font-extrabold w-6 text-center ${
+        isWarriors ? "text-[var(--color-primary)]" : "text-gray-400"
+      }`}>
+        {rank}
+      </span>
       <div className="flex-1">
-        <p className={`font-bold text-sm ${isWarriors ? "text-white" : "text-secondary"}`}>{standing.team}</p>
-        <p className={`text-xs ${isWarriors ? "text-white/60" : "text-gray-400"}`}>{standing.division}</p>
+        <p className={`font-bold text-sm ${isWarriors ? "text-white" : "text-secondary"}`}>
+          {standing.team}
+        </p>
+        <p className={`text-xs ${isWarriors ? "text-white/60" : "text-gray-400"}`}>
+          {standing.division}
+        </p>
       </div>
       <div className="flex items-center gap-1">
-        <span className={`text-sm font-extrabold ${isWarriors ? "text-white" : "text-secondary"}`}>{standing.wins}W</span>
+        <span className={`text-sm font-extrabold ${isWarriors ? "text-white" : "text-secondary"}`}>
+          {standing.wins}W
+        </span>
         <span className={`text-sm ${isWarriors ? "text-white/40" : "text-gray-300"}`}>–</span>
-        <span className={`text-sm font-extrabold ${isWarriors ? "text-white/70" : "text-gray-400"}`}>{standing.losses}L</span>
+        <span className={`text-sm font-extrabold ${isWarriors ? "text-white/70" : "text-gray-400"}`}>
+          {standing.losses}L
+        </span>
       </div>
     </div>
   );
@@ -155,6 +276,7 @@ export default function Statistics() {
               <p className="font-lato text-sm text-primary font-bold mt-1">Chase Center · San Francisco, CA</p>
             </div>
           </div>
+
           <div className="flex border-t border-white/10">
             {TABS.map((tab) => (
               <button
@@ -173,18 +295,21 @@ export default function Statistics() {
           </div>
         </section>
 
+        {/* Error */}
         {error && (
           <div className="rounded-2xl bg-red-50 border border-red-200 p-4 mb-5 font-lato text-red-600 text-sm font-semibold">
             {error}
           </div>
         )}
 
+        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="h-10 w-10 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
           </div>
         )}
 
+        {/* 1. Roster */}
         {!loading && activeTab === "roster" && (
           <div>
             {players.length > 0
@@ -194,9 +319,10 @@ export default function Statistics() {
           </div>
         )}
 
+        {/* 2. Games */}
         {!loading && activeTab === "games" && (
-          <section className="rounded-2xl border border-container-border bg-text-light-soft p-2">
-            <div className="space-y-2">
+          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
+            <div className="space-y-2.5">
               {games.length > 0
                 ? games.map((game, i) => <GameRow key={i} game={game} />)
                 : <p className="font-lato text-center text-gray-400 py-10">No games found.</p>
@@ -205,9 +331,10 @@ export default function Statistics() {
           </section>
         )}
 
+        {/* Standings */}
         {!loading && activeTab === "standings" && (
-          <section className="rounded-2xl border border-container-border bg-text-light-soft p-2">
-            <div className="space-y-2">
+          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
+            <div className="space-y-2.5">
               {standings
                 .filter((s) => s.conf === "West")
                 .map((s, i) => <StandingRow key={i} standing={s} rank={i + 1} />)
