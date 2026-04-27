@@ -16,11 +16,15 @@ import Statistics from './pages/Statistics'
 import News from "./pages/News";
 import NewsDetail from "./pages/NewsDetail";
 import ScrollToTop from "./components/layout/ScrollToTop";
+import Friends from './pages/Friends';
+import PublicProfile from './pages/PublicProfile';
+import FriendInviteProvider from './components/ui/FriendInviteNotification';
 
 function App() {
   return (
     <>
       <ScrollToTop />
+      <FriendInviteProvider />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/quizzes" element={<Quizzes />} />
