@@ -15,18 +15,16 @@ function getTimeOfDay(): string {
 
 function SectionHeader() {
   return (
-    <div className="flex items-baseline justify-between mb-4 md:mb-5">
+    <div className="relative z-10 flex items-baseline justify-between mb-4 md:mb-5">
       <Link
         to="/news"
-        className="group inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+        className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
       >
-        <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight group-hover:text-primary transition-colors">
-          Latest News
-        </h2>
+        Latest News
       </Link>
       <Link
         to="/news"
-        className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
+        className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
       >
         See all
       </Link>
@@ -50,11 +48,11 @@ export default function HomeTopNews() {
       <section aria-label="Latest News">
         {greeting}
         <SectionHeader />
-        <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)] gap-5 lg:gap-6 h-[420px] lg:h-[460px]">
-          <div className="rounded-3xl skeleton-shimmer" />
-          <div className="grid grid-rows-3 gap-4">
+        <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)] md:items-start lg:items-stretch gap-5 lg:gap-6">
+          <div className="lg:h-[452px] rounded-3xl aspect-[5/4] lg:aspect-auto skeleton-shimmer" />
+          <div className="flex flex-col gap-4 lg:h-[452px] lg:grid lg:grid-rows-3 lg:gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-2xl skeleton-shimmer" />
+              <div key={i} className="rounded-2xl h-[132px] lg:h-full skeleton-shimmer" />
             ))}
           </div>
         </div>
@@ -87,14 +85,14 @@ export default function HomeTopNews() {
       {greeting}
       <SectionHeader />
 
-      <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)] gap-5 lg:gap-6 h-[420px] lg:h-[460px]">
-        <div className="min-w-0 fade-in-up stagger-1">
+      <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)] md:items-start lg:items-stretch gap-5 lg:gap-6">
+        <div className="min-w-0 lg:h-[452px] fade-in-up stagger-1">
           <FeaturedNewsCard article={featured} variant="home" />
         </div>
-        <div className="min-w-0 grid grid-rows-3 gap-4">
+        <div className="min-w-0 flex flex-col gap-4 lg:h-[452px] lg:grid lg:grid-rows-3 lg:gap-4">
           {secondary.map((article, i) => (
-            <div key={article.id} className={`min-h-0 fade-in-up stagger-${i + 2}`}>
-              <SecondaryNewsCard article={article} />
+            <div key={article.id} className={`lg:min-h-0 fade-in-up stagger-${i + 2}`}>
+              <SecondaryNewsCard article={article} className="lg:h-full" />
             </div>
           ))}
         </div>

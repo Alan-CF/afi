@@ -19,7 +19,7 @@ interface Props {
 }
 
 const SIZE: Record<Variant, string> = {
-  home: "aspect-[4/5] md:aspect-auto h-full",
+  home: "aspect-[4/5] md:aspect-auto md:h-[386px] lg:h-[452px]",
   page: "aspect-[4/5] md:aspect-[16/7] md:min-h-[420px] lg:min-h-[480px]",
 };
 
@@ -34,7 +34,8 @@ const PADDING: Record<Variant, string> = {
 };
 
 export default function FeaturedNewsCard({ article, variant = "page" }: Props) {
-  const isBreaking = Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
+  const isBreaking =
+    Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
 
   return (
     <Link
@@ -46,7 +47,9 @@ export default function FeaturedNewsCard({ article, variant = "page" }: Props) {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-transparent" />
 
-      <div className={`relative h-full flex flex-col justify-end text-white max-w-full md:max-w-[70%] ${PADDING[variant]}`}>
+      <div
+        className={`relative h-full flex flex-col justify-end text-white max-w-full md:max-w-[70%] ${PADDING[variant]}`}
+      >
         <div className="mb-2">
           {isBreaking ? (
             <LiveBadge label="BREAKING" />
@@ -56,10 +59,10 @@ export default function FeaturedNewsCard({ article, variant = "page" }: Props) {
             </p>
           )}
         </div>
-        <h2 className={TITLE[variant]}>
-          {article.title}
-        </h2>
-        <p className="mt-2 font-lato text-xs md:text-sm text-white/55">{timeAgo(article.publishedAt)}</p>
+        <h2 className={TITLE[variant]}>{article.title}</h2>
+        <p className="mt-2 font-lato text-xs md:text-sm text-white/55">
+          {timeAgo(article.publishedAt)}
+        </p>
         <p className="mt-1 font-lato text-xs md:text-sm text-white/55 group-hover:text-white/80 transition-colors">
           Read article →
         </p>

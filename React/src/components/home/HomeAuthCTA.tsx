@@ -8,7 +8,7 @@ export default function HomeAuthCTA() {
   if (!hasLoadedOnce) {
     return (
       <section className="mt-8 md:mt-10 lg:mt-12">
-        <div className="rounded-3xl aspect-[4/5] md:aspect-[21/9] skeleton-shimmer" />
+        <div className="rounded-3xl min-h-[440px] sm:min-h-[480px] md:min-h-0 md:aspect-[21/9] skeleton-shimmer" />
       </section>
     );
   }
@@ -18,7 +18,7 @@ export default function HomeAuthCTA() {
   if (isLoggedIn) {
     return (
       <section className="mt-8 md:mt-10 lg:mt-12" aria-label="Continue your fan journey">
-        <article className="relative overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[21/9] bg-secondary flex items-end fade-in-up stagger-1">
+        <article className="relative overflow-hidden rounded-3xl min-h-[440px] sm:min-h-[480px] md:min-h-0 md:aspect-[21/9] bg-secondary flex items-end fade-in-up stagger-1">
           <svg
             viewBox="0 0 800 400"
             className="pointer-events-none absolute inset-0 h-full w-full text-white opacity-[0.05]"
@@ -38,14 +38,14 @@ export default function HomeAuthCTA() {
           </span>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/15 to-transparent" />
 
-          <div className="relative z-10 p-8 md:p-12 flex flex-col gap-4 max-w-lg">
+          <div className="relative z-10 p-6 sm:p-8 md:p-12 flex flex-col gap-3 md:gap-4 max-w-lg">
             <p className="font-lato text-xs font-bold uppercase tracking-[0.18em] text-primary">
               Dub Nation
             </p>
-            <h2 className="font-anton text-4xl md:text-5xl text-white leading-tight">
+            <h2 className="font-anton text-3xl sm:text-4xl md:text-5xl text-white leading-tight">
               Keep building your fan profile
             </h2>
-            <p className="font-lato text-base text-white/65">
+            <p className="font-lato text-sm md:text-base text-white/65">
               Play Fanatic, join a room, or climb the leaderboard.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
@@ -54,7 +54,7 @@ export default function HomeAuthCTA() {
                 onClick={() => navigate("/myprofile")}
                 className="rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-primary-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                Go to profile →
+                Go to profile
               </button>
               <button
                 type="button"
@@ -72,7 +72,7 @@ export default function HomeAuthCTA() {
 
   return (
     <section className="mt-8 md:mt-10 lg:mt-12" aria-label="Join AFI">
-      <article className="relative overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[21/9] bg-primary flex items-end fade-in-up stagger-1">
+      <article className="relative overflow-hidden rounded-3xl min-h-[440px] sm:min-h-[480px] md:min-h-0 md:aspect-[21/9] bg-primary flex items-end fade-in-up stagger-1">
         <svg
           viewBox="0 0 800 400"
           className="pointer-events-none absolute inset-0 h-full w-full text-secondary opacity-[0.07]"
@@ -91,14 +91,14 @@ export default function HomeAuthCTA() {
           W
         </span>
 
-        <div className="relative z-10 p-8 md:p-12 flex flex-col gap-4 max-w-lg">
+        <div className="relative z-10 p-6 sm:p-8 md:p-12 flex flex-col gap-3 md:gap-4 max-w-lg">
           <p className="font-lato text-xs font-bold uppercase tracking-[0.18em] text-secondary">
             Dub Nation
           </p>
-          <h2 className="font-anton text-4xl md:text-5xl text-secondary leading-tight">
+          <h2 className="font-anton text-3xl sm:text-4xl md:text-5xl text-secondary leading-tight">
             Join AFI before tip-off
           </h2>
-          <p className="font-lato text-base text-secondary/75">
+          <p className="font-lato text-sm md:text-base text-secondary/75">
             Create your profile, earn points, join rooms, and follow every Warriors moment.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
@@ -107,7 +107,7 @@ export default function HomeAuthCTA() {
               onClick={() => navigate("/login")}
               className="rounded-2xl bg-secondary px-5 py-3 font-lato text-sm font-bold text-white hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             >
-              Create account →
+              Create account
             </button>
             <button
               type="button"

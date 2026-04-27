@@ -79,7 +79,7 @@ export default function Footer() {
 
                 <div className="hidden md:grid md:grid-cols-4 gap-12 py-16">
                     <div className="flex flex-col gap-6">
-                        <img src="/logo.png" alt="AFI" className="h-24 w-48 object-contain" style={{ mixBlendMode: "screen" }} />
+                        <img src="/logo.png" alt="AFI" className="h-24 w-48 object-contain" />
                         <p className="font-lato text-sm leading-relaxed text-white/60">
                             The ultimate fan engagement platform for Golden State Warriors fans.
                             Live watch-parties, predictions, stats, and fan events — all in one place.
@@ -115,7 +115,7 @@ export default function Footer() {
 
                 <div className="md:hidden py-10">
                     <div className="flex flex-col gap-4 mb-8">
-                        <img src="/logo.png" alt="AFI" className="h-20 w-40 object-contain self-start" style={{ mixBlendMode: "screen" }} />
+                        <img src="/logo.png" alt="AFI" className="h-20 w-40 object-contain self-start" />
                         <p className="font-lato text-sm leading-relaxed text-white/60">
                             The ultimate fan engagement platform for Golden State Warriors fans.
                         </p>

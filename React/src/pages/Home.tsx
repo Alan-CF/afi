@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FireIcon,
   UserGroupIcon,
@@ -70,10 +70,13 @@ export default function Home() {
         <HomeStatsPreview />
 
         <section className="mt-8 md:mt-10 lg:mt-12">
-          <div className="flex items-baseline justify-between mb-4 md:mb-5">
-            <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
+          <div className="mb-4 md:mb-5">
+            <Link
+              to="/shop"
+              className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+            >
               Warriors Shop
-            </h2>
+            </Link>
           </div>
           <ShopSpotlight />
         </section>

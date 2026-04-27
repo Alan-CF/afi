@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useStatsPreview } from "../../hooks/useStatsPreview";
 
 type Accent = "neutral" | "success" | "destructive" | "primary";
@@ -47,7 +47,6 @@ function formatNextGame(start: string): string {
 }
 
 export default function HomeStatsPreview() {
-  const navigate = useNavigate();
   const { record, lastGame, nextGame, topScorer, loading } = useStatsPreview();
 
   const recordValue = record ? `${record.wins}–${record.losses}` : "62–20";
@@ -75,20 +74,22 @@ export default function HomeStatsPreview() {
     <section className="mt-8 md:mt-10 lg:mt-12">
       <div className="flex items-baseline justify-between mb-4 md:mb-5">
         <div>
-          <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
+          <Link
+            to="/stats"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+          >
             Season Stats
-          </h2>
+          </Link>
           <p className="font-lato text-sm text-text-light mt-1">
             2025–26 Warriors snapshot
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/stats")}
-          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
+        <Link
+          to="/stats"
+          className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
         >
-          Explore stats →
-        </button>
+          See all
+        </Link>
       </div>
 
       <div className="rounded-3xl bg-white border border-container-border p-6 md:p-8">

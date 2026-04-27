@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useFanaticGame } from "../../hooks/useFanatic";
 
 interface Props {
@@ -13,7 +13,22 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
   if (isActive) {
     return (
       <section className="mt-8 md:mt-10 lg:mt-12">
-        <article className="relative overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[21/9] bg-secondary flex items-end fade-in-up stagger-1">
+        <div className="flex items-baseline justify-between mb-4 md:mb-5">
+          <Link
+            to="/fanatic"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+          >
+            Daily Challenge
+          </Link>
+          <Link
+            to="/fanatic"
+            className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
+          >
+            See all
+          </Link>
+        </div>
+
+        <article className="relative overflow-hidden rounded-3xl bg-secondary flex items-end min-h-[260px] md:min-h-[300px] lg:min-h-[340px] fade-in-up stagger-1">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -38,7 +53,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
 
               <span
                 className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 translate-x-[20%] font-anton text-primary opacity-[0.07] select-none leading-none"
-                style={{ fontSize: "clamp(10rem, 30vw, 24rem)" }}
+                style={{ fontSize: "clamp(8rem, 22vw, 18rem)" }}
                 aria-hidden
               >
                 W
@@ -49,14 +64,14 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-transparent" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-          <div className="relative z-10 p-8 md:p-12 flex flex-col gap-4 max-w-lg">
+          <div className="relative z-10 p-6 md:p-8 lg:p-10 flex flex-col gap-3 max-w-lg">
             <p className="font-lato text-xs font-bold uppercase tracking-[0.18em] text-primary">
               Daily Challenge
             </p>
-            <h2 className="font-anton text-4xl md:text-5xl text-white leading-tight">
+            <h3 className="font-anton text-2xl md:text-3xl lg:text-4xl text-white leading-tight">
               Who is today's Warrior?
-            </h2>
-            <p className="font-lato text-base text-white/65">
+            </h3>
+            <p className="font-lato text-sm md:text-base text-white/65">
               Guess the player from the clues. New challenge every game day.
             </p>
             <div>
@@ -65,7 +80,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
                 onClick={() => navigate("/fanatic")}
                 className="rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-primary-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                Play now →
+                Play now
               </button>
             </div>
           </div>
@@ -76,7 +91,22 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
 
   return (
     <section className="mt-8 md:mt-10 lg:mt-12">
-      <article className="relative overflow-hidden rounded-3xl bg-white border border-container-border border-l-4 border-l-primary aspect-[4/5] md:aspect-[16/9] flex items-end fade-in-up stagger-1">
+      <div className="flex items-baseline justify-between mb-4 md:mb-5">
+        <Link
+          to="/fanatic"
+          className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+        >
+          Daily Challenge
+        </Link>
+        <Link
+          to="/fanatic"
+          className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
+        >
+          See all
+        </Link>
+      </div>
+
+      <article className="relative overflow-hidden rounded-3xl bg-white border border-container-border border-l-4 border-l-primary flex items-end min-h-[220px] md:min-h-[260px] lg:min-h-[280px] fade-in-up stagger-1">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -97,14 +127,14 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
           </svg>
         )}
 
-        <div className="relative z-10 p-8 md:p-12 flex flex-col gap-3 max-w-lg">
+        <div className="relative z-10 p-6 md:p-8 lg:p-10 flex flex-col gap-3 max-w-lg">
           <p className="font-lato text-xs font-bold uppercase tracking-[0.18em] text-primary">
             Daily Challenge
           </p>
-          <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
+          <h3 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
             Next challenge unlocks before tip-off
-          </h2>
-          <p className="font-lato text-base text-text-light">
+          </h3>
+          <p className="font-lato text-sm md:text-base text-text-light">
             We drop a new player every game day.
           </p>
           <div className="mt-1">
@@ -113,7 +143,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
               onClick={() => navigate("/fanatic")}
               className="rounded-2xl border border-secondary/30 px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-secondary hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
             >
-              View Fanatic →
+              View Fanatic
             </button>
           </div>
         </div>

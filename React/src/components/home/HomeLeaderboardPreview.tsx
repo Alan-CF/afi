@@ -1,10 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useLeaderboardPreview } from "../../hooks/useLeaderboardPreview";
 import LeaderboardPodium, { type PodiumEntry } from "../common/LeaderboardPodium";
 
 export default function HomeLeaderboardPreview() {
-  const navigate = useNavigate();
   const { top, me, loading } = useLeaderboardPreview(10);
 
   const top3: PodiumEntry[] = top.slice(0, 3).map((e) => ({
@@ -32,20 +31,22 @@ export default function HomeLeaderboardPreview() {
     <section className="mt-8 md:mt-10 lg:mt-12">
       <div className="flex items-baseline justify-between mb-4 md:mb-5">
         <div>
-          <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
+          <Link
+            to="/ranking"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+          >
             Leaderboard
-          </h2>
+          </Link>
           <p className="font-lato text-sm text-text-light mt-1">
-            Top fans this week
+            Top fans of this month.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/ranking")}
-          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
+        <Link
+          to="/ranking"
+          className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
         >
-          Full leaderboard →
-        </button>
+          See all
+        </Link>
       </div>
 
       <div className="rounded-3xl bg-white border border-container-border p-5 md:p-7">

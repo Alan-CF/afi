@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { UserGroupIcon, PlusIcon } from "@heroicons/react/24/solid";
 import { useRoomsPreview } from "../../hooks/useRoomsPreview";
 import LiveBadge from "../common/LiveBadge";
@@ -11,20 +11,22 @@ export default function HomeRoomsRail() {
     <section className="mt-8 md:mt-10 lg:mt-12">
       <div className="flex items-baseline justify-between mb-4 md:mb-5">
         <div>
-          <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
+          <Link
+            to="/rooms"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+          >
             Watch Parties
-          </h2>
+          </Link>
           <p className="font-lato text-sm text-text-light mt-1">
             Join your crew or start a room.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/rooms")}
-          className="font-lato text-sm font-bold text-secondary hover:text-primary transition-colors shrink-0"
+        <Link
+          to="/rooms"
+          className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
         >
-          See all →
-        </button>
+          See all
+        </Link>
       </div>
 
       <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-proximity scroll-pl-4 md:scroll-pl-6 lg:scroll-pl-8 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
@@ -120,7 +122,7 @@ export default function HomeRoomsRail() {
             onClick={() => navigate("/rooms/create")}
             className="mt-4 font-lato text-sm font-bold text-secondary hover:text-primary transition-colors"
           >
-            Create the first room →
+            Create the first room
           </button>
         </div>
       )}
