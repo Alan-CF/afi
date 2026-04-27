@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { PencilIcon, UserIcon } from "@heroicons/react/24/solid";
 
@@ -6,7 +6,7 @@ interface AvatarUploadProps {
   avatarUrl?: string | null;
   userId: string;
   onUploadSuccess?: (newUrl: string) => void;
-  size?: number; // px, default 88
+  size?: number;
 }
 
 export default function AvatarUpload({
@@ -16,6 +16,7 @@ export default function AvatarUpload({
   size = 88,
 }: AvatarUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imgError, setImgError] = useState(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,17 +44,20 @@ export default function AvatarUpload({
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
     await supabase
       .from("profiles")
       .update({ avatar_url: publicUrl })
       .eq("id", userId);
 
+    setImgError(false);
     onUploadSuccess?.(publicUrl);
   };
+
+  const hasValidAvatar = avatarUrl && !imgError;
 
   return (
     <>
@@ -62,15 +66,19 @@ export default function AvatarUpload({
         style={{ width: size, height: size }}
         onClick={() => fileInputRef.current?.click()}
       >
-        {avatarUrl ? (
+        {hasValidAvatar ? (
           <img
             src={avatarUrl}
             alt="Avatar"
             className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-secondary/60">
-            <UserIcon className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} />
+            <UserIcon
+              className="text-white"
+              style={{ width: size * 0.5, height: size * 0.5 }}
+            />
           </div>
         )}
 
