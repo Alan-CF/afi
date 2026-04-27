@@ -1,21 +1,21 @@
-import { Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import Fanatic from './pages/Fanatic'
-import Login from './pages/Login'
+import { Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Fanatic from './pages/Fanatic';
+import Login from './pages/Login';
 import MyProfile from './pages/MyProfile';
-import Quizzes from "./pages/Quizzes"
-import Rooms from './pages/Rooms/Rooms'
-import CreateRoom from './pages/Rooms/CreateRoom'
-import RoomChat from './pages/Rooms/RoomChat'
-import Ranking from './pages/Ranking'
-import Shop from './pages/Shop'
-import ShopProducts from './pages/ShopProducts'
-import Events from './pages/Events'
-import Legacy from './pages/Legacy'
-import Statistics from './pages/Statistics'
-import News from "./pages/News";
-import NewsDetail from "./pages/NewsDetail";
-import ScrollToTop from "./components/layout/ScrollToTop";
+import Quizzes from './pages/Quizzes';
+import Rooms from './pages/Rooms/Rooms';
+import CreateRoom from './pages/Rooms/CreateRoom';
+import RoomChat from './pages/Rooms/RoomChat';
+import Ranking from './pages/Ranking';
+import Shop from './pages/Shop';
+import ShopProducts from './pages/ShopProducts';
+import Events from './pages/Events';
+import Legacy from './pages/Legacy';
+import Statistics from './pages/Statistics';
+import News from './pages/News';
+import NewsDetail from './pages/NewsDetail';
+import ScrollToTop from './components/layout/ScrollToTop';
 import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
@@ -31,6 +31,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/fanatic" element={<Fanatic />} />
         <Route path="/myprofile" element={<MyProfile />} />
+        <Route path="/friends" element={<Friends />} />
+        <Route path="/profile/:profileId" element={<PublicProfile />} />
         <Route path="/rooms" element={<Rooms />} />
         <Route path="/rooms/create" element={<CreateRoom />} />
         <Route path="/rooms/chat" element={<RoomChat />} />
@@ -48,4 +50,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
