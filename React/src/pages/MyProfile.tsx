@@ -22,6 +22,7 @@ import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 import { fetchPendingFriendRequestCount } from "../lib/friends";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
@@ -46,6 +47,8 @@ export default function MyProfile() {
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
   const navigate = useNavigate();
 
   const onDragStart = (e: React.MouseEvent) => {
