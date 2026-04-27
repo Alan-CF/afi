@@ -144,6 +144,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
     title: room.title,
     status: room.status,
     accent: room.accent,
+    memberProfileIds: memberIds,
     members: formatMembers(
       memberIds
         .map((memberId) => profileMap.get(memberId))

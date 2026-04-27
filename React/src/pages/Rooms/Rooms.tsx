@@ -8,6 +8,8 @@ import {
   jumpToMockGameLastQuarter,
   resetMockGame,
 } from "../../hooks/useMockRoomGameFeed";
+import { fetchMyFriendIds } from "../../lib/friends";
+import { supabase } from "../../lib/supabaseClient";
 
 type RoomsLocationState = {
   removedRoomId?: number;
@@ -19,11 +21,24 @@ function RoomsPage() {
   const state = location.state as RoomsLocationState | null;
 
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [activeFilter, setActiveFilter] = useState<"all" | "live" | "offline">(
+  const [activeFilter, setActiveFilter] = useState<"all" | "live" | "offline" | "friends">(
     "all"
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
+  const [friendIds, setFriendIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setMyId(user.id);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (activeFilter !== "friends") return;
+    fetchMyFriendIds().then(setFriendIds).catch(console.error);
+  }, [activeFilter]);
 
   useEffect(() => {
     async function loadRooms() {
@@ -63,8 +78,16 @@ function RoomsPage() {
 
   const filteredRooms = useMemo(() => {
     if (activeFilter === "all") return orderedRooms;
+    if (activeFilter === "friends") {
+      const friendSet = new Set(friendIds);
+      return orderedRooms.filter((room) =>
+        room.memberProfileIds
+          .filter((id) => id !== myId)
+          .every((id) => friendSet.has(id))
+      );
+    }
     return orderedRooms.filter((room) => room.status === activeFilter);
-  }, [orderedRooms, activeFilter]);
+  }, [orderedRooms, activeFilter, friendIds, myId]);
 
   const liveCount = rooms.filter((room) => room.status === "live").length;
   const offlineCount = rooms.filter((room) => room.status === "offline").length;
@@ -180,6 +203,17 @@ function RoomsPage() {
                   }`}
                 >
                   Offline ({offlineCount})
+                </button>
+
+                <button
+                  onClick={() => setActiveFilter("friends")}
+                  className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
+                    activeFilter === "friends"
+                      ? "bg-[#edf3ff] text-secondary"
+                      : "bg-surface-container text-on-surface-variant"
+                  }`}
+                >
+                  Only friends
                 </button>
               </div>
             </div>
