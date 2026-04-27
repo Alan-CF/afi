@@ -73,7 +73,10 @@ export default function MyProfile() {
   }, [user]);
 
   useEffect(() => {
-    fetchMyFriends().then(setFriends).catch(() => {});
+    const load = () => fetchMyFriends().then(setFriends).catch(() => {});
+    load();
+    window.addEventListener("friend-accepted", load);
+    return () => window.removeEventListener("friend-accepted", load);
   }, []);
 
   const handleEdit = () => {

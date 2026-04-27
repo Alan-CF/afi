@@ -8,64 +8,90 @@ const ACCENTS = [
   "#A4BCE9", "#8CA8DB", "#B5C4E0", "#9FB3D8",
 ];
 
+const DISMISS_MS = 10_000;
+
 type Notification = PendingInvite & { key: string };
 
 function Toast({
   notification,
   onAccept,
   onDecline,
+  onExpire,
 }: {
   notification: Notification;
   onAccept: () => void;
   onDecline: () => void;
+  onExpire: () => void;
 }) {
   const { from } = notification;
   const accentIndex = from.username.charCodeAt(0) % ACCENTS.length;
+  const [barStarted, setBarStarted] = useState(false);
+
+  useEffect(() => {
+    // rAF so the transition fires after first paint
+    const frame = requestAnimationFrame(() => setBarStarted(true));
+    const timer = setTimeout(onExpire, DISMISS_MS);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, []);
 
   return (
-    <div className="flex w-72 items-start gap-3 rounded-[1.25rem] border border-[#cfd9ea] bg-white p-4 shadow-[0_8px_30px_rgba(29,66,138,0.18)]">
-      {from.avatar_url ? (
-        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
-          <img
-            src={from.avatar_url}
-            alt={from.username}
-            className="h-full w-full object-cover"
-          />
+    <div className="w-60 overflow-hidden rounded-xl bg-white shadow-[0_4px_20px_rgba(29,66,138,0.16)] ring-1 ring-[#dde6f5]">
+      {/* Content row */}
+      <div className="flex items-center gap-2.5 px-3 pt-3 pb-2.5">
+        {/* Avatar */}
+        {from.avatar_url ? (
+          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full">
+            <img src={from.avatar_url} alt={from.username} className="h-full w-full object-cover" />
+          </div>
+        ) : (
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-lato text-sm font-bold text-secondary"
+            style={{ backgroundColor: ACCENTS[accentIndex] }}
+          >
+            {from.username[0]?.toUpperCase()}
+          </div>
+        )}
+
+        {/* Text */}
+        <div className="min-w-0 flex-1">
+          <p className="font-lato text-xs font-bold text-[#1f3668]">Friend request</p>
+          <p className="truncate font-lato text-[11px] text-[#6b7a90]">
+            <span className="font-semibold text-secondary">@{from.username}</span>
+          </p>
         </div>
-      ) : (
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-lato font-bold text-secondary"
-          style={{ backgroundColor: ACCENTS[accentIndex] }}
+
+        {/* Dismiss */}
+        <button
+          onClick={onDecline}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#94a3b8] hover:bg-[#f1f5f9] hover:text-[#64748b]"
         >
-          {from.username[0]?.toUpperCase()}
-        </div>
-      )}
+          <XMarkIcon className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
-      <div className="min-w-0 flex-1">
-        <p className="font-lato text-sm font-bold text-[#1f3668]">
-          Friend request
-        </p>
-        <p className="mt-0.5 truncate font-lato text-xs text-[#6b7a90]">
-          <span className="font-semibold">@{from.username}</span> wants to be
-          your friend
-        </p>
+      {/* Accept button */}
+      <div className="px-3 pb-3">
+        <button
+          onClick={onAccept}
+          className="flex w-full items-center justify-center gap-1 rounded-lg bg-secondary py-1.5 font-lato text-xs font-bold text-white hover:bg-[#16327a]"
+        >
+          <CheckIcon className="h-3 w-3" />
+          Accept
+        </button>
+      </div>
 
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            onClick={onDecline}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff1f2] text-[#be123c] transition-colors hover:bg-[#fce7f3]"
-            title="Decline"
-          >
-            <XMarkIcon className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={onAccept}
-            className="flex h-7 items-center gap-1 rounded-full bg-secondary px-3 font-lato text-xs font-bold text-white transition-colors hover:bg-[#16327a]"
-          >
-            <CheckIcon className="h-3 w-3" />
-            Accept
-          </button>
-        </div>
+      {/* Timer bar */}
+      <div className="h-0.5 w-full bg-[#e8eef8]">
+        <div
+          className="h-full bg-secondary"
+          style={{
+            width: barStarted ? "0%" : "100%",
+            transition: barStarted ? `width ${DISMISS_MS}ms linear` : "none",
+          }}
+        />
       </div>
     </div>
   );
@@ -139,6 +165,7 @@ export default function FriendInviteProvider() {
   async function handleAccept(n: Notification) {
     try {
       await acceptFriendInvite(n.friendshipId);
+      window.dispatchEvent(new CustomEvent("friend-accepted"));
     } catch (err) {
       console.error("Accept invite error:", err);
     } finally {
@@ -159,13 +186,14 @@ export default function FriendInviteProvider() {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
       {notifications.map((n) => (
         <Toast
           key={n.key}
           notification={n}
           onAccept={() => handleAccept(n)}
           onDecline={() => handleDecline(n)}
+          onExpire={() => dismiss(n.key)}
         />
       ))}
     </div>
