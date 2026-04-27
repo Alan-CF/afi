@@ -20,13 +20,13 @@ export default function HomeEventsSection() {
   const { events, loading } = useEventsFeed({ limit: 5, pollMs: 60_000 });
 
   return (
-    <section className="mt-10 md:mt-20">
-      <div className="flex items-baseline justify-between mb-4 md:mb-6">
+    <section className="mt-8 md:mt-10 lg:mt-12">
+      <div className="flex items-baseline justify-between mb-4 md:mb-5">
         <Link
           to="/events"
           className="group inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
         >
-          <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight group-hover:text-primary transition-colors">
+          <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight group-hover:text-primary transition-colors">
             Upcoming Events
           </h2>
         </Link>

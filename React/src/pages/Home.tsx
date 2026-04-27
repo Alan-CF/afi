@@ -25,8 +25,8 @@ function QuickActions() {
   ];
 
   return (
-    <section className="mt-10 md:mt-20">
-      <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight mb-4 md:mb-6">
+    <section className="mt-8 md:mt-10 lg:mt-12">
+      <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight mb-4 md:mb-5">
         Jump In
       </h2>
       <div className="grid grid-cols-3 gap-3 md:gap-4">
@@ -43,8 +43,8 @@ function QuickActions() {
             </span>
             <div>
               <p className="font-anton text-lg md:text-xl text-secondary leading-tight">{a.label}</p>
-              <p className="mt-1 font-lato text-xs md:text-sm font-bold text-primary">
-                {a.desc} →
+              <p className="mt-1 font-lato text-xs md:text-sm text-text-light">
+                {a.desc}
               </p>
             </div>
           </button>
@@ -69,9 +69,9 @@ export default function Home() {
         <HomeLeaderboardPreview />
         <HomeStatsPreview />
 
-        <section className="mt-16 md:mt-20">
-          <div className="flex items-baseline justify-between mb-4 md:mb-6">
-            <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
+        <section className="mt-8 md:mt-10 lg:mt-12">
+          <div className="flex items-baseline justify-between mb-4 md:mb-5">
+            <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
               Warriors Shop
             </h2>
           </div>

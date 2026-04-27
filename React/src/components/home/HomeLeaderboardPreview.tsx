@@ -29,10 +29,10 @@ export default function HomeLeaderboardPreview() {
       : null;
 
   return (
-    <section className="mt-16 md:mt-20">
-      <div className="flex items-baseline justify-between mb-4 md:mb-6">
+    <section className="mt-8 md:mt-10 lg:mt-12">
+      <div className="flex items-baseline justify-between mb-4 md:mb-5">
         <div>
-          <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
+          <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
             Leaderboard
           </h2>
           <p className="font-lato text-sm text-text-light mt-1">

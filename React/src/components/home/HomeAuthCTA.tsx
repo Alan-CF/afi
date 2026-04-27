@@ -7,7 +7,7 @@ export default function HomeAuthCTA() {
 
   if (!hasLoadedOnce) {
     return (
-      <section className="mt-16 md:mt-20">
+      <section className="mt-8 md:mt-10 lg:mt-12">
         <div className="rounded-3xl aspect-[4/5] md:aspect-[21/9] skeleton-shimmer" />
       </section>
     );
@@ -17,7 +17,7 @@ export default function HomeAuthCTA() {
 
   if (isLoggedIn) {
     return (
-      <section className="mt-16 md:mt-20" aria-label="Continue your fan journey">
+      <section className="mt-8 md:mt-10 lg:mt-12" aria-label="Continue your fan journey">
         <article className="relative overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[21/9] bg-secondary flex items-end fade-in-up stagger-1">
           <svg
             viewBox="0 0 800 400"
@@ -71,7 +71,7 @@ export default function HomeAuthCTA() {
   }
 
   return (
-    <section className="mt-16 md:mt-20" aria-label="Join AFI">
+    <section className="mt-8 md:mt-10 lg:mt-12" aria-label="Join AFI">
       <article className="relative overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[21/9] bg-primary flex items-end fade-in-up stagger-1">
         <svg
           viewBox="0 0 800 400"

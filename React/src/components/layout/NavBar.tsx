@@ -35,45 +35,47 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className="sticky top-0 z-40 flex items-center justify-between gap-4 px-4 py-3 bg-secondary text-white md:px-6">
-                <button onClick={() => navigate("/")} className="shrink-0 cursor-pointer" aria-label="Go to home">
-                    <img src="/logo.png" alt="AFI" className="h-10" />
-                </button>
+            <nav className="sticky top-0 z-40 w-full bg-secondary text-white">
+                <div className="mx-auto w-full max-w-[1280px] flex items-center justify-between gap-4 px-4 py-3 md:px-6 lg:px-8">
+                    <button onClick={() => navigate("/")} className="shrink-0 cursor-pointer" aria-label="Go to home">
+                        <img src="/logo.png" alt="AFI" className="h-10" />
+                    </button>
 
-                <ul className="hidden md:flex flex-1 items-center justify-center gap-1">
-                    {PRIMARY_LINKS.map((link) => (
-                        <li key={link.to}>
-                            <NavLink
-                                to={link.to}
-                                end={link.to === "/"}
-                                className={({ isActive }) =>
-                                    `px-3 py-2 font-lato text-sm font-bold uppercase tracking-wider transition-all duration-150 ${
-                                        isActive
-                                            ? "text-primary font-black border-b-2 border-primary pb-0.5"
-                                            : "text-white hover:text-primary/80"
-                                    }`
-                                }
-                            >
-                                {link.label}
-                            </NavLink>
-                        </li>
-                    ))}
-                </ul>
+                    <ul className="hidden md:flex flex-1 items-center justify-center gap-1">
+                        {PRIMARY_LINKS.map((link) => (
+                            <li key={link.to}>
+                                <NavLink
+                                    to={link.to}
+                                    end={link.to === "/"}
+                                    className={({ isActive }) =>
+                                        `px-3 py-2 font-lato text-sm font-bold uppercase tracking-wider transition-all duration-150 ${
+                                            isActive
+                                                ? "text-primary font-black border-b-2 border-primary pb-0.5"
+                                                : "text-white hover:text-primary/80"
+                                        }`
+                                    }
+                                >
+                                    {link.label}
+                                </NavLink>
+                            </li>
+                        ))}
+                    </ul>
 
-                <div className="flex items-center gap-3 md:gap-5 shrink-0">
-                    <button onClick={() => setIsCartOpen(true)} type="button" className="cursor-pointer" aria-label="Open cart">
-                        <ShoppingBagIcon className="w-6 h-6" />
-                    </button>
-                    <button type="button" className="md:hidden cursor-pointer" aria-label="Open menu" onClick={() => setIsMenuOpen(true)}>
-                        <Bars3Icon className="w-6 h-6" />
-                    </button>
-                    <button type="button" onClick={() => navigate("/myprofile")} className="cursor-pointer" aria-label="Go to profile">
-                        {user?.avatar_url ? (
-                            <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                        ) : (
-                            <UserCircleIcon className="w-10 h-10" />
-                        )}
-                    </button>
+                    <div className="flex items-center gap-3 md:gap-5 shrink-0">
+                        <button onClick={() => setIsCartOpen(true)} type="button" className="cursor-pointer" aria-label="Open cart">
+                            <ShoppingBagIcon className="w-6 h-6" />
+                        </button>
+                        <button type="button" className="md:hidden cursor-pointer" aria-label="Open menu" onClick={() => setIsMenuOpen(true)}>
+                            <Bars3Icon className="w-6 h-6" />
+                        </button>
+                        <button type="button" onClick={() => navigate("/myprofile")} className="cursor-pointer" aria-label="Go to profile">
+                            {user?.avatar_url ? (
+                                <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                            ) : (
+                                <UserCircleIcon className="w-10 h-10" />
+                            )}
+                        </button>
+                    </div>
                 </div>
             </nav>
 

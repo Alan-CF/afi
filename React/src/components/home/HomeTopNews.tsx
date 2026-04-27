@@ -15,15 +15,14 @@ function getTimeOfDay(): string {
 
 function SectionHeader() {
   return (
-    <div className="flex items-baseline justify-between mb-4 md:mb-6">
+    <div className="flex items-baseline justify-between mb-4 md:mb-5">
       <Link
         to="/news"
-        className="group inline-flex items-baseline gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+        className="group inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
       >
-        <h2 className="font-anton text-3xl md:text-4xl text-secondary leading-tight group-hover:text-primary transition-colors">
+        <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight group-hover:text-primary transition-colors">
           Latest News
         </h2>
-        <span className="font-anton text-2xl md:text-3xl text-secondary/40 group-hover:text-primary transition-colors">→</span>
       </Link>
       <Link
         to="/news"
@@ -51,9 +50,9 @@ export default function HomeTopNews() {
       <section aria-label="Latest News">
         {greeting}
         <SectionHeader />
-        <div className="hidden md:grid grid-cols-12 gap-6">
-          <div className="col-span-7 rounded-3xl aspect-[16/9] skeleton-shimmer" />
-          <div className="col-span-5 grid grid-rows-3 gap-4">
+        <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)] gap-5 lg:gap-6 h-[420px] lg:h-[460px]">
+          <div className="rounded-3xl skeleton-shimmer" />
+          <div className="grid grid-rows-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="rounded-2xl skeleton-shimmer" />
             ))}
@@ -81,7 +80,6 @@ export default function HomeTopNews() {
 
   const featured = news[0];
   const secondary = news.slice(1, 4);
-  const compactDesktop = news.slice(4, 6);
   const compactMobile = news.slice(1, 5);
 
   return (
@@ -89,32 +87,22 @@ export default function HomeTopNews() {
       {greeting}
       <SectionHeader />
 
-      <div className="hidden md:grid grid-cols-12 gap-6">
-        <div className="col-span-7 fade-in-up stagger-1">
-          <FeaturedNewsCard article={featured} />
+      <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)] gap-5 lg:gap-6 h-[420px] lg:h-[460px]">
+        <div className="min-w-0 fade-in-up stagger-1">
+          <FeaturedNewsCard article={featured} variant="home" />
         </div>
-        <div className="col-span-5 grid grid-rows-3 gap-4">
+        <div className="min-w-0 grid grid-rows-3 gap-4">
           {secondary.map((article, i) => (
-            <div key={article.id} className={`fade-in-up stagger-${i + 2}`}>
+            <div key={article.id} className={`min-h-0 fade-in-up stagger-${i + 2}`}>
               <SecondaryNewsCard article={article} />
             </div>
           ))}
         </div>
       </div>
 
-      {compactDesktop.length > 0 && (
-        <div className="hidden md:grid grid-cols-2 gap-4 mt-6">
-          {compactDesktop.map((article, i) => (
-            <div key={article.id} className={`fade-in-up stagger-${i + 5}`}>
-              <CompactNewsCard article={article} />
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="md:hidden flex flex-col gap-4">
         <div className="fade-in-up stagger-1">
-          <FeaturedNewsCard article={featured} />
+          <FeaturedNewsCard article={featured} variant="home" />
         </div>
         <div className="flex flex-col">
           {compactMobile.map((article, i) => (

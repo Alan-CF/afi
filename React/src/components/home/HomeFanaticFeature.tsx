@@ -12,7 +12,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
 
   if (isActive) {
     return (
-      <section className="mt-16 md:mt-20">
+      <section className="mt-8 md:mt-10 lg:mt-12">
         <article className="relative overflow-hidden rounded-3xl aspect-[4/5] md:aspect-[21/9] bg-secondary flex items-end fade-in-up stagger-1">
           {imageUrl ? (
             <img
@@ -75,7 +75,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
   }
 
   return (
-    <section className="mt-16 md:mt-20">
+    <section className="mt-8 md:mt-10 lg:mt-12">
       <article className="relative overflow-hidden rounded-3xl bg-white border border-container-border border-l-4 border-l-primary aspect-[4/5] md:aspect-[16/9] flex items-end fade-in-up stagger-1">
         {imageUrl ? (
           <img

@@ -111,8 +111,8 @@ export default function Ranking() {
       <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
 
         <header className="fade-in-up stagger-1">
-          <h1 className="font-anton text-4xl md:text-5xl text-secondary leading-tight">Leaderboard</h1>
-          <p className="mt-2 font-lato text-base text-text-light">Top fans of the season.</p>
+          <h1 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">Leaderboard</h1>
+          <p className="mt-2 font-lato text-sm md:text-base text-text-light">Top fans of the season.</p>
         </header>
 
         {loading && <Skeleton />}

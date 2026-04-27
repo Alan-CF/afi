@@ -76,8 +76,8 @@ export default function News() {
       <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
 
         <header className="mb-6 md:mb-8 fade-in-up stagger-1">
-          <h1 className="font-anton text-4xl md:text-5xl text-secondary leading-tight">Warriors News</h1>
-          <p className="mt-2 font-lato text-base text-text-light">Latest from the Dub Nation.</p>
+          <h1 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">Warriors News</h1>
+          <p className="mt-2 font-lato text-sm md:text-base text-text-light">Latest from the Dub Nation.</p>
         </header>
 
         {loading && (
@@ -108,7 +108,7 @@ export default function News() {
 
             {topStories.length > 0 && (
               <>
-                <h2 className="font-anton text-3xl md:text-4xl text-secondary mt-12 md:mt-16 mb-4 md:mb-6 fade-in-up stagger-3">
+                <h2 className="font-anton text-2xl md:text-3xl text-secondary mt-10 md:mt-14 mb-4 md:mb-6 fade-in-up stagger-3">
                   Top Stories
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -123,7 +123,7 @@ export default function News() {
 
             {grid.length > 0 && (
               <>
-                <h2 className="font-anton text-3xl md:text-4xl text-secondary mt-16 md:mt-20 mb-4 md:mb-6 fade-in-up stagger-3">
+                <h2 className="font-anton text-2xl md:text-3xl text-secondary mt-12 md:mt-16 mb-4 md:mb-6 fade-in-up stagger-3">
                   More Stories
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

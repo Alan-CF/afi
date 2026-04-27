@@ -75,7 +75,7 @@ export default function Footer() {
                 <BayBridgeSilhouette />
             </div>
 
-            <div className="relative mx-auto max-w-[1280px] px-6 md:px-8">
+            <div className="relative mx-auto max-w-[1280px] px-4 md:px-6 lg:px-8">
 
                 <div className="hidden md:grid md:grid-cols-4 gap-12 py-16">
                     <div className="flex flex-col gap-6">
