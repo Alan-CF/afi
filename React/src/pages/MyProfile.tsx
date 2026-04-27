@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import NavBar from "../components/layout/NavBar";
 import { useProfile } from "../hooks/useProfile";
 import { supabase } from "../lib/supabaseClient";
@@ -10,6 +10,7 @@ import {
   ClockIcon,
   PencilIcon,
   CheckIcon,
+  PlusIcon,
 } from "@heroicons/react/24/solid";
 import {
   HandThumbUpIcon as HandThumbUpOutline,
@@ -19,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
+import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
@@ -38,8 +40,29 @@ export default function MyProfile() {
   const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [friends, setFriends] = useState<FriendOption[]>([]);
+  const friendsRowRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0 });
 
   const navigate = useNavigate();
+
+  const onDragStart = (e: React.MouseEvent) => {
+    const el = friendsRowRef.current;
+    if (!el) return;
+    dragState.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft };
+    el.style.cursor = "grabbing";
+  };
+  const onDragEnd = () => {
+    dragState.current.dragging = false;
+    if (friendsRowRef.current) friendsRowRef.current.style.cursor = "grab";
+  };
+  const onDragMove = (e: React.MouseEvent) => {
+    if (!dragState.current.dragging || !friendsRowRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - friendsRowRef.current.offsetLeft;
+    const walk = x - dragState.current.startX;
+    friendsRowRef.current.scrollLeft = dragState.current.scrollLeft - walk;
+  };
 
   useEffect(() => {
     if (user) {
@@ -48,6 +71,10 @@ export default function MyProfile() {
       if (user.caption) setAboutText(user.caption);
     }
   }, [user]);
+
+  useEffect(() => {
+    fetchMyFriends().then(setFriends).catch(() => {});
+  }, []);
 
   const handleEdit = () => {
     setUsernameError(null);
@@ -200,85 +227,141 @@ export default function MyProfile() {
           </div>
         </section>
 
-        {/* About me + Achievements */}
-        <div className="flex flex-col md:flex-row gap-5 mb-5">
-
-          {/* About me */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">About me</h2>
-              {!isEditing ? (
+        {/* About me */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">About me</h2>
+            {!isEditing ? (
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-1 text-xs font-bold text-secondary"
+              >
+                <PencilIcon className="h-3 w-3" />
+                Edit profile
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={handleEdit}
-                  className="flex items-center gap-1 text-xs font-bold text-secondary"
+                  onClick={handleCancel}
+                  className="text-xs font-bold text-gray-400"
                 >
-                  <PencilIcon className="h-3 w-3" />
-                  Edit profile
+                  Cancel
                 </button>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleCancel}
-                    className="text-xs font-bold text-gray-400"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-1 text-xs font-bold text-secondary disabled:opacity-50"
-                  >
-                    <CheckIcon className="h-3 w-3" />
-                    {saving ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              )}
-            </div>
-            <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 h-[calc(100%-28px)] flex items-center">
-              <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm px-4 py-3 text-sm text-gray-600 w-full">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={aboutText}
-                    onChange={(e) => setAboutText(e.target.value)}
-                    maxLength={200}
-                    className="w-full bg-transparent outline-none text-gray-600"
-                  />
-                ) : (
-                  <div>{aboutText}</div>
-                )}
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-1 text-xs font-bold text-secondary disabled:opacity-50"
+                >
+                  <CheckIcon className="h-3 w-3" />
+                  {saving ? "Saving..." : "Save"}
+                </button>
               </div>
-            </section>
-            {isEditing && aboutText.length >= 200 && (
-              <p className="mt-2 text-xs font-medium text-red-500">There's a 200 character limit.</p>
             )}
           </div>
-
-          {/* Achievements */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Achievements</h2>
-              <button className="text-xs font-bold text-secondary">View All</button>
+          <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 flex items-center">
+            <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm px-4 py-3 text-sm text-gray-600 w-full">
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={aboutText}
+                  onChange={(e) => setAboutText(e.target.value)}
+                  maxLength={200}
+                  className="w-full bg-transparent outline-none text-gray-600"
+                />
+              ) : (
+                <div>{aboutText}</div>
+              )}
             </div>
-            <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 h-[calc(100%-28px)]">
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { icon: <HandThumbUpOutline className="h-6 w-6 text-secondary" /> },
-                  { icon: <StarOutline className="h-6 w-6 text-secondary" /> },
-                  { icon: <CheckOutline className="h-6 w-6 text-secondary" /> },
-                  { icon: <SunOutline className="h-6 w-6 text-secondary" /> },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-center rounded-2xl border-4 border-secondary bg-[var(--color-background)] py-5"
-                  >
-                    {item.icon}
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
+          </section>
+          {isEditing && aboutText.length >= 200 && (
+            <p className="mt-2 text-xs font-medium text-red-500">There's a 200 character limit.</p>
+          )}
+        </div>
 
+        {/* My Friends */}
+        <div className="flex items-center justify-between mb-2 px-1">
+          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">My Friends</h2>
+          <button
+            onClick={() => navigate("/friends")}
+            className="text-xs font-bold text-secondary"
+          >
+            View All
+          </button>
+        </div>
+        <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 mb-5">
+          <div
+            ref={friendsRowRef}
+            className="flex gap-4 overflow-x-auto pb-1 cursor-grab select-none"
+            onMouseDown={onDragStart}
+            onMouseUp={onDragEnd}
+            onMouseLeave={onDragEnd}
+            onMouseMove={onDragMove}
+          >
+            {/* Add friend button */}
+            <button
+              onClick={() => navigate("/friends?tab=add")}
+              className="flex flex-col items-center gap-1 shrink-0"
+            >
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-secondary bg-[var(--color-background)]">
+                <PlusIcon className="h-6 w-6 text-secondary" />
+              </div>
+              <span className="text-[10px] font-semibold text-secondary">Add</span>
+            </button>
+
+            {/* Friend circles */}
+            {friends.map((friend) => (
+              <div key={friend.id} className="flex flex-col items-center gap-1 shrink-0">
+                {friend.avatar_url ? (
+                  <div className="h-14 w-14 rounded-full overflow-hidden shrink-0">
+                    <img
+                      src={friend.avatar_url}
+                      alt={friend.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-full text-white text-lg font-extrabold"
+                    style={{ backgroundColor: friend.accent }}
+                  >
+                    {friend.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-[10px] font-semibold text-gray-500 max-w-[56px] truncate">
+                  @{friend.name}
+                </span>
+              </div>
+            ))}
+
+            {friends.length === 0 && (
+              <p className="text-sm text-gray-400 self-center">No friends yet. Add some!</p>
+            )}
+          </div>
+        </section>
+
+        {/* Achievements */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Achievements</h2>
+            <button className="text-xs font-bold text-secondary">View All</button>
+          </div>
+          <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4">
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { icon: <HandThumbUpOutline className="h-6 w-6 text-secondary" /> },
+                { icon: <StarOutline className="h-6 w-6 text-secondary" /> },
+                { icon: <CheckOutline className="h-6 w-6 text-secondary" /> },
+                { icon: <SunOutline className="h-6 w-6 text-secondary" /> },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-center rounded-2xl border-4 border-secondary bg-[var(--color-background)] py-5"
+                >
+                  {item.icon}
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
 
         {/* Points History */}

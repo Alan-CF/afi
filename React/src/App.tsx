@@ -12,26 +12,31 @@ import Shop from './pages/Shop'
 import ShopProducts from './pages/ShopProducts'
 import Legacy from './pages/Legacy'
 import Statistics from './pages/Statistics';
+import Friends from './pages/Friends';
+import FriendInviteProvider from './components/ui/FriendInviteNotification';
 
 function App() {
-
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/quizzes" element={<Quizzes />} />
-      <Route path="/" element={<Home />} />
-      <Route path="/fanatic" element={<Fanatic />} />
-      <Route path="/myprofile" element={<MyProfile />} />
-      <Route path="/rooms" element={<Rooms />} />
-      <Route path="/rooms/create" element={<CreateRoom />} />
-      <Route path="/rooms/chat" element={<RoomChat />} />
-      <Route path="/rooms/:roomId" element={<RoomChat />} />
-      <Route path="/ranking" element={<Ranking />} />
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/shop/products" element={<ShopProducts />} />
-      <Route path="/legacy" element={<Legacy />} />
-      <Route path="/stats" element={<Statistics />} />
-    </Routes>
+    <>
+      <FriendInviteProvider />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/quizzes" element={<Quizzes />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/fanatic" element={<Fanatic />} />
+        <Route path="/myprofile" element={<MyProfile />} />
+        <Route path="/friends" element={<Friends />} />
+        <Route path="/rooms" element={<Rooms />} />
+        <Route path="/rooms/create" element={<CreateRoom />} />
+        <Route path="/rooms/chat" element={<RoomChat />} />
+        <Route path="/rooms/:roomId" element={<RoomChat />} />
+        <Route path="/ranking" element={<Ranking />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/shop/products" element={<ShopProducts />} />
+        <Route path="/legacy" element={<Legacy />} />
+        <Route path="/stats" element={<Statistics />} />
+      </Routes>
+    </>
   );
 }
 
