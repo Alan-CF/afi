@@ -3,8 +3,11 @@ from ai.ai_client import client as ai_client
 from sb.functions import search_products, get_active_cart, authenticate_user, get_chat_history, save_chat_message
 from ai.context import tools, system_prompt
 
-def run_agent(user_message: str, jwt_token: str = None):
-    user_id = authenticate_user(jwt_token)
+def run_agent(user_message: str, jwt_token: str | None = None):
+
+    user_id = "anonymous"
+    if jwt_token:
+        user_id = authenticate_user(jwt_token)
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -23,7 +26,9 @@ def run_agent(user_message: str, jwt_token: str = None):
         
         if not response.tool_calls:
             save_chat_message(user_id, user_message, "user")
-            save_chat_message(user_id, response.content, "assistant")
+
+            if response.content:
+                save_chat_message(user_id, response.content, "assistant")
             return response.content
             
         for tool in response.tool_calls:

@@ -54,7 +54,7 @@ def search_products(product: str):
         ).execute().data
     return top_products
     
-def authenticate_user(jwt_token: str):
+def authenticate_user(jwt_token: str) -> str:
     token = jwt_token.replace("Bearer ", "")
     supabase.postgrest.auth(token)
     return jwt.decode(token, options={"verify_signature": False})["sub"]
