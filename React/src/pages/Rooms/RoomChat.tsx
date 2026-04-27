@@ -50,6 +50,7 @@ const defaultRoom: Room = {
   members: "Cesar, Luis, Maria +2",
   subtitle: "Live chat is on",
   accent: "#1D428A",
+  memberProfileIds: [],
 };
 
 function formatMessageTime(date: Date) {

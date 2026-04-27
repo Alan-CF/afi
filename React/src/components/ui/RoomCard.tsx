@@ -9,6 +9,7 @@ export type Room = {
   members: string;
   subtitle: string;
   accent: string;
+  memberProfileIds: string[];
 };
 
 type RoomCardProps = {
