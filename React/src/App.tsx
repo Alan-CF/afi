@@ -10,6 +10,7 @@ import RoomChat from './pages/Rooms/RoomChat'
 import Ranking from './pages/Ranking'
 import Shop from './pages/Shop'
 import ShopProducts from './pages/ShopProducts'
+import Legacy from './pages/Legacy'
 import Statistics from './pages/Statistics';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/shop/products" element={<ShopProducts />} />
+      <Route path="/legacy" element={<Legacy />} />
       <Route path="/stats" element={<Statistics />} />
     </Routes>
   );
