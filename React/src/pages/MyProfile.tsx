@@ -35,6 +35,7 @@ import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 import { fetchPendingFriendRequestCount } from "../lib/friends";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
@@ -61,6 +62,8 @@ export default function MyProfile() {
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
   const navigate = useNavigate();
 
   const onDragStart = (e: React.MouseEvent) => {
@@ -469,12 +472,23 @@ export default function MyProfile() {
         {/* Logout */}
         <div className="flex justify-center mt-8">
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="text-s font-bold text-red-400 hover:text-red-600 transition-colors"
           >
-            Logout
+            Log out
           </button>
         </div>
+
+        <ConfirmDialog
+          isOpen={showLogoutConfirm}
+          title="Log out of AFI?"
+          message="You'll need to sign in again to access your account."
+          confirmLabel="Log out"
+          cancelLabel="Cancel"
+          destructive
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       </main>
     </div>
   );

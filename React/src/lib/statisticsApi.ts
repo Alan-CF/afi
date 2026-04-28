@@ -100,3 +100,26 @@ export async function fetchStandings(): Promise<Standing[]> {
     conf: s.conference,
   }));
 }
+
+export async function fetchUpcomingGamesFromStats(): Promise<Game[]> {
+  const { data, error } = await statsSupabase
+    .from('games')
+    .select('*')
+    .gte('game_date', new Date().toISOString().split('T')[0])
+    .order('game_date', { ascending: true })
+    .limit(10);
+
+  if (error) {
+    console.error("fetchUpcomingGamesFromStats:", error);
+    return [];
+  }
+
+  return (data ?? []).map((g: any) => ({
+    date: g.game_date,
+    opponent: g.opponent,
+    is_home: g.is_home,
+    warriors_score: g.warriors_score,
+    opponent_score: g.opponent_score,
+    status: g.status,
+  }));
+}

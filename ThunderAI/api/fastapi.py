@@ -24,7 +24,7 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat_endpoint(request: ChatRequest, authorization: Optional[str] = Header(None)):
     try:
-        reply = run_agent(request.message, jwt_token=authorization)
+        reply = run_agent(request.message, jwt_token=authorization or "")
         return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
