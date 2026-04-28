@@ -470,14 +470,16 @@ export default function MyProfile() {
           </div>
         </section>
         {/* Logout */}
-        <div className="flex justify-center mt-8">
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="text-s font-bold text-red-400 hover:text-red-600 transition-colors"
-          >
-            Log out
-          </button>
-        </div>
+        {user && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="text-sm font-bold text-red-400 hover:text-red-600 transition-colors"
+            >
+              Log out
+            </button>
+          </div>
+        )}
 
         <ConfirmDialog
           isOpen={showLogoutConfirm}
