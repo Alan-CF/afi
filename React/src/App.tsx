@@ -19,6 +19,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
+import Achievements from './pages/Achievements/Achievements';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/legacy" element={<Legacy />} />
         <Route path="/stats" element={<Statistics />} />
+        <Route path="/achievements" element={<Achievements />} />
         <Route path="/news" element={<News />} />
         <Route path="/news/:id" element={<NewsDetail />} />
       </Routes>
