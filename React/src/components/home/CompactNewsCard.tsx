@@ -21,7 +21,7 @@ export default function CompactNewsCard({ article }: { article: WarriorsNewsItem
         <NewsImageOrFallback thumbnail={article.thumbnail} alt="" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-lato font-bold text-sm text-secondary line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="font-lato font-bold text-sm text-secondary line-clamp-2 group-hover:text-[#5780AE] transition-colors">
           {article.title}
         </h3>
         <p className="font-lato text-xs text-text-light mt-1">

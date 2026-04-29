@@ -13,7 +13,7 @@ export default function HomeRoomsRail() {
         <div>
           <Link
             to="/rooms"
-            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
           >
             Watch Parties
           </Link>
@@ -120,7 +120,7 @@ export default function HomeRoomsRail() {
           <button
             type="button"
             onClick={() => navigate("/rooms/create")}
-            className="mt-4 font-lato text-sm font-bold text-secondary hover:text-primary transition-colors"
+            className="mt-4 font-lato text-sm font-bold text-secondary hover:text-[#5780AE] transition-colors"
           >
             Create the first room
           </button>

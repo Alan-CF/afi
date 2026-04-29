@@ -33,7 +33,7 @@ export default function HomeLeaderboardPreview() {
         <div>
           <Link
             to="/ranking"
-            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
           >
             Leaderboard
           </Link>

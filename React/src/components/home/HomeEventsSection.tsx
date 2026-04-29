@@ -24,7 +24,7 @@ export default function HomeEventsSection() {
       <div className="relative z-10 flex items-baseline justify-between mb-4 md:mb-5">
         <Link
           to="/events"
-          className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+          className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
         >
           Upcoming Events
         </Link>

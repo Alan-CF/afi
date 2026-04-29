@@ -23,10 +23,13 @@ const PRIMARY_LINKS = [
 ];
 
 export default function NavBar() {
-  const { user } = useProfile();
+  const { user, hasLoadedOnce } = useProfile();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const isLoggedIn = hasLoadedOnce && user !== null;
+  const isLoggedOut = hasLoadedOnce && user === null;
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
@@ -76,14 +79,16 @@ export default function NavBar() {
           </ul>
 
           <div className="flex items-center gap-3 md:gap-5 shrink-0">
-            <button
-              onClick={() => setIsCartOpen(true)}
-              type="button"
-              className="cursor-pointer"
-              aria-label="Open cart"
-            >
-              <ShoppingBagIcon className="w-6 h-6" />
-            </button>
+            {isLoggedIn && (
+              <button
+                onClick={() => setIsCartOpen(true)}
+                type="button"
+                className="cursor-pointer"
+                aria-label="Open cart"
+              >
+                <ShoppingBagIcon className="w-6 h-6" />
+              </button>
+            )}
             <button
               type="button"
               className="md:hidden cursor-pointer"
@@ -92,22 +97,34 @@ export default function NavBar() {
             >
               <Bars3Icon className="w-6 h-6" />
             </button>
-            <button
-              type="button"
-              onClick={() => navigate('/myprofile')}
-              className="cursor-pointer"
-              aria-label="Go to profile"
-            >
-              {user?.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <UserCircleIcon className="w-10 h-10" />
-              )}
-            </button>
+            {isLoggedIn && (
+              <button
+                type="button"
+                onClick={() => navigate('/myprofile')}
+                className="cursor-pointer"
+                aria-label="Go to profile"
+              >
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <UserCircleIcon className="w-10 h-10" />
+                )}
+              </button>
+            )}
+            {isLoggedOut && (
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="hidden md:inline-flex items-center justify-center rounded-full bg-primary px-4 py-1.5 font-lato text-sm font-bold uppercase tracking-wider text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                aria-label="Log in"
+              >
+                Log in
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -173,25 +190,41 @@ export default function NavBar() {
             </li>
           ))}
 
-          <li className="mt-auto">
-            <NavLink
-              to="/myprofile"
-              onClick={() => setIsMenuOpen(false)}
-              className="group block"
-            >
-              {({ isActive }) => (
-                <span
-                  className={`block px-6 py-5 font-anton tracking-wide transition-all duration-150 ${
-                    isActive
-                      ? 'text-primary text-3xl tracking-widest'
-                      : 'text-white text-2xl group-hover:text-white/70'
-                  }`}
-                >
-                  Profile
-                </span>
-              )}
-            </NavLink>
-          </li>
+          {isLoggedIn && (
+            <li className="mt-auto">
+              <NavLink
+                to="/myprofile"
+                onClick={() => setIsMenuOpen(false)}
+                className="group block"
+              >
+                {({ isActive }) => (
+                  <span
+                    className={`block px-6 py-5 font-anton tracking-wide transition-all duration-150 ${
+                      isActive
+                        ? 'text-primary text-3xl tracking-widest'
+                        : 'text-white text-2xl group-hover:text-white/70'
+                    }`}
+                  >
+                    Profile
+                  </span>
+                )}
+              </NavLink>
+            </li>
+          )}
+          {isLoggedOut && (
+            <li className="mt-auto p-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  navigate('/login');
+                }}
+                className="w-full rounded-xl bg-primary py-3 font-lato font-bold uppercase text-secondary transition-all duration-200 active:scale-[0.98]"
+              >
+                Log in
+              </button>
+            </li>
+          )}
         </ul>
       </aside>
     </>
