@@ -37,7 +37,7 @@ export default function HomeEventsSection() {
       </div>
 
       {loading ? (
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide pr-4 md:pr-6 lg:pr-8 pb-1">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -48,7 +48,7 @@ export default function HomeEventsSection() {
       ) : events.length === 0 ? (
         <EmptyState message="No games on the calendar. The Warriors will be back." />
       ) : (
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-proximity scroll-pl-4 md:scroll-pl-6 lg:scroll-pl-8 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 pb-1">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-proximity pr-4 md:pr-6 lg:pr-8 pb-1">
           {events.map((event, i) => (
             <div
               key={event.id}
