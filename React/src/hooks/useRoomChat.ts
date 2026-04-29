@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabaseClient";
 import type { Room } from "../components/ui/RoomCard";
-import type { PredictionOption } from "./mockRoomGameFeed";
+import type { PredictionOption } from "./useMockRoomGameFeed";
 
 export const ROOM_SYSTEM_MESSAGE_PREFIX = "[[system]] ";
 export const ROOM_PREDICTION_MESSAGE_PREFIX = "[[prediction]] ";
@@ -60,6 +60,18 @@ function formatMembers(usernames: string[]) {
   return `${usernames.slice(0, 3).join(", ")} +${usernames.length - 3}`;
 }
 
+export function isRoomSystemMessage(content: string) {
+  return content.startsWith(ROOM_SYSTEM_MESSAGE_PREFIX);
+}
+
+export function isRoomPredictionMessage(content: string) {
+  return content.startsWith(ROOM_PREDICTION_MESSAGE_PREFIX);
+}
+
+export function shouldHideRoomMessage(content: string) {
+  return isRoomSystemMessage(content) || isRoomPredictionMessage(content);
+}
+
 async function getAuthenticatedUserId() {
   const {
     data: { user },
@@ -70,20 +82,6 @@ async function getAuthenticatedUserId() {
   if (!user) throw new Error("You must be signed in.");
 
   return user.id;
-}
-
-async function fetchUsername(profileId: string) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", profileId)
-    .single();
-
-  if (error) {
-    throw buildQueryError("profiles query failed", error.message);
-  }
-
-  return data.username as string;
 }
 
 async function fetchProfileMap(profileIds: string[]) {
@@ -146,6 +144,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
     title: room.title,
     status: room.status,
     accent: room.accent,
+    memberProfileIds: memberIds,
     members: formatMembers(
       memberIds
         .map((memberId) => profileMap.get(memberId))
@@ -317,22 +316,6 @@ export async function sendRoomPrediction(
 
 export async function leaveRoom(roomId: number): Promise<void> {
   const profileId = await getAuthenticatedUserId();
-
-  try {
-    const username = await fetchUsername(profileId);
-
-    const { error: messageError } = await supabase.from("room_messages").insert({
-      room_id: roomId,
-      sender_profile_id: profileId,
-      content: `${ROOM_SYSTEM_MESSAGE_PREFIX}${username} has left the chat.`,
-    });
-
-    if (messageError) {
-      console.error("leave room system message error:", messageError);
-    }
-  } catch (error) {
-    console.error("Could not create leave-room system message:", error);
-  }
 
   const { data, error } = await supabase
     .from("room_members")

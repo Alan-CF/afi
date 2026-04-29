@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export interface PricedProduct {
@@ -70,7 +70,9 @@ export default function useShopProducts(options?: UseShopProductsOptions) {
     } catch (err) {
       console.error("Error in useShopProducts hook:", err);
       setProducts([]);
-      setError(err instanceof Error ? err : new Error("Failed to fetch products"));
+      setError(
+        err instanceof Error ? err : new Error("Failed to fetch products"),
+      );
     } finally {
       setLoading(false);
       setHasLoadedOnce(true);
@@ -87,5 +89,49 @@ export default function useShopProducts(options?: UseShopProductsOptions) {
     hasLoadedOnce,
     error,
     refreshProducts: fetchProducts,
+  };
+}
+
+export function useShopProductsByIds(productIds: number[] | null) {
+  const [products, setProducts] = useState<PricedProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const productIdsKey = JSON.stringify(productIds ?? []);
+
+  const fetchProductsByIds = useCallback(async (ids: number[] | null) => {
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.rpc("get_priced_products_by_id", {
+        p_ids: ids ?? [],
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setProducts((data ?? []) as PricedProduct[]);
+      setError(null);
+    } catch (err) {
+      console.error("Error in useShopProductsByIds hook:", err);
+      setProducts([]);
+      setError(
+        err instanceof Error ? err : new Error("Failed to fetch products"),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const ids = JSON.parse(productIdsKey) as number[];
+    void fetchProductsByIds(ids.length > 0 ? ids : null);
+  }, [productIdsKey, fetchProductsByIds]);
+
+  return {
+    products,
+    loading,
+    error,
+    refreshProducts: fetchProductsByIds,
   };
 }

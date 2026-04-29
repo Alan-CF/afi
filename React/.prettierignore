@@ -1,0 +1,27 @@
+# Artifacts
+build
+dist
+coverage
+
+# Dependencies
+node_modules
+
+# Generated files
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Cache
+.eslintcache
+.cache
+.parcel-cache
+.next
+.vite
+
+# Env
+.env
+.env.*
+
+# Misc
+*.min.js
+*.min.css
+public

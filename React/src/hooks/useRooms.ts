@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
+import { shouldHideRoomMessage } from "./useRoomChat";
 
 export type RoomCardData = {
   id: number;
@@ -7,12 +8,14 @@ export type RoomCardData = {
   members: string;
   subtitle: string;
   accent: string;
+  memberProfileIds: string[];
 };
 
 export type FriendOption = {
   id: string;
   name: string;
   accent: string;
+  avatar_url: string | null;
 };
 
 function formatMembers(usernames: string[]) {
@@ -54,9 +57,9 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
 
   const { data: friendships, error: friendshipsError } = await supabase
     .from("friendships")
-    .select("requester_id, addressee_id")
+    .select("requester_profile_id, receiver_profile_id")
     .eq("status", "accepted")
-    .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+    .or(`requester_profile_id.eq.${userId},receiver_profile_id.eq.${userId}`);
 
   if (friendshipsError) {
     console.error("friendships error:", friendshipsError);
@@ -66,9 +69,9 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
   const friendIds = Array.from(
     new Set(
       (friendships ?? []).map((friendship) =>
-        friendship.requester_id === userId
-          ? friendship.addressee_id
-          : friendship.requester_id
+        friendship.requester_profile_id === userId
+          ? friendship.receiver_profile_id
+          : friendship.requester_profile_id
       )
     )
   );
@@ -77,7 +80,7 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username")
+    .select("id, username, avatar_url")
     .in("id", friendIds)
     .order("username", { ascending: true });
 
@@ -90,6 +93,7 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
     id: profile.id,
     name: profile.username,
     accent: friendAccents[index % friendAccents.length],
+    avatar_url: profile.avatar_url ?? null,
   }));
 }
 
@@ -229,13 +233,19 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
   );
 
   return (rooms ?? []).map((room) => {
-    const membersForRoom = (allMembers ?? [])
-      .filter((member) => member.room_id === room.id)
+    const roomMemberRows = (allMembers ?? []).filter(
+      (member) => member.room_id === room.id
+    );
+
+    const membersForRoom = roomMemberRows
       .map((member) => profileMap.get(member.profile_id))
       .filter(Boolean) as string[];
 
+    const memberProfileIds = roomMemberRows.map((member) => member.profile_id);
+
     const lastMessage = (messages ?? []).find(
-      (message) => message.room_id === room.id
+      (message) =>
+        message.room_id === room.id && !shouldHideRoomMessage(message.content)
     );
 
     const subtitle = lastMessage
@@ -249,6 +259,7 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
       accent: room.accent,
       members: formatMembers(membersForRoom),
       subtitle,
+      memberProfileIds,
     };
   });
 }

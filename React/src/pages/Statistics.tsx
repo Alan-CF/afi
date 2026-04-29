@@ -1,0 +1,351 @@
+import { useState, useEffect } from "react";
+import NavBar from "../components/layout/NavBar";
+import Footer from "../components/layout/Footer";
+import { CalendarIcon, UserGroupIcon, TrophyIcon } from "@heroicons/react/24/solid";
+import {
+  fetchWarriorsPlayers,
+  fetchWarriorsGames,
+  fetchStandings,
+  type PlayerStat,
+  type Game,
+  type Standing,
+} from "../lib/statisticsApi";
+
+type Tab = "roster" | "games" | "standings";
+
+const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  { id: "roster", label: "Roster", icon: <UserGroupIcon className="h-4 w-4" /> },
+  { id: "games", label: "Games", icon: <CalendarIcon className="h-4 w-4" /> },
+  { id: "standings", label: "Standings", icon: <TrophyIcon className="h-4 w-4" /> },
+];
+
+type SortKey = "pts" | "reb" | "ast" | "gp";
+type SortDir = "asc" | "desc";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+  { key: "gp", label: "GP" },
+];
+
+const POSITIONS = ["G", "F", "C"];
+
+function RosterTable({ players }: { players: PlayerStat[] }) {
+  const [sortKey, setSortKey] = useState<SortKey>("pts");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [posFilter, setPosFilter] = useState<string>("");
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const filtered = players
+    .filter((p) => (posFilter ? p.position === posFilter : true))
+    .sort((a, b) => {
+      const dir = sortDir === "desc" ? -1 : 1;
+      return dir * (Number(a[sortKey]) - Number(b[sortKey]));
+    });
+
+  return (
+    <div className="space-y-3">
+      {/* Controles con scroll */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {SORT_OPTIONS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => handleSort(key)}
+            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+              sortKey === key
+                ? "bg-secondary text-white border-secondary"
+                : "bg-transparent text-gray-400 border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            {label}
+            {sortKey === key && (
+              <span className="text-[10px]">{sortDir === "desc" ? "↓" : "↑"}</span>
+            )}
+          </button>
+        ))}
+
+        <span className="shrink-0 w-px h-4 bg-gray-200" />
+
+        {/* Filtro de posición */}
+        <select
+          value={posFilter}
+          onChange={(e) => setPosFilter(e.target.value)}
+          className="shrink-0 text-xs font-bold rounded-full px-3 py-1.5 border border-gray-200 bg-transparent text-gray-400 cursor-pointer"
+        >
+          <option value="">Position</option>
+          {POSITIONS.map((pos) => (
+            <option key={pos} value={pos}>{pos}</option>
+          ))}
+        </select>
+
+        <span className="shrink-0 text-xs text-gray-400 ml-auto pl-2">
+          {filtered.length} players
+        </span>
+      </div>
+
+      {/* Tabla*/}
+      <div className="rounded-2xl border border-[var(--color-container-border)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-secondary">
+                <th className="sticky left-0 z-10 bg-secondary text-left px-3 py-3 text-xs font-bold uppercase tracking-widest text-white/60 w-10"></th>
+                <th className="sticky left-10 z-10 bg-secondary text-left px-2 py-3 text-xs font-bold uppercase tracking-widest text-white/60 whitespace-nowrap">
+                  Player
+                </th>
+                {(["pts", "reb", "ast", "gp"] as SortKey[]).map((key) => (
+                  <th
+                    key={key}
+                    onClick={() => handleSort(key)}
+                    className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60 cursor-pointer select-none hover:text-white/90 transition-colors"
+                  >
+                    {key.toUpperCase()}
+                    {sortKey === key && (
+                      <span className="ml-0.5 text-[10px]">{sortDir === "desc" ? "↓" : "↑"}</span>
+                    )}
+                  </th>
+                ))}
+                <th className="text-center px-5 py-3 text-xs font-bold uppercase tracking-widest text-white/60">
+                  POS
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-container-border)]">
+              {filtered.map((player, i) => (
+                <tr
+                  key={i}
+                  className="bg-[var(--color-background)] hover:bg-[var(--color-text-light-soft)] transition-colors"
+                >
+                  <td className="sticky left-0 z-10 bg-inherit px-3 py-3 text-right">
+                    <span className="text-sm font-extrabold text-[var(--color-secondary)]/60">
+                      #{player.jersey_number}
+                    </span>
+                  </td>
+                  <td className="sticky left-10 z-10 bg-inherit px-2 py-3">
+                    <p className="font-bold text-sm text-secondary whitespace-nowrap">{player.name}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.pts}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.reb}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm font-extrabold text-secondary whitespace-nowrap">{player.ast}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm text-gray-500 whitespace-nowrap">{player.gp}</p>
+                  </td>
+                  <td className="text-center px-5 py-3">
+                    <p className="text-sm text-gray-400 uppercase whitespace-nowrap">{player.position}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GameRow({ game }: { game: Game }) {
+  const isFinished = game.status === "Final";
+  const won = isFinished && (game.warriors_score ?? 0) > (game.opponent_score ?? 0);
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3">
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold ${
+        !isFinished ? "bg-gray-100 text-gray-400" :
+        won ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"
+      }`}>
+        {!isFinished ? "—" : won ? "W" : "L"}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm text-secondary">
+          {game.is_home ? "vs" : "@"} {game.opponent}
+        </p>
+        <p className="text-xs text-gray-400">
+          {new Date(game.date).toLocaleDateString("en-US", {
+            month: "short", day: "numeric", year: "numeric",
+          })}
+        </p>
+      </div>
+      {isFinished ? (
+        <p className={`text-base font-extrabold ${won ? "text-green-600" : "text-red-500"}`}>
+          {game.warriors_score} – {game.opponent_score}
+        </p>
+      ) : (
+        <p className="text-xs font-semibold text-gray-400">{game.status}</p>
+      )}
+    </div>
+  );
+}
+
+function StandingRow({ standing, rank }: { standing: Standing; rank: number }) {
+  const isWarriors = standing.team === "Golden State Warriors";
+
+  return (
+    <div className={`flex items-center gap-3 rounded-xl border shadow-sm p-3 ${
+      isWarriors
+        ? "bg-secondary border-secondary"
+        : "bg-[var(--color-background)] border-[var(--color-container-border)]"
+    }`}>
+      <span className={`text-sm font-extrabold w-6 text-center ${
+        isWarriors ? "text-[var(--color-primary)]" : "text-gray-400"
+      }`}>
+        {rank}
+      </span>
+      <div className="flex-1">
+        <p className={`font-bold text-sm ${isWarriors ? "text-white" : "text-secondary"}`}>
+          {standing.team}
+        </p>
+        <p className={`text-xs ${isWarriors ? "text-white/60" : "text-gray-400"}`}>
+          {standing.division}
+        </p>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className={`text-sm font-extrabold ${isWarriors ? "text-white" : "text-secondary"}`}>
+          {standing.wins}W
+        </span>
+        <span className={`text-sm ${isWarriors ? "text-white/40" : "text-gray-300"}`}>–</span>
+        <span className={`text-sm font-extrabold ${isWarriors ? "text-white/70" : "text-gray-400"}`}>
+          {standing.losses}L
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function Statistics() {
+  const [activeTab, setActiveTab] = useState<Tab>("roster");
+  const [players, setPlayers] = useState<PlayerStat[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
+  const [standings, setStandings] = useState<Standing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [playersData, gamesData, standingsData] = await Promise.all([
+          fetchWarriorsPlayers(),
+          fetchWarriorsGames(),
+          fetchStandings(),
+        ]);
+        setPlayers(playersData);
+        setGames(gamesData);
+        setStandings(standingsData);
+      } catch (e) {
+        console.error(e);
+        setError("Failed to load data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-text-light-soft">
+      <NavBar />
+
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 pb-16">
+
+        <section className="rounded-2xl bg-secondary overflow-hidden mb-6">
+          <div className="flex flex-col md:flex-row items-center gap-4 px-6 py-5">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/en/0/01/Golden_State_Warriors_logo.svg"
+              alt="Warriors"
+              className="h-20 w-20"
+            />
+            <div className="text-center md:text-left">
+              <p className="text-white/60 text-xs font-bold uppercase tracking-[0.2em]">NBA · Western Conference</p>
+              <h1 className="font-anton text-3xl text-white mt-1">Golden State Warriors</h1>
+              <p className="font-lato text-sm text-primary font-bold mt-1">Chase Center · San Francisco, CA</p>
+            </div>
+          </div>
+
+          <div className="flex border-t border-white/10">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 font-lato text-sm font-bold uppercase tracking-wide transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-primary text-secondary"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Error */}
+        {error && (
+          <div className="rounded-2xl bg-red-50 border border-red-200 p-4 mb-5 font-lato text-red-600 text-sm font-semibold">
+            {error}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="h-10 w-10 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
+          </div>
+        )}
+
+        {/* 1. Roster */}
+        {!loading && activeTab === "roster" && (
+          <div>
+            {players.length > 0
+              ? <RosterTable players={players} />
+              : <p className="font-lato text-center text-gray-400 py-10">No players found.</p>
+            }
+          </div>
+        )}
+
+        {/* 2. Games */}
+        {!loading && activeTab === "games" && (
+          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
+            <div className="space-y-2.5">
+              {games.length > 0
+                ? games.map((game, i) => <GameRow key={i} game={game} />)
+                : <p className="font-lato text-center text-gray-400 py-10">No games found.</p>
+              }
+            </div>
+          </section>
+        )}
+
+        {/* Standings */}
+        {!loading && activeTab === "standings" && (
+          <section className="rounded-2xl border border-[var(--color-container-border)] bg-[var(--color-text-light-soft)] p-2">
+            <div className="space-y-2.5">
+              {standings
+                .filter((s) => s.conf === "West")
+                .map((s, i) => <StandingRow key={i} standing={s} rank={i + 1} />)
+              }
+            </div>
+          </section>
+        )}
+
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
