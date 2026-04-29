@@ -34,7 +34,7 @@ function ArticleCard({ article, className = "" }: { article: WarriorsNewsItem; c
       </div>
       <div className="p-5 flex flex-col gap-2">
         <p className="font-lato text-xs font-bold uppercase tracking-[0.16em] text-text-light">Warriors</p>
-        <h3 className="font-anton text-lg md:text-xl text-secondary leading-tight line-clamp-3 group-hover:text-primary transition-colors">
+        <h3 className="font-anton text-lg md:text-xl text-secondary leading-tight line-clamp-3 group-hover:text-[#5780AE] transition-colors">
           {article.title}
         </h3>
         <p className="font-lato text-xs text-text-light tabular-nums">{timeAgo(article.publishedAt)}</p>
