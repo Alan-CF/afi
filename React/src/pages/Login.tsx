@@ -6,7 +6,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
+    <div className="h-screen w-screen overflow-hidden bg-text-light-soft font-[family-name:var(--font-lato)]">
       <button
         type="button"
         onClick={() => navigate("/")}
