@@ -1,16 +1,16 @@
-import { Link } from "react-router-dom";
-import { useWarriorsNews } from "../../hooks/useWarriorsNews";
-import { useProfile } from "../../hooks/useProfile";
-import EmptyState from "../common/EmptyState";
-import FeaturedNewsCard from "./FeaturedNewsCard";
-import SecondaryNewsCard from "./SecondaryNewsCard";
-import CompactNewsCard from "./CompactNewsCard";
+import { Link } from 'react-router-dom';
+import { useWarriorsNews } from '../../hooks/useWarriorsNews';
+import { useProfile } from '../../hooks/useProfile';
+import EmptyState from '../common/EmptyState';
+import FeaturedNewsCard from './FeaturedNewsCard';
+import SecondaryNewsCard from './SecondaryNewsCard';
+import CompactNewsCard from './CompactNewsCard';
 
 function getTimeOfDay(): string {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
 }
 
 function SectionHeader() {
@@ -37,11 +37,13 @@ export default function HomeTopNews() {
   const { user, hasLoadedOnce } = useProfile();
   const isLoggedIn = hasLoadedOnce && user !== null;
 
-  const greeting = isLoggedIn && user ? (
-    <p className="font-lato text-sm text-text-light mb-3 md:mb-4">
-      {getTimeOfDay()}, <span className="font-semibold text-secondary">@{user.username}</span>.
-    </p>
-  ) : null;
+  const greeting =
+    isLoggedIn && user ? (
+      <p className="font-lato text-sm text-text-light mb-3 md:mb-4">
+        {getTimeOfDay()},{' '}
+        <span className="font-semibold text-secondary">{user.name}</span>.
+      </p>
+    ) : null;
 
   if (loading) {
     return (
@@ -52,7 +54,10 @@ export default function HomeTopNews() {
           <div className="lg:h-[452px] rounded-3xl aspect-[5/4] lg:aspect-auto skeleton-shimmer" />
           <div className="flex flex-col gap-4 lg:h-[452px] lg:grid lg:grid-rows-3 lg:gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-2xl h-[132px] lg:h-full skeleton-shimmer" />
+              <div
+                key={i}
+                className="rounded-2xl h-[132px] lg:h-full skeleton-shimmer"
+              />
             ))}
           </div>
         </div>
@@ -91,7 +96,10 @@ export default function HomeTopNews() {
         </div>
         <div className="min-w-0 flex flex-col gap-4 lg:h-[452px] lg:grid lg:grid-rows-3 lg:gap-4">
           {secondary.map((article, i) => (
-            <div key={article.id} className={`lg:min-h-0 fade-in-up stagger-${i + 2}`}>
+            <div
+              key={article.id}
+              className={`lg:min-h-0 fade-in-up stagger-${i + 2}`}
+            >
               <SecondaryNewsCard article={article} className="lg:h-full" />
             </div>
           ))}
