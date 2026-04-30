@@ -4,7 +4,7 @@ import NavBar from "../components/layout/NavBar";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
 import Footer from "../components/layout/Footer";
 import { useWarriorsNews } from "../hooks/useWarriorsNews";
-import type { WarriorsNewsItem } from "../hooks/warriorsNews";
+import { normalizeImageUrl, type WarriorsNewsItem } from "../hooks/warriorsNews";
 import { articleSlug } from "../hooks/useNewsArticle";
 import LiveBadge from "../components/common/LiveBadge";
 import EmptyState from "../components/common/EmptyState";
@@ -23,7 +23,7 @@ function ArticleCard({ article, className = "" }: { article: WarriorsNewsItem; c
   const breaking = Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
   return (
     <Link
-      to={`/news/${articleSlug(article.id)}`}
+      to={`/news/${article.slug ?? articleSlug(article.id)}`}
       className={`group block rounded-3xl overflow-hidden bg-white border border-container-border lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
       aria-label={article.title}
     >
@@ -59,14 +59,37 @@ function CardSkeleton() {
 
 const PAGE_SIZE = 12;
 
+function getUniqueImageArticles(articles: WarriorsNewsItem[]): WarriorsNewsItem[] {
+  const seenIds = new Set<string>();
+  const seenTitles = new Set<string>();
+  const seenImages = new Set<string>();
+  const out: WarriorsNewsItem[] = [];
+  for (const a of articles) {
+    if (!a.id || !a.title) continue;
+    const titleKey = a.title.trim().toLowerCase();
+    if (!titleKey) continue;
+    if (seenIds.has(a.id) || seenTitles.has(titleKey)) continue;
+    const imgKey = normalizeImageUrl(a.thumbnail ?? a.image ?? null);
+    if (!imgKey) continue;
+    if (seenImages.has(imgKey)) continue;
+    if (!a.slug && !a.id) continue;
+    seenIds.add(a.id);
+    seenTitles.add(titleKey);
+    seenImages.add(imgKey);
+    out.push(a);
+  }
+  return out;
+}
+
 export default function News() {
-  const { news, loading, error } = useWarriorsNews(20);
+  const { news, loading, error } = useWarriorsNews(40);
   const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const hero = news[0] ?? null;
-  const topStories = news.slice(1, 5);
-  const grid = news.slice(5, 5 + visible);
-  const hasMore = 5 + visible < news.length;
+  const filtered = getUniqueImageArticles(news);
+  const hero = filtered[0] ?? null;
+  const topStories = filtered.slice(1, 5);
+  const grid = filtered.slice(5, 5 + visible);
+  const hasMore = 5 + visible < filtered.length;
 
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">

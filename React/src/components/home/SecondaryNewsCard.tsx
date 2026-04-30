@@ -18,7 +18,7 @@ interface Props {
 export default function SecondaryNewsCard({ article, className = "" }: Props) {
   return (
     <Link
-      to={`/news/${articleSlug(article.id)}`}
+      to={`/news/${article.slug ?? articleSlug(article.id)}`}
       className={`group flex h-[118px] rounded-2xl bg-white border border-container-border overflow-hidden lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
       aria-label={article.title}
     >

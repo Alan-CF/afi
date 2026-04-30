@@ -39,7 +39,7 @@ export default function FeaturedNewsCard({ article, variant = "page" }: Props) {
 
   return (
     <Link
-      to={`/news/${articleSlug(article.id)}`}
+      to={`/news/${article.slug ?? articleSlug(article.id)}`}
       className={`group relative block w-full overflow-hidden rounded-3xl bg-secondary lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${SIZE[variant]}`}
       aria-label={article.title}
     >
