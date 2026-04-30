@@ -60,6 +60,18 @@ function slugifyTitle(title: string): string {
     .replace(/-+$/g, "");
 }
 
+export function normalizeImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  try {
+    const u = new URL(trimmed);
+    return `${u.protocol}//${u.hostname.toLowerCase()}${u.pathname}`;
+  } catch {
+    return trimmed.toLowerCase();
+  }
+}
+
 export function createArticleSlug(
   id: string | number | null | undefined,
   title?: string | null,

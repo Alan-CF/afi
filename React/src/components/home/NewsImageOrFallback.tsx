@@ -1,17 +1,25 @@
+import { useEffect, useState } from "react";
+
 interface Props {
   thumbnail: string | null;
   alt: string;
 }
 
 export default function NewsImageOrFallback({ thumbnail, alt }: Props) {
-  if (thumbnail) {
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [thumbnail]);
+
+  if (thumbnail && !broken) {
     return (
       <img
         src={thumbnail}
         alt={alt}
         className="absolute inset-0 h-full w-full object-cover image-zoom"
         loading="lazy"
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        onError={() => setBroken(true)}
       />
     );
   }

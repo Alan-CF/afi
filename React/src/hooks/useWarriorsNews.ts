@@ -13,7 +13,20 @@ export function useWarriorsNews(limit = 6, pollMs = 10 * 60_000) {
     abortRef.current = controller;
     try {
       const data = await fetchWarriorsNews(limit, controller.signal);
-      if (!controller.signal.aborted) { setNews(data); setError(null); }
+      if (!controller.signal.aborted) {
+        const seenIds = new Set<string>();
+        const seenTitles = new Set<string>();
+        const deduped = data.filter((a) => {
+          const t = a.title.trim().toLowerCase();
+          if (seenIds.has(a.id)) return false;
+          if (t && seenTitles.has(t)) return false;
+          seenIds.add(a.id);
+          if (t) seenTitles.add(t);
+          return true;
+        });
+        setNews(deduped);
+        setError(null);
+      }
     } catch (err) {
       if (!controller.signal.aborted) setError((err as Error).message);
     } finally {
