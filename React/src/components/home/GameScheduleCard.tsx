@@ -122,7 +122,7 @@ export default function GameScheduleCard({ event, className = "" }: Props) {
             </p>
           )}
         </div>
-        <span className="font-lato text-xs font-bold text-secondary group-hover:text-primary transition-colors shrink-0">
+        <span className="font-lato text-xs font-bold text-secondary group-hover:text-[#5780AE] transition-colors shrink-0">
           {isLive ? "Join room →" : "Reserve a room →"}
         </span>
       </div>
