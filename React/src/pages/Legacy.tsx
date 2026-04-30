@@ -178,7 +178,7 @@ function Legacy() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
+    <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
       <NavBar />
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">

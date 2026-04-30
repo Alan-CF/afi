@@ -166,7 +166,7 @@ function Quizzes() {
 
   return (
     <>
-      <div className="flex flex-col min-h-screen bg-[var(--color-text-light-soft)]">
+      <div className="flex flex-col min-h-screen bg-text-light-soft">
         <NavBar />
 
         {screen === "list" && (

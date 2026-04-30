@@ -79,7 +79,7 @@ export default function NewsDetail() {
         <button
           type="button"
           onClick={() => navigate("/news")}
-          className="mb-6 inline-flex items-center gap-2 font-lato text-sm font-bold text-secondary hover:text-primary transition-colors"
+          className="mb-6 inline-flex items-center gap-2 font-lato text-sm font-bold text-secondary hover:text-[#5780AE] transition-colors"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back to News

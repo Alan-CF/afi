@@ -30,7 +30,7 @@ export default function SecondaryNewsCard({ article, className = "" }: Props) {
           <p className="font-lato text-[0.625rem] font-bold uppercase tracking-[0.14em] text-text-light mb-1">
             Warriors News
           </p>
-          <h3 className="font-anton text-base md:text-lg text-secondary leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-anton text-base md:text-lg text-secondary leading-tight line-clamp-2 group-hover:text-[#5780AE] transition-colors">
             {article.title}
           </h3>
         </div>

@@ -16,7 +16,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
         <div className="flex items-baseline justify-between mb-4 md:mb-5">
           <Link
             to="/fanatic"
-            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
           >
             Daily Challenge
           </Link>
@@ -94,7 +94,7 @@ export default function HomeFanaticFeature({ imageUrl = null }: Props) {
       <div className="flex items-baseline justify-between mb-4 md:mb-5">
         <Link
           to="/fanatic"
-          className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+          className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
         >
           Daily Challenge
         </Link>
