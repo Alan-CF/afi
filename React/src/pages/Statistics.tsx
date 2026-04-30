@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import NavBar from "../components/layout/NavBar";
+import Footer from "../components/layout/Footer";
 import { CalendarIcon, UserGroupIcon, TrophyIcon } from "@heroicons/react/24/solid";
 import {
   fetchWarriorsPlayers,
@@ -257,27 +258,22 @@ export default function Statistics() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
+    <div className="flex min-h-screen flex-col bg-text-light-soft">
       <NavBar />
 
-      <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 pb-16">
 
-        {/* Header */}
-        <section className="rounded-2xl bg-secondary overflow-hidden mb-4">
-          <div className="flex flex-col md:flex-row items-center gap-2 px-4 py-4">
+        <section className="rounded-2xl bg-secondary overflow-hidden mb-6">
+          <div className="flex flex-col md:flex-row items-center gap-4 px-6 py-5">
             <img
               src="https://upload.wikimedia.org/wikipedia/en/0/01/Golden_State_Warriors_logo.svg"
               alt="Warriors"
-              className="h-22 w-22"
+              className="h-20 w-20"
             />
             <div className="text-center md:text-left">
-              <p className="text-white/60 text-sm uppercase tracking-widest font-semibold">
-                NBA · Western Conference
-              </p>
-              <h1 className="text-3xl font-extrabold text-white mt-2">Golden State Warriors</h1>
-              <p className="text-[var(--color-primary)] font-bold mt-2">
-                Chase Center · San Francisco, CA
-              </p>
+              <p className="text-white/60 text-xs font-bold uppercase tracking-[0.2em]">NBA · Western Conference</p>
+              <h1 className="font-anton text-3xl text-white mt-1">Golden State Warriors</h1>
+              <p className="font-lato text-sm text-primary font-bold mt-1">Chase Center · San Francisco, CA</p>
             </div>
           </div>
 
@@ -286,9 +282,9 @@ export default function Statistics() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 font-lato text-sm font-bold uppercase tracking-wide transition-colors ${
                   activeTab === tab.id
-                    ? "bg-[var(--color-primary)] text-secondary"
+                    ? "bg-primary text-secondary"
                     : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -301,7 +297,7 @@ export default function Statistics() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-2xl bg-red-50 border border-red-200 p-4 mb-5 text-red-600 text-sm font-semibold">
+          <div className="rounded-2xl bg-red-50 border border-red-200 p-4 mb-5 font-lato text-red-600 text-sm font-semibold">
             {error}
           </div>
         )}
@@ -318,7 +314,7 @@ export default function Statistics() {
           <div>
             {players.length > 0
               ? <RosterTable players={players} />
-              : <p className="text-center text-gray-400 py-10">No players found.</p>
+              : <p className="font-lato text-center text-gray-400 py-10">No players found.</p>
             }
           </div>
         )}
@@ -329,7 +325,7 @@ export default function Statistics() {
             <div className="space-y-2.5">
               {games.length > 0
                 ? games.map((game, i) => <GameRow key={i} game={game} />)
-                : <p className="text-center text-gray-400 py-10">No games found.</p>
+                : <p className="font-lato text-center text-gray-400 py-10">No games found.</p>
               }
             </div>
           </section>
@@ -348,6 +344,8 @@ export default function Statistics() {
         )}
 
       </main>
+
+      <Footer />
     </div>
   );
 }
