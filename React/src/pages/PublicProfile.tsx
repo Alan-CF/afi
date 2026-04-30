@@ -1,38 +1,45 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import NavBar from "../components/layout/NavBar";
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import NavBar from '../components/layout/NavBar';
+import Footer from '../components/layout/Footer';
 import {
   ArrowLeftIcon,
   FireIcon,
   StarIcon,
   TrophyIcon,
-} from "@heroicons/react/24/solid";
+} from '@heroicons/react/24/solid';
 import {
   HandThumbUpIcon as HandThumbUpOutline,
   StarIcon as StarOutline,
   CheckIcon as CheckOutline,
   SunIcon as SunOutline,
-} from "@heroicons/react/24/outline";
+} from '@heroicons/react/24/outline';
 import {
   fetchPublicProfileById,
   fetchPublicFriendsByProfileId,
   type PublicProfile as PublicProfileData,
   type PublicFriend,
-} from "../lib/friends";
+} from '../lib/friends';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ACCENTS = [
-  "#8FB3E8", "#B8C9E8", "#9CB6E6", "#C8D6F2",
-  "#A4BCE9", "#8CA8DB", "#B5C4E0", "#9FB3D8",
+  '#8FB3E8',
+  '#B8C9E8',
+  '#9CB6E6',
+  '#C8D6F2',
+  '#A4BCE9',
+  '#8CA8DB',
+  '#B5C4E0',
+  '#9FB3D8',
 ];
 
 function getLeague(coins: number): { name: string; emoji: string } {
-  if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
-  if (coins <= 10000) return { name: "Silver",  emoji: "🥈" };
-  if (coins <= 15000) return { name: "Gold",    emoji: "🥇" };
-  if (coins <= 20000) return { name: "Sapphire", emoji: "♦️" };
-  return { name: "Diamond", emoji: "💎" };
+  if (coins <= 5000) return { name: 'Bronze', emoji: '🥉' };
+  if (coins <= 10000) return { name: 'Silver', emoji: '🥈' };
+  if (coins <= 15000) return { name: 'Gold', emoji: '🥇' };
+  if (coins <= 20000) return { name: 'Sapphire', emoji: '♦️' };
+  return { name: 'Diamond', emoji: '💎' };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -47,17 +54,27 @@ export default function PublicProfile() {
   const [error, setError] = useState<string | null>(null);
 
   const friendsRowRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
+  const dragState = useRef({
+    dragging: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
 
   const onDragStart = (e: React.MouseEvent) => {
     const el = friendsRowRef.current;
     if (!el) return;
-    dragState.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false };
-    el.style.cursor = "grabbing";
+    dragState.current = {
+      dragging: true,
+      startX: e.pageX - el.offsetLeft,
+      scrollLeft: el.scrollLeft,
+      moved: false,
+    };
+    el.style.cursor = 'grabbing';
   };
   const onDragEnd = () => {
     dragState.current.dragging = false;
-    if (friendsRowRef.current) friendsRowRef.current.style.cursor = "grab";
+    if (friendsRowRef.current) friendsRowRef.current.style.cursor = 'grab';
   };
   const onDragMove = (e: React.MouseEvent) => {
     if (!dragState.current.dragging || !friendsRowRef.current) return;
@@ -77,12 +94,15 @@ export default function PublicProfile() {
       fetchPublicFriendsByProfileId(profileId),
     ])
       .then(([prof, frns]) => {
-        if (!prof) { setError("Profile not found."); return; }
+        if (!prof) {
+          setError('Profile not found.');
+          return;
+        }
         setProfile(prof);
         setFriends(frns);
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Could not load profile.")
+        setError(err instanceof Error ? err.message : 'Could not load profile.')
       )
       .finally(() => setLoading(false));
   }, [profileId]);
@@ -107,7 +127,9 @@ export default function PublicProfile() {
       <div className="min-h-screen bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
         <NavBar />
         <div className="flex flex-col items-center justify-center gap-4 pt-24">
-          <p className="text-sm text-gray-500">{error ?? "Profile not found."}</p>
+          <p className="text-sm text-gray-500">
+            {error ?? 'Profile not found.'}
+          </p>
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 text-sm font-bold text-secondary"
@@ -125,7 +147,6 @@ export default function PublicProfile() {
       <NavBar />
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
-
         {/* Back button */}
         <button
           onClick={() => navigate(-1)}
@@ -138,7 +159,6 @@ export default function PublicProfile() {
         {/* Info card */}
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
-
             {/* Blue header */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
               <div className="mb-3">
@@ -169,24 +189,36 @@ export default function PublicProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{(profile.streak).toLocaleString()}</p>
-                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Streak</p>
+                  <p className="text-xl font-extrabold text-secondary">
+                    {profile.streak.toLocaleString()}
+                  </p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">
+                    Streak
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <StarIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{(profile.fanatic_coins).toLocaleString()}</p>
-                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
+                  <p className="text-xl font-extrabold text-secondary">
+                    {profile.fanatic_coins.toLocaleString()}
+                  </p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">
+                    Points
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <TrophyIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{league.emoji}</p>
-                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">{league.name}</p>
+                  <p className="text-xl font-extrabold text-secondary">
+                    {league.emoji}
+                  </p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">
+                    {league.name}
+                  </p>
                 </div>
               </div>
             </div>
@@ -196,22 +228,28 @@ export default function PublicProfile() {
         {/* About me */}
         <div className="mb-5">
           <div className="flex items-center mb-2 px-1">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">About me</h2>
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+              About me
+            </h2>
           </div>
           <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 flex items-center">
             <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm px-4 py-3 text-sm text-gray-600 w-full">
-              {profile.caption ?? "No bio yet."}
+              {profile.caption ?? 'No bio yet.'}
             </div>
           </section>
         </div>
 
         {/* Friends */}
         <div className="flex items-center justify-between mb-2 px-1">
-          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Friends</h2>
+          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+            Friends
+          </h2>
         </div>
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4 mb-5">
           {friends.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-2">No friends to show.</p>
+            <p className="text-sm text-gray-400 text-center py-2">
+              No friends to show.
+            </p>
           ) : (
             <div
               ref={friendsRowRef}
@@ -224,7 +262,10 @@ export default function PublicProfile() {
               {friends.map((friend, index) => (
                 <button
                   key={friend.id}
-                  onClick={() => { if (!dragState.current.moved) navigate(`/profile/${friend.id}`); }}
+                  onClick={() => {
+                    if (!dragState.current.moved)
+                      navigate(`/profile/${friend.id}`);
+                  }}
                   className="flex flex-col items-center gap-1 shrink-0"
                 >
                   {friend.avatar_url ? (
@@ -238,7 +279,9 @@ export default function PublicProfile() {
                   ) : (
                     <div
                       className="flex h-14 w-14 items-center justify-center rounded-full text-white text-lg font-extrabold"
-                      style={{ backgroundColor: ACCENTS[index % ACCENTS.length] }}
+                      style={{
+                        backgroundColor: ACCENTS[index % ACCENTS.length],
+                      }}
                     >
                       {friend.username.charAt(0).toUpperCase()}
                     </div>
@@ -255,12 +298,18 @@ export default function PublicProfile() {
         {/* Achievements */}
         <div className="mb-5">
           <div className="flex items-center mb-2 px-1">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Achievements</h2>
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+              Achievements
+            </h2>
           </div>
           <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4">
             <div className="grid grid-cols-4 gap-3">
               {[
-                { icon: <HandThumbUpOutline className="h-6 w-6 text-secondary" /> },
+                {
+                  icon: (
+                    <HandThumbUpOutline className="h-6 w-6 text-secondary" />
+                  ),
+                },
                 { icon: <StarOutline className="h-6 w-6 text-secondary" /> },
                 { icon: <CheckOutline className="h-6 w-6 text-secondary" /> },
                 { icon: <SunOutline className="h-6 w-6 text-secondary" /> },
@@ -275,8 +324,8 @@ export default function PublicProfile() {
             </div>
           </section>
         </div>
-
       </main>
+      <Footer />
     </div>
   );
 }

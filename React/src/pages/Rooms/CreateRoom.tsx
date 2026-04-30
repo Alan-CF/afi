@@ -1,18 +1,19 @@
-import { ArrowLeftIcon, CheckIcon } from "@heroicons/react/24/solid";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import NavBar from "../../components/layout/NavBar";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
+import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import NavBar from '../../components/layout/NavBar';
+import Footer from '../../components/layout/Footer';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
 import {
   createRoomWithMembers,
   fetchMyFriends,
   type FriendOption,
-} from "../../hooks/useRooms";
+} from '../../hooks/useRooms';
 
 function CreateRoom() {
   const navigate = useNavigate();
-  const [roomName, setRoomName] = useState("");
+  const [roomName, setRoomName] = useState('');
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
@@ -22,7 +23,10 @@ function CreateRoom() {
   const selectedCount = selectedFriendIds.length;
   const canCreateRoom = roomName.trim().length > 0 && selectedCount > 0;
 
-  const selectedSet = useMemo(() => new Set(selectedFriendIds), [selectedFriendIds]);
+  const selectedSet = useMemo(
+    () => new Set(selectedFriendIds),
+    [selectedFriendIds]
+  );
 
   useEffect(() => {
     async function loadFriends() {
@@ -32,9 +36,9 @@ function CreateRoom() {
         const data = await fetchMyFriends();
         setFriends(data);
       } catch (err) {
-        console.error("Error loading friends:", err);
+        console.error('Error loading friends:', err);
         setError(
-          err instanceof Error ? err.message : "Could not load friends."
+          err instanceof Error ? err.message : 'Could not load friends.'
         );
       } finally {
         setLoadingFriends(false);
@@ -58,27 +62,25 @@ function CreateRoom() {
       setCreatingRoom(true);
       setError(null);
       await createRoomWithMembers(roomName, selectedFriendIds);
-      navigate("/rooms");
+      navigate('/rooms');
     } catch (err) {
-      console.error("Error creating room:", err);
-      setError(
-        err instanceof Error ? err.message : "Could not create room."
-      );
+      console.error('Error creating room:', err);
+      setError(err instanceof Error ? err.message : 'Could not create room.');
     } finally {
       setCreatingRoom(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
       <NavBar />
 
-      <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1440px] flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
+      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
         <section className="mx-auto flex w-full max-w-md flex-1 flex-col rounded-[1.75rem] bg-white/92 p-4 shadow-[0_24px_70px_rgba(30,41,59,0.12)] backdrop-blur-sm sm:max-w-xl sm:p-5 lg:max-w-3xl lg:p-7">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate("/rooms")}
+              onClick={() => navigate('/rooms')}
               aria-label="Go back"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-[#edf3ff] text-secondary transition-colors hover:bg-[#dfe9fb]"
             >
@@ -140,8 +142,10 @@ function CreateRoom() {
                         type="button"
                         onClick={() => toggleFriend(friend.id)}
                         className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors sm:px-5 ${
-                          index !== friends.length - 1 ? "border-b border-[#d9e2f0]" : ""
-                        } ${isSelected ? "bg-[#f5f9ff]" : "bg-white hover:bg-[#f9fbff]"}`}
+                          index !== friends.length - 1
+                            ? 'border-b border-[#d9e2f0]'
+                            : ''
+                        } ${isSelected ? 'bg-[#f5f9ff]' : 'bg-white hover:bg-[#f9fbff]'}`}
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <div
@@ -158,8 +162,8 @@ function CreateRoom() {
                         <div
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
                             isSelected
-                              ? "border-primary bg-primary text-secondary"
-                              : "border-[#c7d4e8] bg-white text-transparent"
+                              ? 'border-primary bg-primary text-secondary'
+                              : 'border-[#c7d4e8] bg-white text-transparent'
                           }`}
                         >
                           <CheckIcon className="h-3.5 w-3.5" />
@@ -186,12 +190,13 @@ function CreateRoom() {
               className="w-full rounded-[1.2rem] border-transparent py-3 text-sm font-bold text-secondary disabled:bg-[#b7c8df] disabled:text-white sm:py-4 sm:text-base"
             >
               {creatingRoom
-                ? "Creating Room..."
-                : `Create Room (${selectedCount} Friend${selectedCount === 1 ? "" : "s"})`}
+                ? 'Creating Room...'
+                : `Create Room (${selectedCount} Friend${selectedCount === 1 ? '' : 's'})`}
             </Button>
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

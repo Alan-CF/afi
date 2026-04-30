@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import NavBar from "../../components/layout/NavBar";
-import Button from "../../components/ui/Button";
-import { fetchMyRooms } from "../../hooks/useRooms";
-import RoomCard, { type Room } from "../../components/ui/RoomCard";
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import NavBar from '../../components/layout/NavBar';
+import Footer from '../../components/layout/Footer';
+import Button from '../../components/ui/Button';
+import { fetchMyRooms } from '../../hooks/useRooms';
+import RoomCard, { type Room } from '../../components/ui/RoomCard';
 import {
   jumpToMockGameLastQuarter,
   resetMockGame,
-} from "../../hooks/useMockRoomGameFeed";
-import { fetchMyFriendIds } from "../../lib/friends";
-import { supabase } from "../../lib/supabaseClient";
+} from '../../hooks/useMockRoomGameFeed';
+import { fetchMyFriendIds } from '../../lib/friends';
+import { supabase } from '../../lib/supabaseClient';
 
 type RoomsLocationState = {
   removedRoomId?: number;
@@ -21,9 +22,9 @@ function RoomsPage() {
   const state = location.state as RoomsLocationState | null;
 
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [activeFilter, setActiveFilter] = useState<"all" | "live" | "offline" | "friends">(
-    "all"
-  );
+  const [activeFilter, setActiveFilter] = useState<
+    'all' | 'live' | 'offline' | 'friends'
+  >('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
@@ -36,7 +37,7 @@ function RoomsPage() {
   }, []);
 
   useEffect(() => {
-    if (activeFilter !== "friends") return;
+    if (activeFilter !== 'friends') return;
     fetchMyFriendIds().then(setFriendIds).catch(console.error);
   }, [activeFilter]);
 
@@ -48,10 +49,8 @@ function RoomsPage() {
         const data = await fetchMyRooms();
         setRooms(data);
       } catch (err) {
-        console.error("Error loading rooms:", err);
-        setError(
-          err instanceof Error ? err.message : "Could not load rooms."
-        );
+        console.error('Error loading rooms:', err);
+        setError(err instanceof Error ? err.message : 'Could not load rooms.');
       } finally {
         setLoading(false);
       }
@@ -70,15 +69,15 @@ function RoomsPage() {
 
   const orderedRooms = useMemo(() => {
     return [...rooms].sort((a, b) => {
-      if (a.status === "live" && b.status !== "live") return -1;
-      if (a.status !== "live" && b.status === "live") return 1;
+      if (a.status === 'live' && b.status !== 'live') return -1;
+      if (a.status !== 'live' && b.status === 'live') return 1;
       return a.title.localeCompare(b.title);
     });
   }, [rooms]);
 
   const filteredRooms = useMemo(() => {
-    if (activeFilter === "all") return orderedRooms;
-    if (activeFilter === "friends") {
+    if (activeFilter === 'all') return orderedRooms;
+    if (activeFilter === 'friends') {
       const friendSet = new Set(friendIds);
       return orderedRooms.filter((room) =>
         room.memberProfileIds
@@ -89,15 +88,15 @@ function RoomsPage() {
     return orderedRooms.filter((room) => room.status === activeFilter);
   }, [orderedRooms, activeFilter, friendIds, myId]);
 
-  const liveCount = rooms.filter((room) => room.status === "live").length;
-  const offlineCount = rooms.filter((room) => room.status === "offline").length;
+  const liveCount = rooms.filter((room) => room.status === 'live').length;
+  const offlineCount = rooms.filter((room) => room.status === 'offline').length;
 
   function handleCreateRoom() {
-    navigate("/rooms/create");
+    navigate('/rooms/create');
   }
 
   function handleRoomAction(room: Room) {
-    if (room.status === "live") {
+    if (room.status === 'live') {
       navigate(`/rooms/${room.id}`, { state: { from: location.pathname } });
       return;
     }
@@ -173,44 +172,44 @@ function RoomsPage() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => setActiveFilter("all")}
+                  onClick={() => setActiveFilter('all')}
                   className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === "all"
-                      ? "bg-secondary text-white"
-                      : "bg-surface-container text-on-surface-variant"
+                    activeFilter === 'all'
+                      ? 'bg-secondary text-white'
+                      : 'bg-surface-container text-on-surface-variant'
                   }`}
                 >
                   All
                 </button>
 
                 <button
-                  onClick={() => setActiveFilter("live")}
+                  onClick={() => setActiveFilter('live')}
                   className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === "live"
-                      ? "bg-[#ffe7ea] text-[#ff4d57]"
-                      : "bg-surface-container text-on-surface-variant"
+                    activeFilter === 'live'
+                      ? 'bg-[#ffe7ea] text-[#ff4d57]'
+                      : 'bg-surface-container text-on-surface-variant'
                   }`}
                 >
                   Live ({liveCount})
                 </button>
 
                 <button
-                  onClick={() => setActiveFilter("offline")}
+                  onClick={() => setActiveFilter('offline')}
                   className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === "offline"
-                      ? "bg-[#e9edf5] text-[#667085]"
-                      : "bg-surface-container text-on-surface-variant"
+                    activeFilter === 'offline'
+                      ? 'bg-[#e9edf5] text-[#667085]'
+                      : 'bg-surface-container text-on-surface-variant'
                   }`}
                 >
                   Offline ({offlineCount})
                 </button>
 
                 <button
-                  onClick={() => setActiveFilter("friends")}
+                  onClick={() => setActiveFilter('friends')}
                   className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === "friends"
-                      ? "bg-[#edf3ff] text-secondary"
-                      : "bg-surface-container text-on-surface-variant"
+                    activeFilter === 'friends'
+                      ? 'bg-[#edf3ff] text-secondary'
+                      : 'bg-surface-container text-on-surface-variant'
                   }`}
                 >
                   Only friends
@@ -264,7 +263,6 @@ function RoomsPage() {
               <h2 className="mt-2 font-lato text-xl font-bold text-secondary">
                 Test the live game feed
               </h2>
-          
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -287,6 +285,7 @@ function RoomsPage() {
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

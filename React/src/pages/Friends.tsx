@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import NavBar from "../components/layout/NavBar";
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import NavBar from '../components/layout/NavBar';
+import Footer from '../components/layout/Footer';
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -8,7 +9,7 @@ import {
   UserMinusIcon,
   UserPlusIcon,
   XMarkIcon,
-} from "@heroicons/react/24/solid";
+} from '@heroicons/react/24/solid';
 import {
   acceptFriendInvite,
   declineFriendInvite,
@@ -20,13 +21,19 @@ import {
   type Friend,
   type PendingInvite,
   type SearchResultProfile,
-} from "../lib/friends";
+} from '../lib/friends';
 
 // ─── Shared accent palette ───────────────────────────────────────────────────
 
 const ACCENTS = [
-  "#8FB3E8", "#B8C9E8", "#9CB6E6", "#C8D6F2",
-  "#A4BCE9", "#8CA8DB", "#B5C4E0", "#9FB3D8",
+  '#8FB3E8',
+  '#B8C9E8',
+  '#9CB6E6',
+  '#C8D6F2',
+  '#A4BCE9',
+  '#8CA8DB',
+  '#B5C4E0',
+  '#9FB3D8',
 ];
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
@@ -35,18 +42,22 @@ function Avatar({
   username,
   avatarUrl,
   index = 0,
-  size = "md",
+  size = 'md',
 }: {
   username: string;
   avatarUrl: string | null;
   index?: number;
-  size?: "sm" | "md";
+  size?: 'sm' | 'md';
 }) {
-  const dim = size === "sm" ? "h-9 w-9 text-sm" : "h-11 w-11 text-base";
+  const dim = size === 'sm' ? 'h-9 w-9 text-sm' : 'h-11 w-11 text-base';
   if (avatarUrl) {
     return (
       <div className={`${dim} shrink-0 overflow-hidden rounded-full`}>
-        <img src={avatarUrl} alt={username} className="h-full w-full object-cover" />
+        <img
+          src={avatarUrl}
+          alt={username}
+          className="h-full w-full object-cover"
+        />
       </div>
     );
   }
@@ -89,10 +100,10 @@ function RemoveModal({
         </div>
 
         <p className="font-lato text-sm leading-relaxed text-[#6b7a90]">
-          Remove{" "}
+          Remove{' '}
           <span className="font-bold text-secondary">
             @{friend.profile.username}
-          </span>{" "}
+          </span>{' '}
           from your friends? They won't be notified.
         </p>
 
@@ -108,7 +119,7 @@ function RemoveModal({
             disabled={loading}
             className="flex-1 rounded-[1rem] bg-[#be123c] py-2.5 font-lato text-sm font-bold text-white transition-colors hover:bg-[#9f1239] disabled:opacity-60"
           >
-            {loading ? "Removing…" : "Remove"}
+            {loading ? 'Removing…' : 'Remove'}
           </button>
         </div>
       </div>
@@ -136,7 +147,7 @@ function MyFriendsTab() {
       setError(null);
       setFriends(await fetchMyFriends());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load friends.");
+      setError(err instanceof Error ? err.message : 'Could not load friends.');
     } finally {
       setLoading(false);
     }
@@ -152,7 +163,7 @@ function MyFriendsTab() {
       );
       setPendingRemove(null);
     } catch (err) {
-      console.error("Remove friend error:", err);
+      console.error('Remove friend error:', err);
     } finally {
       setRemoveLoading(false);
     }
@@ -197,7 +208,7 @@ function MyFriendsTab() {
           <div
             key={friend.friendshipId}
             className={`flex items-center justify-between gap-3 px-4 py-3 ${
-              index !== friends.length - 1 ? "border-b border-[#d9e2f0]" : ""
+              index !== friends.length - 1 ? 'border-b border-[#d9e2f0]' : ''
             }`}
           >
             <button
@@ -247,7 +258,7 @@ function MyFriendsTab() {
 // ─── Add Friends tab ──────────────────────────────────────────────────────────
 
 function AddFriendsTab() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResultProfile[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -277,7 +288,7 @@ function AddFriendsTab() {
       setHasSearched(true);
     } catch (err) {
       setSearchError(
-        err instanceof Error ? err.message : "Search failed. Try again."
+        err instanceof Error ? err.message : 'Search failed. Try again.'
       );
     } finally {
       setSearching(false);
@@ -290,11 +301,11 @@ function AddFriendsTab() {
       await sendFriendInvite(profileId);
       setResults((prev) =>
         prev.map((r) =>
-          r.id === profileId ? { ...r, friendshipStatus: "pending_sent" } : r
+          r.id === profileId ? { ...r, friendshipStatus: 'pending_sent' } : r
         )
       );
     } catch (err) {
-      console.error("Send invite error:", err);
+      console.error('Send invite error:', err);
     } finally {
       setSendingId(null);
     }
@@ -302,21 +313,21 @@ function AddFriendsTab() {
 
   function StatusBadge({ profile }: { profile: SearchResultProfile }) {
     const status = profile.friendshipStatus;
-    if (status === "accepted") {
+    if (status === 'accepted') {
       return (
         <span className="rounded-full bg-[#edf3ff] px-3 py-1 font-lato text-xs font-bold text-secondary">
           Friends
         </span>
       );
     }
-    if (status === "pending_sent") {
+    if (status === 'pending_sent') {
       return (
         <span className="rounded-full bg-[#f0fdf4] px-3 py-1 font-lato text-xs font-bold text-[#16a34a]">
           Invite sent
         </span>
       );
     }
-    if (status === "pending_received") {
+    if (status === 'pending_received') {
       return (
         <span className="rounded-full bg-[#fef9c3] px-3 py-1 font-lato text-xs font-bold text-[#a16207]">
           Sent you invite
@@ -330,7 +341,7 @@ function AddFriendsTab() {
         className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 font-lato text-xs font-bold text-white transition-colors hover:bg-[#16327a] disabled:opacity-60"
       >
         <UserPlusIcon className="h-3 w-3" />
-        {sendingId === profile.id ? "Sending…" : "Send invite"}
+        {sendingId === profile.id ? 'Sending…' : 'Send invite'}
       </button>
     );
   }
@@ -386,7 +397,7 @@ function AddFriendsTab() {
             <div
               key={profile.id}
               className={`flex items-center justify-between gap-3 px-4 py-3 ${
-                index !== results.length - 1 ? "border-b border-[#d9e2f0]" : ""
+                index !== results.length - 1 ? 'border-b border-[#d9e2f0]' : ''
               }`}
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -418,7 +429,11 @@ function AddFriendsTab() {
 
 // ─── Requests tab ────────────────────────────────────────────────────────────
 
-function RequestsTab({ onCountChange }: { onCountChange: (n: number) => void }) {
+function RequestsTab({
+  onCountChange,
+}: {
+  onCountChange: (n: number) => void;
+}) {
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -436,7 +451,7 @@ function RequestsTab({ onCountChange }: { onCountChange: (n: number) => void }) 
       setInvites(data);
       onCountChange(data.length);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load requests.");
+      setError(err instanceof Error ? err.message : 'Could not load requests.');
     } finally {
       setLoading(false);
     }
@@ -456,7 +471,7 @@ function RequestsTab({ onCountChange }: { onCountChange: (n: number) => void }) 
       await acceptFriendInvite(invite.friendshipId);
       dismiss(invite.friendshipId);
     } catch (err) {
-      console.error("Accept error:", err);
+      console.error('Accept error:', err);
     } finally {
       setActingId(null);
     }
@@ -468,7 +483,7 @@ function RequestsTab({ onCountChange }: { onCountChange: (n: number) => void }) 
       await declineFriendInvite(invite.friendshipId);
       dismiss(invite.friendshipId);
     } catch (err) {
-      console.error("Decline error:", err);
+      console.error('Decline error:', err);
     } finally {
       setActingId(null);
     }
@@ -514,7 +529,7 @@ function RequestsTab({ onCountChange }: { onCountChange: (n: number) => void }) 
           <div
             key={invite.friendshipId}
             className={`flex items-center justify-between gap-3 px-4 py-3 ${
-              index !== invites.length - 1 ? "border-b border-[#d9e2f0]" : ""
+              index !== invites.length - 1 ? 'border-b border-[#d9e2f0]' : ''
             }`}
           >
             <div className="flex min-w-0 items-center gap-3">
@@ -550,7 +565,7 @@ function RequestsTab({ onCountChange }: { onCountChange: (n: number) => void }) 
                 className="flex h-8 items-center gap-1 rounded-full bg-secondary px-3 font-lato text-xs font-bold text-white transition-colors hover:bg-[#16327a] disabled:opacity-50"
               >
                 <CheckIcon className="h-3 w-3" />
-                {busy ? "…" : "Accept"}
+                {busy ? '…' : 'Accept'}
               </button>
             </div>
           </div>
@@ -566,17 +581,17 @@ export default function Friends() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const initialTab = ((): "my-friends" | "add-friends" | "requests" => {
+  const initialTab = ((): 'my-friends' | 'add-friends' | 'requests' => {
     const params = new URLSearchParams(location.search);
-    const t = params.get("tab");
-    if (t === "add") return "add-friends";
-    if (t === "requests") return "requests";
-    return "my-friends";
+    const t = params.get('tab');
+    if (t === 'add') return 'add-friends';
+    if (t === 'requests') return 'requests';
+    return 'my-friends';
   })();
 
-  const [activeTab, setActiveTab] = useState<"my-friends" | "add-friends" | "requests">(
-    initialTab
-  );
+  const [activeTab, setActiveTab] = useState<
+    'my-friends' | 'add-friends' | 'requests'
+  >(initialTab);
   const [pendingCount, setPendingCount] = useState(0);
 
   return (
@@ -585,7 +600,6 @@ export default function Friends() {
 
       <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1440px] flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
         <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col rounded-[1.75rem] bg-white/92 p-4 shadow-[0_24px_70px_rgba(30,41,59,0.12)] backdrop-blur-sm sm:p-5 lg:p-7">
-
           {/* Header */}
           <div className="flex items-center gap-3">
             <button
@@ -610,9 +624,9 @@ export default function Friends() {
           <div className="mt-6 flex gap-1 rounded-[1rem] bg-[#edf3ff] p-1">
             {(
               [
-                { key: "my-friends", label: "My Friends" },
-                { key: "requests", label: "Requests" },
-                { key: "add-friends", label: "Add Friends" },
+                { key: 'my-friends', label: 'My Friends' },
+                { key: 'requests', label: 'Requests' },
+                { key: 'add-friends', label: 'Add Friends' },
               ] as const
             ).map(({ key, label }) => (
               <button
@@ -620,14 +634,14 @@ export default function Friends() {
                 onClick={() => setActiveTab(key)}
                 className={`relative flex-1 rounded-[0.75rem] py-2 font-lato text-sm font-bold transition-all ${
                   activeTab === key
-                    ? "bg-white text-secondary shadow-sm"
-                    : "text-secondary/60 hover:text-secondary"
+                    ? 'bg-white text-secondary shadow-sm'
+                    : 'text-secondary/60 hover:text-secondary'
                 }`}
               >
                 {label}
-                {key === "requests" && pendingCount > 0 && (
+                {key === 'requests' && pendingCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#be123c] font-lato text-[10px] font-bold text-white">
-                    {pendingCount > 9 ? "9+" : pendingCount}
+                    {pendingCount > 9 ? '9+' : pendingCount}
                   </span>
                 )}
               </button>
@@ -636,14 +650,15 @@ export default function Friends() {
 
           {/* Content */}
           <div className="mt-5 flex-1">
-            {activeTab === "my-friends" && <MyFriendsTab />}
-            {activeTab === "requests" && (
+            {activeTab === 'my-friends' && <MyFriendsTab />}
+            {activeTab === 'requests' && (
               <RequestsTab onCountChange={setPendingCount} />
             )}
-            {activeTab === "add-friends" && <AddFriendsTab />}
+            {activeTab === 'add-friends' && <AddFriendsTab />}
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
-import NavBar from "../components/layout/NavBar";
-import { useProfile } from "../hooks/useProfile";
-import { supabase } from "../lib/supabaseClient";
-import AvatarUpload from "../components/ui/AvatarUpload";
-import AchievementDetailModal from "../components/ui/achievements/AchievementDetailModal";
-import { useAchievements } from "../hooks/useAchievements";
-import type { Achievement, AchievementId } from "../data/achievements";
+import { useState, useEffect, useRef } from 'react';
+import NavBar from '../components/layout/NavBar';
+import { useProfile } from '../hooks/useProfile';
+import { supabase } from '../lib/supabaseClient';
+import AvatarUpload from '../components/ui/AvatarUpload';
+import AchievementDetailModal from '../components/ui/achievements/AchievementDetailModal';
+import { useAchievements } from '../hooks/useAchievements';
+import type { Achievement, AchievementId } from '../data/achievements';
+import Footer from '../components/layout/Footer';
 import {
   FireIcon,
   StarIcon,
@@ -20,29 +21,29 @@ import {
   UsersIcon,
   HomeIcon,
   AcademicCapIcon,
-} from "@heroicons/react/24/solid";
+} from '@heroicons/react/24/solid';
 
 const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
-  "first-spark": FireIcon,
-  "ten-day-flame": BoltIcon,
-  "century-fan": TrophyIcon,
-  "new-teammate": UserPlusIcon,
-  "squad-builder": UsersIcon,
-  "room-rookie": HomeIcon,
-  "quiz-debut": AcademicCapIcon,
+  'first-spark': FireIcon,
+  'ten-day-flame': BoltIcon,
+  'century-fan': TrophyIcon,
+  'new-teammate': UserPlusIcon,
+  'squad-builder': UsersIcon,
+  'room-rookie': HomeIcon,
+  'quiz-debut': AcademicCapIcon,
 };
-import { signOut } from "../lib/auth";
-import { useNavigate } from "react-router-dom";
-import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
-import { fetchPendingFriendRequestCount } from "../lib/friends";
-import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { signOut } from '../lib/auth';
+import { useNavigate } from 'react-router-dom';
+import { fetchMyFriends, type FriendOption } from '../hooks/useRooms';
+import { fetchPendingFriendRequestCount } from '../lib/friends';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 function getLeague(coins: number): { name: string; emoji: string } {
-  if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
-  if (coins <= 10000) return { name: "Silver",   emoji: "🥈" };
-  if (coins <= 15000) return { name: "Gold",     emoji: "🥇" };
-  if (coins <= 20000) return { name: "Sapphire", emoji: "♦️" };
-  return { name: "Diamond", emoji: "💎" };
+  if (coins <= 5000) return { name: 'Bronze', emoji: '🥉' };
+  if (coins <= 10000) return { name: 'Silver', emoji: '🥈' };
+  if (coins <= 15000) return { name: 'Gold', emoji: '🥇' };
+  if (coins <= 20000) return { name: 'Sapphire', emoji: '♦️' };
+  return { name: 'Diamond', emoji: '💎' };
 }
 
 export default function MyProfile() {
@@ -51,30 +52,43 @@ export default function MyProfile() {
   const { achievements } = useAchievements();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [nameText, setNameText] = useState("");
-  const [usernameText, setUsernameText] = useState("");
-  const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
+  const [nameText, setNameText] = useState('');
+  const [usernameText, setUsernameText] = useState('');
+  const [aboutText, setAboutText] = useState(
+    'Let us get to know you! Write a short bio about yourself.'
+  );
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
-  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
+  const [selectedAchievement, setSelectedAchievement] =
+    useState<Achievement | null>(null);
   const friendsRowRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
+  const dragState = useRef({
+    dragging: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
+
   const navigate = useNavigate();
 
   const onDragStart = (e: React.MouseEvent) => {
     const el = friendsRowRef.current;
     if (!el) return;
-    dragState.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false };
-    el.style.cursor = "grabbing";
+    dragState.current = {
+      dragging: true,
+      startX: e.pageX - el.offsetLeft,
+      scrollLeft: el.scrollLeft,
+      moved: false,
+    };
+    el.style.cursor = 'grabbing';
   };
   const onDragEnd = () => {
     dragState.current.dragging = false;
-    if (friendsRowRef.current) friendsRowRef.current.style.cursor = "grab";
+    if (friendsRowRef.current) friendsRowRef.current.style.cursor = 'grab';
   };
   const onDragMove = (e: React.MouseEvent) => {
     if (!dragState.current.dragging || !friendsRowRef.current) return;
@@ -94,12 +108,25 @@ export default function MyProfile() {
   }, [user]);
 
   useEffect(() => {
-    const loadFriends = () => fetchMyFriends().then(setFriends).catch(() => {});
-    const loadPending = () => fetchPendingFriendRequestCount().then(setPendingCount).catch(() => {});
+    const loadFriends = () =>
+      fetchMyFriends()
+        .then(setFriends)
+        .catch(() => {});
+    const loadPending = () =>
+      fetchPendingFriendRequestCount()
+        .then(setPendingCount)
+        .catch(() => {});
     loadFriends();
     loadPending();
-    window.addEventListener("friend-accepted", () => { loadFriends(); loadPending(); });
-    return () => window.removeEventListener("friend-accepted", () => { loadFriends(); loadPending(); });
+    window.addEventListener('friend-accepted', () => {
+      loadFriends();
+      loadPending();
+    });
+    return () =>
+      window.removeEventListener('friend-accepted', () => {
+        loadFriends();
+        loadPending();
+      });
   }, []);
 
   const handleEdit = () => {
@@ -108,13 +135,13 @@ export default function MyProfile() {
   };
   const handleLogout = async () => {
     await signOut();
-    navigate("/login");
+    navigate('/login');
   };
   const handleSave = async () => {
     const trimmedUsername = usernameText.trim();
 
     if (!trimmedUsername) {
-      setUsernameError("Username cannot be empty.");
+      setUsernameError('Username cannot be empty.');
       return;
     }
 
@@ -123,27 +150,29 @@ export default function MyProfile() {
     // Verificar si el username ya existe (solo si cambió)
     if (trimmedUsername !== user?.username) {
       const { data: existing } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", trimmedUsername)
+        .from('profiles')
+        .select('id')
+        .eq('username', trimmedUsername)
         .maybeSingle();
 
       if (existing) {
-        setUsernameError("That username is already taken.");
+        setUsernameError('That username is already taken.');
         setSaving(false);
         return;
       }
     }
 
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
     await supabase
-      .from("profiles")
+      .from('profiles')
       .update({
         name: nameText,
         username: trimmedUsername,
         caption: aboutText,
       })
-      .eq("id", authUser?.id ?? "");
+      .eq('id', authUser?.id ?? '');
 
     await refreshProfile();
     setIsEditing(false);
@@ -165,19 +194,15 @@ export default function MyProfile() {
       <NavBar />
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
-
         {/* Info general */}
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
-
-
             {/* Header azul */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
-              
               <div className="mb-3">
                 <AvatarUpload
                   avatarUrl={user?.avatar_url}
-                  userId={user?.id ?? ""}
+                  userId={user?.id ?? ''}
                   onUploadSuccess={() => refreshProfile()}
                 />
               </div>
@@ -193,7 +218,9 @@ export default function MyProfile() {
                   autoFocus
                 />
               ) : (
-                <h1 className="text-2xl font-extrabold text-white mb-1">{nameText}</h1>
+                <h1 className="text-2xl font-extrabold text-white mb-1">
+                  {nameText}
+                </h1>
               )}
 
               {isEditing ? (
@@ -213,7 +240,9 @@ export default function MyProfile() {
                     />
                   </div>
                   {usernameError && (
-                    <p className="mt-1 text-[11px] text-red-300 font-medium">{usernameError}</p>
+                    <p className="mt-1 text-[11px] text-red-300 font-medium">
+                      {usernameError}
+                    </p>
                   )}
                 </div>
               ) : (
@@ -228,35 +257,48 @@ export default function MyProfile() {
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{(user?.streak ?? 0).toLocaleString()}</p>
-                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Streak</p>
+                  <p className="text-xl font-extrabold text-secondary">
+                    {(user?.streak ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">
+                    Streak
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <StarIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{(user?.fanatic_coins ?? 0).toLocaleString()}</p>
-                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
+                  <p className="text-xl font-extrabold text-secondary">
+                    {(user?.fanatic_coins ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">
+                    Points
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <TrophyIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{league.emoji}</p>
-                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">{league.name}</p>
+                  <p className="text-xl font-extrabold text-secondary">
+                    {league.emoji}
+                  </p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">
+                    {league.name}
+                  </p>
                 </div>
               </div>
             </div>
-
           </div>
         </section>
 
         {/* About me */}
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2 px-1">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">About me</h2>
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+              About me
+            </h2>
             {!isEditing ? (
               <button
                 onClick={handleEdit}
@@ -279,7 +321,7 @@ export default function MyProfile() {
                   className="flex items-center gap-1 text-xs font-bold text-secondary disabled:opacity-50"
                 >
                   <CheckIcon className="h-3 w-3" />
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             )}
@@ -300,21 +342,25 @@ export default function MyProfile() {
             </div>
           </section>
           {isEditing && aboutText.length >= 200 && (
-            <p className="mt-2 text-xs font-medium text-red-500">There's a 200 character limit.</p>
+            <p className="mt-2 text-xs font-medium text-red-500">
+              There's a 200 character limit.
+            </p>
           )}
         </div>
 
         {/* My Friends */}
         <div className="flex items-center justify-between mb-2 px-1">
-          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">My Friends</h2>
+          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+            My Friends
+          </h2>
           <button
-            onClick={() => navigate("/friends")}
+            onClick={() => navigate('/friends')}
             className="relative flex items-center gap-1 text-xs font-bold text-secondary"
           >
             View All
             {pendingCount > 0 && (
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#be123c] text-[10px] font-bold text-white">
-                {pendingCount > 9 ? "9+" : pendingCount}
+                {pendingCount > 9 ? '9+' : pendingCount}
               </span>
             )}
           </button>
@@ -330,20 +376,25 @@ export default function MyProfile() {
           >
             {/* Add friend button */}
             <button
-              onClick={() => navigate("/friends?tab=add")}
+              onClick={() => navigate('/friends?tab=add')}
               className="flex flex-col items-center gap-1 shrink-0"
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-secondary bg-[var(--color-background)]">
                 <PlusIcon className="h-6 w-6 text-secondary" />
               </div>
-              <span className="text-[10px] font-semibold text-secondary">Add</span>
+              <span className="text-[10px] font-semibold text-secondary">
+                Add
+              </span>
             </button>
 
             {/* Friend circles */}
             {friends.map((friend) => (
               <button
                 key={friend.id}
-                onClick={() => { if (!dragState.current.moved) navigate(`/profile/${friend.id}`); }}
+                onClick={() => {
+                  if (!dragState.current.moved)
+                    navigate(`/profile/${friend.id}`);
+                }}
                 className="flex flex-col items-center gap-1 shrink-0"
               >
                 {friend.avatar_url ? (
@@ -369,7 +420,9 @@ export default function MyProfile() {
             ))}
 
             {friends.length === 0 && (
-              <p className="text-sm text-gray-400 self-center">No friends yet. Add some!</p>
+              <p className="text-sm text-gray-400 self-center">
+                No friends yet. Add some!
+              </p>
             )}
           </div>
         </section>
@@ -377,9 +430,11 @@ export default function MyProfile() {
         {/* Achievements */}
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2 px-1">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Achievements</h2>
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+              Achievements
+            </h2>
             <button
-              onClick={() => navigate("/achievements")}
+              onClick={() => navigate('/achievements')}
               className="text-xs font-bold text-secondary"
             >
               View All
@@ -393,8 +448,8 @@ export default function MyProfile() {
                   onClick={() => setSelectedAchievement(achievement)}
                   className={`group flex flex-col items-center gap-1.5 rounded-2xl border-2 py-4 transition-all hover:-translate-y-0.5 focus:outline-none ${
                     achievement.unlocked
-                      ? "border-[#d7dce6] bg-[var(--color-background)] shadow-sm hover:shadow-md"
-                      : "border-[#e8edf5] bg-[#f8fafc]"
+                      ? 'border-[#d7dce6] bg-[var(--color-background)] shadow-sm hover:shadow-md'
+                      : 'border-[#e8edf5] bg-[#f8fafc]'
                   }`}
                 >
                   <div className="relative">
@@ -402,14 +457,14 @@ export default function MyProfile() {
                       className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
                         achievement.unlocked
                           ? `${achievement.color} shadow-md`
-                          : "bg-[#edf0f4]"
+                          : 'bg-[#edf0f4]'
                       }`}
                     >
                       {(() => {
                         const Icon = PROFILE_ACHIEVEMENT_ICONS[achievement.id];
                         return (
                           <Icon
-                            className={`h-5 w-5 ${achievement.unlocked ? "text-white" : "text-[#b0bac8]"}`}
+                            className={`h-5 w-5 ${achievement.unlocked ? 'text-white' : 'text-[#b0bac8]'}`}
                           />
                         );
                       })()}
@@ -422,7 +477,7 @@ export default function MyProfile() {
                   </div>
                   <span
                     className={`font-lato text-[0.55rem] font-bold leading-tight tracking-tight text-center ${
-                      achievement.unlocked ? "text-secondary" : "text-[#9aa5b4]"
+                      achievement.unlocked ? 'text-secondary' : 'text-[#9aa5b4]'
                     }`}
                   >
                     {achievement.name}
@@ -442,16 +497,18 @@ export default function MyProfile() {
 
         {/* Points History */}
         <div className="flex items-center justify-between mb-2 px-1">
-          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Points History</h2>
+          <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">
+            Points History
+          </h2>
           <button className="text-xs font-bold text-secondary">See All</button>
         </div>
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4">
           <div className="flex flex-col gap-3">
             {(() => {
               const item = {
-                title: "Daily login",
-                subtitle: "Welcome back to AFI · 2/27/2026",
-                points: "+10",
+                title: 'Daily login',
+                subtitle: 'Welcome back to AFI · 2/27/2026',
+                points: '+10',
                 icon: <ClockIcon className="h-5 w-5 text-gray-400" />,
               };
               return (
@@ -460,10 +517,14 @@ export default function MyProfile() {
                     {item.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-secondary">{item.title}</p>
+                    <p className="font-bold text-sm text-secondary">
+                      {item.title}
+                    </p>
                     <p className="text-xs text-gray-400">{item.subtitle}</p>
                   </div>
-                  <p className="text-base font-extrabold text-primary">{item.points}</p>
+                  <p className="text-base font-extrabold text-primary">
+                    {item.points}
+                  </p>
                 </div>
               );
             })()}
@@ -492,6 +553,7 @@ export default function MyProfile() {
           onCancel={() => setShowLogoutConfirm(false)}
         />
       </main>
+      <Footer />
     </div>
   );
 }

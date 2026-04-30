@@ -13,6 +13,7 @@ import {
   UsersIcon,
 } from "@heroicons/react/24/solid";
 import NavBar from "../../components/layout/NavBar";
+import Footer from "../../components/layout/Footer";
 import AchievementDetailModal from "../../components/ui/achievements/AchievementDetailModal";
 import { useAchievements } from "../../hooks/useAchievements";
 import type { Achievement, AchievementId } from "../../data/achievements";
@@ -37,10 +38,10 @@ export default function Achievements() {
   const percent = total > 0 ? Math.round((unlockedCount / total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#eef3fb]">
+    <div className="flex min-h-screen flex-col bg-[#eef3fb]">
       <NavBar />
 
-      <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
         <section className="rounded-[1.75rem] bg-white/95 p-4 shadow-[0_24px_70px_rgba(30,41,59,0.12)] sm:p-5 lg:p-7">
           <div className="flex items-center gap-3">
             <button
@@ -124,6 +125,7 @@ export default function Achievements() {
           onClose={() => setSelected(null)}
         />
       )}
+      <Footer />
     </div>
   );
 }
