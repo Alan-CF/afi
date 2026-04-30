@@ -18,7 +18,6 @@ const NAV_GROUPS = [
     label: 'Warriors',
     links: [
       { label: 'News', to: '/news' },
-      { label: 'Events', to: '/events' },
       { label: 'Stats', to: '/stats' },
       { label: 'Legacy', to: '/legacy' },
       { label: 'Shop', to: '/shop' },

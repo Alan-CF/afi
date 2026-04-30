@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import NavBar from "../components/layout/NavBar";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
@@ -8,7 +8,7 @@ import EmptyState from "../components/common/EmptyState";
 import LiveBadge from "../components/common/LiveBadge";
 import CompactNewsCard from "../components/home/CompactNewsCard";
 import NewsImageOrFallback from "../components/home/NewsImageOrFallback";
-import { useNewsArticle, articleSlugDecode } from "../hooks/useNewsArticle";
+import { useNewsArticle } from "../hooks/useNewsArticle";
 import { fetchScrapedArticle, type ScrapedArticle } from "../services/newsScraper";
 
 function formatPublished(iso: string): string {
@@ -38,10 +38,9 @@ function ArticleSkeleton() {
 }
 
 export default function NewsDetail() {
-  const { id: rawId } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const id = articleSlugDecode(rawId);
-  const { article, related, loading, error } = useNewsArticle(id);
+  const { article, relatedArticles, loading, error } = useNewsArticle(slug ?? null);
 
   const [scraped, setScraped] = useState<ScrapedArticle | null>(null);
   const [scrapedLoading, setScrapedLoading] = useState(false);
@@ -70,6 +69,15 @@ export default function NewsDetail() {
   const isBreaking =
     !!article && Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
 
+  const heroImage = article ? article.image ?? article.thumbnail : null;
+  const author = article?.author;
+  const sourceLabel = scraped?.source ?? article?.sourceName ?? article?.source;
+  const originalUrl = article?.originalUrl ?? article?.link;
+  const body = scraped?.body ?? article?.body ?? null;
+  const bodyParagraphs = body
+    ? body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+    : [];
+
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <NavBar />
@@ -90,14 +98,14 @@ export default function NewsDetail() {
         {!loading && (error || !article) && (
           <EmptyState
             message="We couldn't find that story."
-            cta={{ label: "Back to news", onClick: () => navigate("/news") }}
+            cta={{ label: "Back to News", onClick: () => navigate("/news") }}
           />
         )}
 
         {!loading && article && (
           <article>
             <div className="relative aspect-[4/5] md:aspect-[16/9] rounded-3xl overflow-hidden bg-secondary fade-in-up stagger-1">
-              <NewsImageOrFallback thumbnail={article.thumbnail} alt="" />
+              <NewsImageOrFallback thumbnail={heroImage ?? null} alt={article.title} />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
               {isBreaking && (
                 <div className="absolute top-5 left-5">
@@ -113,57 +121,78 @@ export default function NewsDetail() {
               <h1 className="mt-3 font-anton text-3xl md:text-5xl text-secondary leading-tight">
                 {article.title}
               </h1>
-              <p className="mt-3 font-lato text-sm text-text-light">
-                {scraped?.source ?? "ESPN"} · {formatPublished(article.publishedAt)}
-              </p>
-            </header>
-
-            <div className="mt-6 md:mt-8 fade-in-up stagger-3">
               {article.description && (
-                <p className="font-lato text-lg md:text-xl text-text leading-relaxed">
+                <p className="mt-4 font-lato text-base md:text-lg text-text-light leading-relaxed">
                   {article.description}
                 </p>
               )}
-              {scrapedLoading && (
-                <div className="mt-6 flex flex-col gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 font-lato text-sm text-text-light">
+                {author && (
+                  <span>
+                    By <span className="font-semibold text-secondary">{author}</span>
+                  </span>
+                )}
+                {author && sourceLabel && <span aria-hidden>·</span>}
+                {sourceLabel && <span>{sourceLabel}</span>}
+                {(author || sourceLabel) && <span aria-hidden>·</span>}
+                <span>{formatPublished(article.publishedAt)}</span>
+              </div>
+            </header>
+
+            <div className="mt-8 md:mt-10 fade-in-up stagger-3">
+              {scrapedLoading && bodyParagraphs.length === 0 && (
+                <div className="flex flex-col gap-3">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="h-4 w-full rounded skeleton-shimmer" />
                   ))}
                 </div>
               )}
-              {!scrapedLoading && scraped?.body && (
-                <div className="mt-6 font-lato text-base text-text leading-relaxed whitespace-pre-line">
-                  {scraped.body}
+
+              {!scrapedLoading && bodyParagraphs.length > 0 && (
+                <div className="flex flex-col gap-5 font-lato text-base md:text-lg text-text leading-8">
+                  {bodyParagraphs.map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                </div>
+              )}
+
+              {!scrapedLoading && bodyParagraphs.length === 0 && (
+                <div className="rounded-3xl bg-white border border-container-border p-6 md:p-8">
+                  <p className="font-lato text-base md:text-lg text-text-light leading-relaxed">
+                    Full article content is available from the original source.
+                  </p>
                 </div>
               )}
             </div>
 
-            <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 fade-in-up stagger-4">
-              <a
-                href={article.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 font-lato text-sm font-bold text-white hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-              >
-                Read original on ESPN
-                <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-              </a>
-              <button
-                type="button"
-                onClick={() => navigate("/news")}
-                className="inline-flex items-center justify-center rounded-2xl border border-secondary/30 px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-secondary/5 transition-colors"
-              >
-                More stories
-              </button>
-            </div>
+            {originalUrl && (
+              <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 fade-in-up stagger-4">
+                <a
+                  href={originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 font-lato text-sm font-bold text-white hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                >
+                  Read original source
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => navigate("/news")}
+                  className="inline-flex items-center justify-center rounded-2xl border border-secondary/30 px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-secondary/5 transition-colors"
+                >
+                  More stories
+                </button>
+              </div>
+            )}
 
-            {related.length > 0 && (
+            {relatedArticles.length > 0 && (
               <section className="mt-16 md:mt-20">
                 <h2 className="font-anton text-2xl md:text-3xl text-secondary leading-tight mb-4 md:mb-6">
                   Related Stories
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {related.map((item, i) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {relatedArticles.map((item, i) => (
                     <div key={item.id} className={`fade-in-up stagger-${Math.min(i + 1, 6)}`}>
                       <CompactNewsCard article={item} />
                     </div>
@@ -171,10 +200,6 @@ export default function NewsDetail() {
                 </div>
               </section>
             )}
-
-            <p className="mt-12 font-lato text-xs text-text-light">
-              Source: <Link to={article.link} target="_blank" rel="noopener noreferrer" className="underline hover:text-secondary">{article.link}</Link>
-            </p>
           </article>
         )}
       </main>

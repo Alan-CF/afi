@@ -46,7 +46,7 @@ function App() {
         <Route path="/stats" element={<Statistics />} />
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/news" element={<News />} />
-        <Route path="/news/:id" element={<NewsDetail />} />
+        <Route path="/news/:slug" element={<NewsDetail />} />
       </Routes>
     </>
   );

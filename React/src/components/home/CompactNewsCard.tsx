@@ -13,7 +13,7 @@ function timeAgo(iso: string): string {
 export default function CompactNewsCard({ article }: { article: WarriorsNewsItem }) {
   return (
     <Link
-      to={`/news/${articleSlug(article.id)}`}
+      to={`/news/${article.slug ?? articleSlug(article.id)}`}
       className="group flex items-center gap-3 py-3 border-b border-container-border last:border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
       aria-label={article.title}
     >
