@@ -25,6 +25,15 @@ type ThunderJsonReply = {
   };
 };
 
+const WELCOME_MESSAGE = `Welcome to ThunderAI Chat! ⚡ I'm your personal shopping assistant, ready to help you find the best options. What can I help you discover today?
+
+Suggested questions:
+- I have X product in my cart — is there a cheaper alternative?
+- My kid's birthday is coming up. What should I buy?
+
+Heads up:
+I do NOT have access to modify your cart. My role is to help you make smart, helpful recommendations.`;
+
 function handlePricedProducts(
   recommendations: ThunderRecommendation[],
   pricedProducts: PricedProduct[]
@@ -67,12 +76,8 @@ function ParsedMessage({ content }: { content: string }) {
     parsedReply = null;
   }
 
-  if (!parsedReply) {
-    return renderText(content);
-  }
-
   const recommendationProducts: ThunderRecommendation[] = (
-    parsedReply.products ?? []
+    parsedReply?.products ?? []
   ).map((product) => ({
     product_id: product.product_id,
     description: product.description,
@@ -82,20 +87,17 @@ function ParsedMessage({ content }: { content: string }) {
     (product) => product.product_id
   );
 
-  console.log('productIds extracted from message:', productIds);
   const { products: pricedProducts } = useShopProductsByIds(
     productIds.length > 0 ? productIds : null
   );
-  console.log('Priced products fetched for recommendations:', pricedProducts);
+
+  if (!parsedReply) {
+    return renderText(content);
+  }
 
   const mappedRecommendations = handlePricedProducts(
     recommendationProducts,
     pricedProducts
-  );
-
-  console.log(
-    'Mapped recommendations with product details:',
-    mappedRecommendations
   );
   const topMessage = parsedReply.top_message?.trim() ?? '';
   const bottomMessage = parsedReply.bottom_message?.trim() ?? '';
@@ -218,6 +220,9 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
             </div>
           ) : (
             <>
+              <ChatBubble isUser={false}>
+                <ParsedMessage content={WELCOME_MESSAGE} />
+              </ChatBubble>
               {messages.map((msg) => (
                 <ChatBubble key={msg.id} isUser={msg.is_user}>
                   <ParsedMessage content={msg.content} />
