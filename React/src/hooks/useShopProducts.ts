@@ -9,7 +9,6 @@ export interface PricedProduct {
   discount: number;
   is_active: boolean;
   image_url: string | null;
-  product_details: Record<string, unknown>;
   meta_data: Record<string, unknown>;
 }
 
