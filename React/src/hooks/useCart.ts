@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { getSession } from "../lib/auth";
-import { supabase } from "../lib/supabaseClient";
+import { useCallback, useEffect, useState } from 'react';
+import { getSession } from '../lib/auth';
+import { supabase } from '../lib/supabaseClient';
 
-const CART_UPDATED_EVENT = "cart:updated";
+const CART_UPDATED_EVENT = 'cart:updated';
 
 function notifyCartUpdated() {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return;
   }
 
@@ -16,7 +16,6 @@ export interface CartItem {
   id: number;
   product_name: string;
   product_description: string;
-  stock: number;
   is_active: boolean;
   price: number;
   discount: number;
@@ -28,10 +27,10 @@ async function addItemToCartRequest(pricedProductId: number) {
   const profileId = session?.user?.id;
 
   if (!profileId) {
-    throw new Error("You must be signed in to add items to your cart.");
+    throw new Error('You must be signed in to add items to your cart.');
   }
 
-  const { error } = await supabase.rpc("add_item_to_active_cart", {
+  const { error } = await supabase.rpc('add_item_to_active_cart', {
     p_profile_id: profileId,
     p_priced_product_id: pricedProductId,
   });
@@ -56,7 +55,7 @@ export function useAddItemToCart() {
       const parsedError =
         error instanceof Error
           ? error
-          : new Error("Failed to add item to cart.");
+          : new Error('Failed to add item to cart.');
       setAddToCartError(parsedError);
     } finally {
       setIsAddingToCart(false);
@@ -75,10 +74,10 @@ export async function removeItemFromCart(cartItemId: number) {
   const profileId = session?.user?.id;
 
   if (!profileId) {
-    throw new Error("You must be signed in to remove items from your cart.");
+    throw new Error('You must be signed in to remove items from your cart.');
   }
 
-  const { error } = await supabase.rpc("remove_item_from_active_cart", {
+  const { error } = await supabase.rpc('remove_item_from_active_cart', {
     p_profile_id: profileId,
     p_cart_item_id: cartItemId,
   });
@@ -109,7 +108,7 @@ export function useCart() {
         return;
       }
 
-      const { data, error } = await supabase.rpc("get_cart", {
+      const { data, error } = await supabase.rpc('get_cart', {
         p_profile_id: profileId,
       });
 
@@ -120,9 +119,9 @@ export function useCart() {
       setCartItems((data ?? []) as CartItem[]);
       setError(null);
     } catch (err) {
-      console.error("Error in useCart hook:", err);
+      console.error('Error in useCart hook:', err);
       setCartItems([]);
-      setError(err instanceof Error ? err : new Error("Failed to fetch cart"));
+      setError(err instanceof Error ? err : new Error('Failed to fetch cart'));
     } finally {
       setLoading(false);
       setHasLoadedOnce(true);
@@ -132,7 +131,7 @@ export function useCart() {
   useEffect(() => {
     fetchCart();
 
-    if (typeof window === "undefined") {
+    if (typeof window === 'undefined') {
       return;
     }
 

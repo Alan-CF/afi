@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 export interface PricedProduct {
   id: number;
@@ -8,7 +8,6 @@ export interface PricedProduct {
   price: number;
   discount: number;
   is_active: boolean;
-  stock: number;
   image_url: string | null;
   product_details: Record<string, unknown>;
   meta_data: Record<string, unknown>;
@@ -28,7 +27,7 @@ type UseShopProductsOptions = {
 };
 
 export default function useShopProducts(options?: UseShopProductsOptions) {
-  const searchQuery = options?.searchQuery ?? "";
+  const searchQuery = options?.searchQuery ?? '';
   const filters = options?.filters ?? {};
   const enabled = options?.enabled ?? true;
   const filtersKey = JSON.stringify(filters);
@@ -56,7 +55,7 @@ export default function useShopProducts(options?: UseShopProductsOptions) {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.rpc("get_priced_products", {
+      const { data, error } = await supabase.rpc('get_priced_products', {
         p_search_query: nextSearchQuery.trim(),
         p_filters: nextFilters,
       });
@@ -68,10 +67,10 @@ export default function useShopProducts(options?: UseShopProductsOptions) {
       setProducts((data ?? []) as PricedProduct[]);
       setError(null);
     } catch (err) {
-      console.error("Error in useShopProducts hook:", err);
+      console.error('Error in useShopProducts hook:', err);
       setProducts([]);
       setError(
-        err instanceof Error ? err : new Error("Failed to fetch products"),
+        err instanceof Error ? err : new Error('Failed to fetch products')
       );
     } finally {
       setLoading(false);
@@ -102,7 +101,7 @@ export function useShopProductsByIds(productIds: number[] | null) {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.rpc("get_priced_products_by_id", {
+      const { data, error } = await supabase.rpc('get_priced_products_by_id', {
         p_ids: ids ?? [],
       });
 
@@ -113,10 +112,10 @@ export function useShopProductsByIds(productIds: number[] | null) {
       setProducts((data ?? []) as PricedProduct[]);
       setError(null);
     } catch (err) {
-      console.error("Error in useShopProductsByIds hook:", err);
+      console.error('Error in useShopProductsByIds hook:', err);
       setProducts([]);
       setError(
-        err instanceof Error ? err : new Error("Failed to fetch products"),
+        err instanceof Error ? err : new Error('Failed to fetch products')
       );
     } finally {
       setLoading(false);
