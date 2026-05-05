@@ -1,24 +1,28 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
-import NavBar from "../components/layout/NavBar";
-import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
-import Footer from "../components/layout/Footer";
-import EmptyState from "../components/common/EmptyState";
-import LiveBadge from "../components/common/LiveBadge";
-import CompactNewsCard from "../components/home/CompactNewsCard";
-import NewsImageOrFallback from "../components/home/NewsImageOrFallback";
-import { useNewsArticle } from "../hooks/useNewsArticle";
-import { fetchScrapedArticle, type ScrapedArticle } from "../services/newsScraper";
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  ArrowLeftIcon,
+  ArrowTopRightOnSquareIcon,
+} from '@heroicons/react/24/solid';
+import ScoreboardRibbon from '../components/layout/ScoreboardRibbon';
+import EmptyState from '../components/common/EmptyState';
+import LiveBadge from '../components/common/LiveBadge';
+import CompactNewsCard from '../components/home/CompactNewsCard';
+import NewsImageOrFallback from '../components/home/NewsImageOrFallback';
+import { useNewsArticle } from '../hooks/useNewsArticle';
+import {
+  fetchScrapedArticle,
+  type ScrapedArticle,
+} from '../services/newsScraper';
 
 function formatPublished(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+  return new Date(iso).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 }
 
@@ -40,7 +44,9 @@ function ArticleSkeleton() {
 export default function NewsDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { article, relatedArticles, loading, error } = useNewsArticle(slug ?? null);
+  const { article, relatedArticles, loading, error } = useNewsArticle(
+    slug ?? null
+  );
 
   const [scraped, setScraped] = useState<ScrapedArticle | null>(null);
   const [scrapedLoading, setScrapedLoading] = useState(false);
@@ -67,26 +73,29 @@ export default function NewsDetail() {
   }, [article]);
 
   const isBreaking =
-    !!article && Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
+    !!article &&
+    Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
 
-  const heroImage = article ? article.image ?? article.thumbnail : null;
+  const heroImage = article ? (article.image ?? article.thumbnail) : null;
   const author = article?.author;
   const sourceLabel = scraped?.source ?? article?.sourceName ?? article?.source;
   const originalUrl = article?.originalUrl ?? article?.link;
   const body = scraped?.body ?? article?.body ?? null;
   const bodyParagraphs = body
-    ? body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+    ? body
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter(Boolean)
     : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
-      <NavBar />
       <ScoreboardRibbon />
 
       <main className="flex-1 mx-auto w-full max-w-[1024px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <button
           type="button"
-          onClick={() => navigate("/news")}
+          onClick={() => navigate('/news')}
           className="mb-6 inline-flex items-center gap-2 font-lato text-sm font-bold text-secondary hover:text-[#5780AE] transition-colors"
         >
           <ArrowLeftIcon className="h-4 w-4" />
@@ -98,14 +107,17 @@ export default function NewsDetail() {
         {!loading && (error || !article) && (
           <EmptyState
             message="We couldn't find that story."
-            cta={{ label: "Back to News", onClick: () => navigate("/news") }}
+            cta={{ label: 'Back to News', onClick: () => navigate('/news') }}
           />
         )}
 
         {!loading && article && (
           <article>
             <div className="relative aspect-[4/5] md:aspect-[16/9] rounded-3xl overflow-hidden bg-secondary fade-in-up stagger-1">
-              <NewsImageOrFallback thumbnail={heroImage ?? null} alt={article.title} />
+              <NewsImageOrFallback
+                thumbnail={heroImage ?? null}
+                alt={article.title}
+              />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
               {isBreaking && (
                 <div className="absolute top-5 left-5">
@@ -129,7 +141,10 @@ export default function NewsDetail() {
               <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 font-lato text-sm text-text-light">
                 {author && (
                   <span>
-                    By <span className="font-semibold text-secondary">{author}</span>
+                    By{' '}
+                    <span className="font-semibold text-secondary">
+                      {author}
+                    </span>
                   </span>
                 )}
                 {author && sourceLabel && <span aria-hidden>·</span>}
@@ -143,7 +158,10 @@ export default function NewsDetail() {
               {scrapedLoading && bodyParagraphs.length === 0 && (
                 <div className="flex flex-col gap-3">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-4 w-full rounded skeleton-shimmer" />
+                    <div
+                      key={i}
+                      className="h-4 w-full rounded skeleton-shimmer"
+                    />
                   ))}
                 </div>
               )}
@@ -178,7 +196,7 @@ export default function NewsDetail() {
                 </a>
                 <button
                   type="button"
-                  onClick={() => navigate("/news")}
+                  onClick={() => navigate('/news')}
                   className="inline-flex items-center justify-center rounded-2xl border border-secondary/30 px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-secondary/5 transition-colors"
                 >
                   More stories
@@ -193,7 +211,10 @@ export default function NewsDetail() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {relatedArticles.map((item, i) => (
-                    <div key={item.id} className={`fade-in-up stagger-${Math.min(i + 1, 6)}`}>
+                    <div
+                      key={item.id}
+                      className={`fade-in-up stagger-${Math.min(i + 1, 6)}`}
+                    >
                       <CompactNewsCard article={item} />
                     </div>
                   ))}
@@ -203,8 +224,6 @@ export default function NewsDetail() {
           </article>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }
