@@ -1,9 +1,9 @@
-import useShopProducts from '../hooks/useShopProducts';
-import ProductCard from '../components/ui/shop/ProductCard';
+import useShopProducts from '../../hooks/useShopProducts';
+import ProductCard from '../../components/ui/shop/ProductCard';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
-import Filters from '../components/layout/Shop/Filters';
-import ThunderChat from '../components/layout/Shop/ThunderChat';
+import Filters from '../../components/layout/Shop/Filters';
+import ThunderChat from '../../components/layout/Shop/ThunderChat';
 import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
