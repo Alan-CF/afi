@@ -1,19 +1,16 @@
-import NavBar from '../../components/layout/NavBar';
-import { ProductGroupCard } from '../../components/ui/shop/ProductGroupCard';
+import { ProductGroupCard } from '../components/ui/shop/ProductGroupCard';
 import {
   useCategories,
   useCollections,
   usePlayers,
-} from '../../hooks/useShopGroups';
-import ShopCarousel from '../../components/ui/shop/Carrousel';
-import ShopHero from '../../components/ui/shop/Hero';
-import ShopSeparator from '../../components/ui/shop/Separator';
-import SearchBar from '../../components/layout/Shop/SearchBar';
+} from '../hooks/useShopGroups';
+import ShopCarousel from '../components/ui/shop/Carrousel';
+import ShopHero from '../components/ui/shop/Hero';
+import ShopSeparator from '../components/ui/shop/Separator';
+import SearchBar from '../components/layout/Shop/SearchBar';
 import { useNavigate } from 'react-router-dom';
-import ThunderChat from '../../components/layout/Shop/ThunderChat';
+import ThunderChat from '../components/layout/Shop/ThunderChat';
 import { useState } from 'react';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import Footer from '../../components/layout/Footer';
 import Button from '../../components/ui/Button';
 
 function ProductGroupCardSkeleton() {
@@ -66,11 +63,9 @@ export default function Shop() {
   } = usePlayers();
 
   return (
-    <div className="flex h-screen flex-col">
-      <NavBar />
-
+    <div className="flex flex-col">
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-hide">
+        <main className="min-h-0 min-w-0 flex-1">
           <SearchBar
             loading={categoriesLoading}
             onSearch={navigateToProductsSearch}

@@ -1,10 +1,9 @@
-import useShopProducts from '../../hooks/useShopProducts';
-import ProductCard from '../../components/ui/shop/ProductCard';
-import NavBar from '../../components/layout/NavBar';
+import useShopProducts from '../hooks/useShopProducts';
+import ProductCard from '../components/ui/shop/ProductCard';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
-import Filters from '../../components/layout/Shop/Filters';
-import ThunderChat from '../../components/layout/Shop/ThunderChat';
+import Filters from '../components/layout/Shop/Filters';
+import ThunderChat from '../components/layout/Shop/ThunderChat';
 import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
@@ -76,9 +75,7 @@ export default function ShopProducts() {
   } = useShopProducts({ searchQuery, filters });
 
   return (
-    <div className="flex h-screen flex-col bg-secondary/15">
-      <NavBar />
-
+    <div className="flex min-h-0 flex-1 flex-col bg-secondary/15">
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {isDesktopFiltersOpen ? (
           <div className="hidden md:flex">
@@ -90,7 +87,7 @@ export default function ShopProducts() {
           </div>
         ) : null}
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+        <main className="min-h-0 min-w-0 flex-1">
           <div className="mt-6 flex w-full items-center gap-2 px-6">
             {!isDesktopFiltersOpen ? (
               <button
