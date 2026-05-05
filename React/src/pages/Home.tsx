@@ -8,7 +8,6 @@ import NavBar from "../components/layout/NavBar";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
 import Footer from "../components/layout/Footer";
 import HomeTopNews from "../components/home/HomeTopNews";
-import HomeEventsSection from "../components/home/HomeEventsSection";
 import HomeFanaticFeature from "../components/home/HomeFanaticFeature";
 import HomeRoomsRail from "../components/home/HomeRoomsRail";
 import HomeLeaderboardPreview from "../components/home/HomeLeaderboardPreview";
@@ -62,7 +61,6 @@ export default function Home() {
 
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <HomeTopNews />
-        <HomeEventsSection />
         <QuickActions />
         <HomeFanaticFeature />
         <HomeRoomsRail />

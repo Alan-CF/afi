@@ -12,7 +12,6 @@ import Cart from './Cart';
 const PRIMARY_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/news', label: 'News' },
-  { to: '/events', label: 'Events' },
   { to: '/stats', label: 'Stats' },
   { to: '/legacy', label: 'Legacy' },
   { to: '/ranking', label: 'Leaderboard' },
@@ -145,11 +144,11 @@ export default function NavBar() {
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className={`fixed inset-y-0 right-0 z-50 flex w-80 max-w-[85vw] flex-col bg-secondary text-white min-[900px]:hidden transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 right-0 z-50 flex h-dvh w-full sm:w-[86vw] sm:max-w-sm flex-col overflow-y-auto bg-secondary text-white min-[900px]:hidden pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+1rem)] transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex justify-end p-4">
+        <div className="flex justify-end p-4 shrink-0">
           <button
             onClick={() => setIsMenuOpen(false)}
             className="p-2 text-white cursor-pointer"
@@ -159,7 +158,7 @@ export default function NavBar() {
           </button>
         </div>
 
-        <ul className="flex flex-1 flex-col overflow-y-auto">
+        <ul className="flex flex-1 flex-col">
           {PRIMARY_LINKS.map((link) => (
             <li key={link.to}>
               <NavLink
@@ -171,10 +170,10 @@ export default function NavBar() {
                 {({ isActive }) => (
                   <>
                     <span
-                      className={`block px-6 py-4 font-anton tracking-wide transition-all duration-150 ${
+                      className={`block px-6 py-3 sm:py-4 font-anton tracking-wide transition-all duration-150 ${
                         isActive
-                          ? 'text-primary text-3xl tracking-widest'
-                          : 'text-white text-2xl group-hover:text-white/70'
+                          ? 'text-primary text-2xl sm:text-3xl tracking-widest'
+                          : 'text-white text-xl sm:text-2xl group-hover:text-white/70'
                       }`}
                     >
                       {link.label}
@@ -199,10 +198,10 @@ export default function NavBar() {
               >
                 {({ isActive }) => (
                   <span
-                    className={`block px-6 py-5 font-anton tracking-wide transition-all duration-150 ${
+                    className={`block px-6 py-4 sm:py-5 font-anton tracking-wide transition-all duration-150 ${
                       isActive
-                        ? 'text-primary text-3xl tracking-widest'
-                        : 'text-white text-2xl group-hover:text-white/70'
+                        ? 'text-primary text-2xl sm:text-3xl tracking-widest'
+                        : 'text-white text-xl sm:text-2xl group-hover:text-white/70'
                     }`}
                   >
                     Profile
