@@ -1,26 +1,34 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FireIcon,
   UserGroupIcon,
   AcademicCapIcon,
-} from "@heroicons/react/24/solid";
-import NavBar from "../components/layout/NavBar";
-import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
-import Footer from "../components/layout/Footer";
-import HomeTopNews from "../components/home/HomeTopNews";
-import HomeFanaticFeature from "../components/home/HomeFanaticFeature";
-import HomeRoomsRail from "../components/home/HomeRoomsRail";
-import HomeLeaderboardPreview from "../components/home/HomeLeaderboardPreview";
-import HomeStatsPreview from "../components/home/HomeStatsPreview";
-import ShopSpotlight from "../components/home/ShopSpotlight";
-import HomeAuthCTA from "../components/home/HomeAuthCTA";
+} from '@heroicons/react/24/solid';
+import ScoreboardRibbon from '../components/layout/ScoreboardRibbon';
+import HomeTopNews from '../components/home/HomeTopNews';
+import HomeFanaticFeature from '../components/home/HomeFanaticFeature';
+import HomeRoomsRail from '../components/home/HomeRoomsRail';
+import HomeLeaderboardPreview from '../components/home/HomeLeaderboardPreview';
+import HomeStatsPreview from '../components/home/HomeStatsPreview';
+import ShopSpotlight from '../components/home/ShopSpotlight';
+import HomeAuthCTA from '../components/home/HomeAuthCTA';
 
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: FireIcon,        label: "Fanatic",  desc: "Keep playing",          to: "/fanatic"  },
-    { icon: UserGroupIcon,   label: "Rooms",    desc: "Join the conversation", to: "/rooms"    },
-    { icon: AcademicCapIcon, label: "Quizzes",  desc: "Test your IQ",          to: "/quizzes"  },
+    { icon: FireIcon, label: 'Fanatic', desc: 'Keep playing', to: '/fanatic' },
+    {
+      icon: UserGroupIcon,
+      label: 'Rooms',
+      desc: 'Join the conversation',
+      to: '/rooms',
+    },
+    {
+      icon: AcademicCapIcon,
+      label: 'Quizzes',
+      desc: 'Test your IQ',
+      to: '/quizzes',
+    },
   ];
 
   return (
@@ -41,7 +49,9 @@ function QuickActions() {
               <a.icon className="h-6 w-6" />
             </span>
             <div>
-              <p className="font-anton text-lg md:text-xl text-secondary leading-tight">{a.label}</p>
+              <p className="font-anton text-lg md:text-xl text-secondary leading-tight">
+                {a.label}
+              </p>
               <p className="mt-1 font-lato text-xs md:text-sm text-text-light">
                 {a.desc}
               </p>
@@ -56,7 +66,6 @@ function QuickActions() {
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
-      <NavBar />
       <ScoreboardRibbon />
 
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
@@ -81,8 +90,6 @@ export default function Home() {
 
         <HomeAuthCTA />
       </main>
-
-      <Footer />
     </div>
   );
 }
