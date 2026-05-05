@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import {
   Bars3Icon,
   ShoppingBagIcon,
-  UserCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import Cart from './Cart';
+import ProfileIcon from '../ui/ProfileIcon';
 
 const PRIMARY_LINKS = [
   { to: '/', label: 'Home' },
@@ -22,7 +22,12 @@ const PRIMARY_LINKS = [
 ];
 
 export default function NavBar() {
-  const { user, hasLoadedOnce } = useProfile();
+  const {
+    user,
+    loading: profileLoading,
+    error: profileError,
+    hasLoadedOnce,
+  } = useProfile();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -96,25 +101,21 @@ export default function NavBar() {
             >
               <Bars3Icon className="w-6 h-6" />
             </button>
-            {isLoggedIn && (
+            {!isLoggedOut ? (
               <button
                 type="button"
                 onClick={() => navigate('/myprofile')}
                 className="cursor-pointer"
                 aria-label="Go to profile"
               >
-                {user?.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt=""
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <UserCircleIcon className="w-10 h-10" />
-                )}
+                <ProfileIcon
+                  user={user}
+                  userLoading={profileLoading}
+                  userError={profileError}
+                  hasLoadedOnce={hasLoadedOnce}
+                />
               </button>
-            )}
-            {isLoggedOut && (
+            ) : (
               <button
                 type="button"
                 onClick={() => navigate('/login')}
