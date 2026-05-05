@@ -1,14 +1,14 @@
-import useShopProducts from "../hooks/useShopProducts";
-import ProductCard from "../components/ui/shop/ProductCard";
-import NavBar from "../components/layout/NavBar";
-import { useSearchParams } from "react-router-dom";
-import { useMemo, useState } from "react";
-import Filters from "../components/layout/Shop/Filters";
-import ThunderChat from "../components/layout/Shop/ThunderChat";
+import useShopProducts from '../../hooks/useShopProducts';
+import ProductCard from '../../components/ui/shop/ProductCard';
+import NavBar from '../../components/layout/NavBar';
+import { useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import Filters from '../../components/layout/Shop/Filters';
+import ThunderChat from '../../components/layout/Shop/ThunderChat';
 import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
-} from "@heroicons/react/24/outline";
+} from '@heroicons/react/24/outline';
 
 function ProductsSkeleton() {
   return (
@@ -23,21 +23,21 @@ function ProductsSkeleton() {
 export default function ShopProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(
-    searchParams.get("search") || "",
+    searchParams.get('search') || ''
   );
   const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
   const [isDesktopFiltersOpen, setIsDesktopFiltersOpen] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleClearSearch = () => {
-    setInputValue("");
+    setInputValue('');
     const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete("search");
+    nextSearchParams.delete('search');
     setSearchParams(nextSearchParams);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       const value = inputValue.trim();
       if (value) {
         setSearchParams({ search: value });
@@ -51,7 +51,7 @@ export default function ShopProducts() {
     const nextFilters: Record<string, { name?: string | null }> = {};
 
     for (const [key, value] of searchParams.entries()) {
-      if (key === "search") continue;
+      if (key === 'search') continue;
 
       const trimmedValue = value.trim();
 
@@ -66,7 +66,7 @@ export default function ShopProducts() {
   }, [searchParams]);
 
   const searchQuery = useMemo(() => {
-    return searchParams.get("search") || "";
+    return searchParams.get('search') || '';
   }, [searchParams]);
 
   const {
@@ -147,7 +147,7 @@ export default function ShopProducts() {
             <div className="flex min-h-64 items-center justify-center px-6 py-10 text-center font-lato text-lg text-gray-700">
               {searchQuery
                 ? `No products found for "${searchQuery}".`
-                : "No products available at the moment."}
+                : 'No products available at the moment.'}
             </div>
           ) : (
             <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
