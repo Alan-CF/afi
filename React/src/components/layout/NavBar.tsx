@@ -83,16 +83,23 @@ export default function NavBar() {
           </ul>
 
           <div className="flex items-center gap-2 xl:gap-5 shrink-0">
-            {isLoggedIn && (
-              <button
-                onClick={() => setIsCartOpen(true)}
-                type="button"
-                className="cursor-pointer"
-                aria-label="Open cart"
-              >
-                <ShoppingBagIcon className="w-6 h-6" />
-              </button>
-            )}
+            {/* Show the cart button while loading (disabled) or when logged in */
+            (isLoggedIn || profileLoading) &&
+              (() => {
+                const cartDisabled = profileLoading || !isLoggedIn;
+                return (
+                  <button
+                    onClick={() => !cartDisabled && setIsCartOpen(true)}
+                    type="button"
+                    className={`${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    aria-label={cartDisabled ? 'Cart disabled' : 'Open cart'}
+                    aria-disabled={cartDisabled}
+                    disabled={cartDisabled}
+                  >
+                    <ShoppingBagIcon className="w-6 h-6" />
+                  </button>
+                );
+              })()}
             <button
               type="button"
               className="min-[900px]:hidden cursor-pointer"
