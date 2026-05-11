@@ -11,16 +11,5 @@ export default function ProductDetail() {
 
   const { product, loading, error } = useDetailedProduct(productIdNumber);
 
-  return (
-    <ProductView
-      imageUrls={product?.imageUrls}
-      name={product?.name}
-      description={product?.description}
-      price={product?.price}
-      discount={product?.discount}
-      productDetails={product?.product_details}
-      loading={loading}
-      error={error}
-    />
-  );
+  return <ProductView product={product} loading={loading} error={error} />;
 }

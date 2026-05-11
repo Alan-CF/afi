@@ -1,22 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import ProductDetailSelector, {
+  type ProductSelectorEntry,
+} from './ProductDetailSelector';
 import ProductVisualizer from './ProductVisualizer';
+import type { DetailedPricedProduct } from '../../../hooks/useShopProducts';
+import Button from '../Button';
 
 interface ProductViewProps {
-  imageUrls?: string[];
-  name?: string;
-  description?: string;
-  price?: number;
-  discount?: number;
-  productDetails?: Record<string, unknown>;
+  product?: DetailedPricedProduct | null;
   loading?: boolean;
   error?: Error | null;
 }
-
-type SelectorEntry = {
-  key: string;
-  label: string;
-  options: string[];
-};
 
 type DetailEntry = {
   label: string;
@@ -35,7 +29,7 @@ function formatDetailKey(key: string) {
 }
 
 function parseProductDetails(details: Record<string, unknown>) {
-  const selectors: SelectorEntry[] = [];
+  const selectors: ProductSelectorEntry[] = [];
   const detailEntries: DetailEntry[] = [];
 
   for (const [key, rawValue] of Object.entries(details)) {
@@ -54,7 +48,11 @@ function parseProductDetails(details: Record<string, unknown>) {
       continue;
     }
 
-    if (rawValue === null || rawValue === undefined || typeof rawValue === 'object') {
+    if (
+      rawValue === null ||
+      rawValue === undefined ||
+      typeof rawValue === 'object'
+    ) {
       continue;
     }
 
@@ -67,32 +65,40 @@ function parseProductDetails(details: Record<string, unknown>) {
   return { selectors, detailEntries };
 }
 
+function ProductDetailsSkeleton() {
+  return (
+    <div className="flex animate-pulse flex-col gap-3">
+      <div className="h-8 w-3/4 rounded bg-gray-200" />
+      <div className="h-6 w-1/2 rounded bg-gray-200" />
+      <div className="h-4 w-full rounded bg-gray-200" />
+      <div className="h-4 w-5/6 rounded bg-gray-200" />
+    </div>
+  );
+}
+
 export default function ProductView({
-  imageUrls = [],
-  name = 'Product',
-  description,
-  price,
-  discount = 0,
-  productDetails = {},
+  product,
   loading,
   error,
 }: ProductViewProps) {
+  const imageUrls = product?.imageUrls ?? [];
+  const name = product?.name ?? 'Product';
+  const description = product?.description;
+  const price = product?.price;
+  const discount = product?.discount ?? 0;
+
   const { selectors, detailEntries } = useMemo(
-    () => parseProductDetails(productDetails),
-    [productDetails]
+    () => parseProductDetails(product?.product_details ?? {}),
+    [product?.product_details]
   );
 
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<string, string>
-  >({});
   const hasPrice = typeof price === 'number';
   const hasDiscount = hasPrice && discount > 0;
-  const displayedPrice = hasPrice ? (hasDiscount ? price * (1 - discount) : price) : null;
-
-  const getSelectedValue = (selector: SelectorEntry) => {
-    const current = selectedOptions[selector.key];
-    return selector.options.includes(current) ? current : selector.options[0];
-  };
+  const displayedPrice = hasPrice
+    ? hasDiscount
+      ? price * (1 - discount)
+      : price
+    : null;
 
   return (
     <div className="w-full bg-secondary/15">
@@ -107,12 +113,7 @@ export default function ProductView({
 
         <aside className="flex w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-md lg:max-w-xl lg:flex-1">
           {loading ? (
-            <div className="flex animate-pulse flex-col gap-3">
-              <div className="h-8 w-3/4 rounded bg-gray-200" />
-              <div className="h-6 w-1/2 rounded bg-gray-200" />
-              <div className="h-4 w-full rounded bg-gray-200" />
-              <div className="h-4 w-5/6 rounded bg-gray-200" />
-            </div>
+            <ProductDetailsSkeleton />
           ) : error ? (
             <p className="font-lato text-sm text-red-600">
               Unable to load product details.
@@ -146,50 +147,7 @@ export default function ProductView({
                   'No description available for this product.'}
               </p>
 
-              {selectors.length > 0 ? (
-                <div className="mt-2 flex flex-col gap-4">
-                  {selectors.map((selector) => {
-                    const selectedValue = getSelectedValue(selector);
-
-                    return (
-                      <div key={selector.key} className="flex flex-col gap-2">
-                        <p className="font-lato text-lg text-gray-700">
-                          {selector.label}:{' '}
-                          <span className="font-semibold text-black">
-                            {selectedValue}
-                          </span>
-                        </p>
-
-                        <div className="flex flex-wrap gap-3">
-                          {selector.options.map((option) => {
-                            const isSelected = option === selectedValue;
-
-                            return (
-                              <button
-                                key={`${selector.key}-${option}`}
-                                type="button"
-                                onClick={() =>
-                                  setSelectedOptions((prev) => ({
-                                    ...prev,
-                                    [selector.key]: option,
-                                  }))
-                                }
-                                className={`rounded-xl px-4 py-2 font-lato text-md transition-colors ${
-                                  isSelected
-                                    ? 'border-4 border-secondary bg-blue-50 font-semibold text-black'
-                                    : 'border border-dashed border-gray-400 bg-white text-gray-800 hover:border-gray-500'
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
+              <ProductDetailSelector selectors={selectors} />
 
               {detailEntries.length > 0 ? (
                 <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -210,6 +168,9 @@ export default function ProductView({
               ) : null}
             </>
           )}
+          <Button variant="primary" onClick={() => alert('Added to cart!')}>
+            Add to Cart
+          </Button>
         </aside>
       </div>
     </div>
