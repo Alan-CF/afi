@@ -62,9 +62,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       className={`flex h-full w-full min-w-60 max-w-96 flex-col gap-4 rounded-xl bg-white p-4 text-left shadow-lg hover:cursor-pointer ${onClick ? 'transition-transform hover:-translate-y-0.5' : 'cursor-default disabled:opacity-100'}`}
     >
       {productPreview}
-      <div className="rounded-2xl border-4 border-transparent bg-primary px-4 py-2 text-center font-lato text-sm font-semibold text-text">
-        Add to cart
-      </div>
     </button>
   );
 }
