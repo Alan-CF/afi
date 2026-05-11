@@ -19,7 +19,7 @@ export interface CartItem {
   is_active: boolean;
   price: number;
   discount: number;
-  details: Record<string, string>;
+  product_details: Record<string, string>;
   image_url: string | null;
 }
 
