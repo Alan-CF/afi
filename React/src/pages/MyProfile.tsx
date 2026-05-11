@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import AvatarUpload from '../components/ui/AvatarUpload';
 import AchievementDetailModal from '../components/ui/achievements/AchievementDetailModal';
 import { useAchievements } from '../hooks/useAchievements';
-import type { Achievement, AchievementId } from '../data/achievements';
+import type { Achievement} from '../data/achievements';
 import {
   FireIcon,
   StarIcon,

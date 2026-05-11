@@ -1,29 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  AcademicCapIcon,
   ArrowLeftIcon,
-  BoltIcon,
-  FireIcon,
-  HomeIcon,
   LockClosedIcon,
   StarIcon,
   TrophyIcon,
-  UserPlusIcon,
-  UsersIcon,
 } from '@heroicons/react/24/solid';
 import AchievementDetailModal from '../../components/ui/achievements/AchievementDetailModal';
 import { useAchievements } from '../../hooks/useAchievements';
-import type { Achievement, AchievementId } from '../../data/achievements';
+import type { Achievement } from '../../data/achievements';
 
-const ICONS: Record<AchievementId, React.ElementType> = {
-  'first-spark': FireIcon,
-  'ten-day-flame': BoltIcon,
-  'century-fan': TrophyIcon,
-  'new-teammate': UserPlusIcon,
-  'squad-builder': UsersIcon,
-  'room-rookie': HomeIcon,
-  'quiz-debut': AcademicCapIcon,
+import type { ComponentType, SVGProps } from 'react';
+
+type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+const ICONS: Record<string, IconType> = {
+  shooter: TrophyIcon,
 };
 
 export default function Achievements() {
