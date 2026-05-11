@@ -21,6 +21,7 @@ import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
 import MainLayout from './components/layout/MainLayout';
+import ShootYourShotAR from './pages/ShootYourShotAR';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:slug" element={<NewsDetail />} />
+          <Route path="/shoot-your-shot" element={<ShootYourShotAR />} />
         </Route>
 
         <Route path="/rooms/chat" element={<RoomChat />} />

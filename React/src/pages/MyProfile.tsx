@@ -20,8 +20,11 @@ import {
   HomeIcon,
   AcademicCapIcon,
 } from '@heroicons/react/24/solid';
+import type { ComponentType, SVGProps } from 'react';
 
-const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
+type AchievementIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
+const PROFILE_ACHIEVEMENT_ICONS: Record<string, AchievementIcon> = {
   'first-spark': FireIcon,
   'ten-day-flame': BoltIcon,
   'century-fan': TrophyIcon,
@@ -30,6 +33,7 @@ const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
   'room-rookie': HomeIcon,
   'quiz-debut': AcademicCapIcon,
 };
+
 import { signOut } from '../lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { fetchMyFriends, type FriendOption } from '../hooks/useRooms';
