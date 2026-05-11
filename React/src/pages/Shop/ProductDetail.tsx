@@ -1,5 +1,22 @@
 import ProductView from '../../components/ui/shop/ProductView';
+import { useParams } from 'react-router-dom';
+import { useDetailedProduct } from '../../hooks/useShopProducts';
 
 export default function ProductDetail() {
-  return <ProductView />;
+  const { productId } = useParams<{ productId: string }>();
+  const parsedProductId = productId ? Number(productId) : Number.NaN;
+  const productIdNumber = Number.isFinite(parsedProductId)
+    ? parsedProductId
+    : null;
+
+  const { product, loading, error } = useDetailedProduct(productIdNumber);
+  console.log('ProductDetail - product:', product);
+
+  return (
+    <ProductView
+      imageUrls={product?.imageUrls ?? []}
+      loading={loading}
+      error={error}
+    />
+  );
 }
