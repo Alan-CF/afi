@@ -13,6 +13,7 @@ interface ProductViewProps {
   onAddToCart?: () => void;
   onDetailSelectionChange?: (selection: Record<string, string>) => void;
   isAddingToCart?: boolean;
+  isAddedToCart?: boolean;
   addToCartError?: Error | null;
 }
 
@@ -87,6 +88,7 @@ export default function ProductView({
   onAddToCart,
   onDetailSelectionChange,
   isAddingToCart,
+  isAddedToCart,
   addToCartError,
 }: ProductViewProps) {
   const imageUrls = product?.imageUrls ?? [];
@@ -180,12 +182,16 @@ export default function ProductView({
             </>
           )}
           <Button
-            variant="primary"
+            variant={isAddedToCart ? 'success' : 'primary'}
             className="hover:cursor-pointer"
             onClick={() => onAddToCart?.()}
             disabled={!product || !onAddToCart || isAddingToCart}
           >
-            {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+            {isAddingToCart
+              ? 'Adding...'
+              : isAddedToCart
+                ? 'Added to cart'
+                : 'Add to Cart'}
           </Button>
           {addToCartError ? (
             <p className="font-lato text-sm text-red-600">

@@ -60,12 +60,14 @@ export function useAddItemToCart() {
         setIsAddingToCart(true);
         setAddToCartError(null);
         await addItemToCartRequest(pricedProductId, productDetails);
+        return true;
       } catch (error) {
         const parsedError =
           error instanceof Error
             ? error
             : new Error('Failed to add item to cart.');
         setAddToCartError(parsedError);
+        return false;
       } finally {
         setIsAddingToCart(false);
       }
