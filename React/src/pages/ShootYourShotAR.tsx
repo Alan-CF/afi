@@ -102,17 +102,25 @@ function Ball({
 
     const wentThroughHoop =
     isFalling &&
-    Math.abs(ballPosition.x - rimCenter.x) < 0.25 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.25 &&
-    ballPosition.y < rimCenter.y + 0.16 &&
-    ballPosition.y > rimCenter.y - 0.18;
+    Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.32 &&
+    ballPosition.y < rimCenter.y + 0.2 &&
+    ballPosition.y > rimCenter.y - 0.22;
+
+    const nearRim =
+    Math.abs(ballPosition.x - rimCenter.x) < 0.48 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.48 &&
+    Math.abs(ballPosition.y - rimCenter.y) < 0.2;
+
+    const insideScoringArea =
+    Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.32;
 
     const hitRim =
     !wentThroughHoop &&
+    !insideScoringArea &&
     !hasBounced.current &&
-    Math.abs(ballPosition.x - rimCenter.x) < 0.42 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.42 &&
-    Math.abs(ballPosition.y - rimCenter.y) < 0.18;
+    nearRim;
 
     const hitBackboard =
     !wentThroughHoop &&
@@ -158,8 +166,8 @@ function ShootYourShotAR() {
     typeof window !== 'undefined' &&
     window.matchMedia('(max-width: 768px)').matches;
 
-  const [hoopPlaced, setHoopPlaced] = useState(!isMobileDevice);
-  const [hoopPosition, setHoopPosition] = useState<Position3D>([0, 0.75, -4]);
+  const [hoopPlaced, setHoopPlaced] = useState(true);
+  const [hoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
 
@@ -206,11 +214,6 @@ function ShootYourShotAR() {
     } catch {
         setCameraReady(false);
     }
-    };
-
-  const handlePlaceHoop = () => {
-    setHoopPosition([0, 0.75, -4]);
-    setHoopPlaced(true);
     };
 
   const handleRestart = () => {
@@ -374,13 +377,6 @@ function ShootYourShotAR() {
                   >
                     Start Camera
                   </button>
-                  <button
-                        type="button"
-                        onClick={handlePlaceHoop}
-                        className="rounded-2xl bg-white text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg border border-secondary/20"
-                    >
-                        Place Hoop
-                    </button>
                 </>
               )}
 
