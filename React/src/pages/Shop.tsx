@@ -1,17 +1,16 @@
-import NavBar from "../components/layout/NavBar";
-import { ProductGroupCard } from "../components/ui/shop/ProductGroupCard";
+import { ProductGroupCard } from '../components/ui/shop/ProductGroupCard';
 import {
   useCategories,
   useCollections,
   usePlayers,
-} from "../hooks/useShopGroups";
-import ShopCarousel from "../components/ui/shop/Carrousel";
-import ShopHero from "../components/ui/shop/Hero";
-import ShopSeparator from "../components/ui/shop/Separator";
-import SearchBar from "../components/layout/Shop/SearchBar";
-import { useNavigate } from "react-router-dom";
-import ThunderChat from "../components/layout/Shop/ThunderChat";
-import { useState } from "react";
+} from '../hooks/useShopGroups';
+import ShopCarousel from '../components/ui/shop/Carrousel';
+import ShopHero from '../components/ui/shop/Hero';
+import ShopSeparator from '../components/ui/shop/Separator';
+import SearchBar from '../components/layout/Shop/SearchBar';
+import { useNavigate } from 'react-router-dom';
+import ThunderChat from '../components/layout/Shop/ThunderChat';
+import { useState } from 'react';
 
 function ProductGroupCardSkeleton() {
   return (
@@ -30,8 +29,8 @@ export default function Shop() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navigateToProducts = (
-    filterKey: "category" | "player" | "collection",
-    filterValue: string,
+    filterKey: 'category' | 'player' | 'collection',
+    filterValue: string
   ) => {
     const params = new URLSearchParams();
     params.set(filterKey, filterValue);
@@ -41,7 +40,7 @@ export default function Shop() {
 
   const navigateToProductsSearch = (query: string) => {
     const params = new URLSearchParams();
-    params.set("search", query);
+    params.set('search', query);
 
     navigate(`/shop/products?${params.toString()}`);
   };
@@ -63,11 +62,9 @@ export default function Shop() {
   } = usePlayers();
 
   return (
-    <div className="flex h-screen flex-col">
-      <NavBar />
-
+    <div className="flex flex-col">
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-hide">
+        <main className="min-h-0 min-w-0 flex-1">
           <SearchBar
             loading={categoriesLoading}
             onSearch={navigateToProductsSearch}
@@ -75,7 +72,7 @@ export default function Shop() {
             {categories.map((category) => (
               <button
                 key={category.name}
-                onClick={() => navigateToProducts("category", category.name)}
+                onClick={() => navigateToProducts('category', category.name)}
                 className="shrink-0 rounded-full border border-black px-4 py-2 font-lato text-sm font-semibold uppercase text-black transition-colors hover:border-secondary hover:bg-secondary hover:text-primary"
               >
                 {category.name}
@@ -99,7 +96,7 @@ export default function Shop() {
                     title={player.name}
                     description={`#${player.number} - ${player.position}`}
                     imageUrl={player.image_url}
-                    onClick={() => navigateToProducts("player", player.name)}
+                    onClick={() => navigateToProducts('player', player.name)}
                   />
                 ))}
           </ShopCarousel>
@@ -120,7 +117,7 @@ export default function Shop() {
                     title={collection.name}
                     imageUrl={collection.image_url}
                     onClick={() =>
-                      navigateToProducts("collection", collection.name)
+                      navigateToProducts('collection', collection.name)
                     }
                   />
                 ))}
