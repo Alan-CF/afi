@@ -1,7 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { XR, createXRStore } from '@react-three/xr';
-import { useTexture } from '@react-three/drei';
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useBasketballGame } from '../hooks/useBasketballGame';
 import { useThrowGesture } from '../hooks/useThrowGesture';
@@ -46,24 +44,6 @@ function PlacementReticle({ position }: { position: Position3D }) {
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.25, 0.33, 48]} />
         <meshBasicMaterial color="#FFC72C" />
-      </mesh>
-    </group>
-  );
-}
-
-function CourtBackground() {
-  const courtTexture = useTexture('/court_warriors.png');
-
-  return (
-    <group>
-      <mesh position={[0, 0, -8]}>
-        <planeGeometry args={[22, 12]} />
-        <meshBasicMaterial map={courtTexture} />
-      </mesh>
-
-      <mesh position={[0, 0, -7.95]}>
-        <planeGeometry args={[22, 12]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.18} />
       </mesh>
     </group>
   );
@@ -144,13 +124,14 @@ function Ball({
 }
 
 function ShootYourShotAR() {
-  const store = useMemo(() => createXRStore(), []);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
 
   const isMobileDevice =
     typeof window !== 'undefined' &&
     window.matchMedia('(max-width: 768px)').matches;
 
-  const [isARSupported, setIsARSupported] = useState(true);
   const [hoopPlaced, setHoopPlaced] = useState(!isMobileDevice);
   const [hoopPosition, setHoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
@@ -178,12 +159,28 @@ function ShootYourShotAR() {
 
   const handleEnterAR = async () => {
     try {
-      await store.enterAR();
-      setIsARSupported(true);
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+        },
+        audio: false,
+        });
+
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        }
+
+        setCameraReady(true);
     } catch {
-      setIsARSupported(false);
+        setCameraReady(false);
     }
-  };
+    };
 
   const handlePlaceHoop = () => {
     setHoopPosition([0, 0.75, -4]);
@@ -203,6 +200,12 @@ function ShootYourShotAR() {
     setHasShotOnce(false);
   };
 
+  useEffect(() => {
+    return () => {
+        streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+    }, []);
+
   return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
@@ -221,6 +224,27 @@ function ShootYourShotAR() {
         </section>
 
         <section className="relative h-[72vh] min-h-[480px] max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none">
+            {!isMobileDevice && (
+  <img
+    src="/court_warriors.png"
+    alt="Warriors court"
+    className="absolute inset-0 h-full w-full object-cover"
+  />
+)}
+
+{isMobileDevice && (
+  <video
+    ref={videoRef}
+    className={`absolute inset-0 h-full w-full object-cover ${
+      cameraReady ? 'block' : 'hidden'
+    }`}
+    autoPlay
+    muted
+    playsInline
+  />
+)}
+
+<div className="absolute inset-0 bg-black/20" />
           <div
             className="absolute inset-0 z-10 touch-none select-none cursor-grab active:cursor-grabbing"
             onPointerDown={(event) => {
@@ -236,32 +260,32 @@ function ShootYourShotAR() {
             onContextMenu={(event) => event.preventDefault()}
           />
 
-          <Canvas camera={{ position: [0, 0, 0], fov: 62 }}>
-            <XR store={store}>
-              <Suspense fallback={null}>
-                <ambientLight intensity={1.2} />
-                <directionalLight position={[2, 4, 3]} intensity={1.5} />
+          <Canvas
+  className="absolute inset-0 z-[5]"
+  camera={{ position: [0, 0, 0], fov: 62 }}
+  gl={{ alpha: true }}
+>
+  <Suspense fallback={null}>
+    <ambientLight intensity={1.2} />
+    <directionalLight position={[2, 4, 3]} intensity={1.5} />
 
-                {(!isMobileDevice || !isARSupported) && <CourtBackground />}
+    {isMobileDevice && !hoopPlaced && (
+      <PlacementReticle position={[0, -0.4, -2.2]} />
+    )}
 
-                {isMobileDevice && !hoopPlaced && (
-                  <PlacementReticle position={[0, -0.4, -2.2]} />
-                )}
+    {hoopPlaced && <Hoop position={hoopPosition} />}
 
-                {hoopPlaced && <Hoop position={hoopPosition} />}
-
-                {hoopPlaced && (
-                  <Ball
-                    canThrow={canThrow}
-                    hoopPosition={hoopPosition}
-                    throwRequest={throwRequest}
-                    onThrowConsumed={() => setThrowRequest(null)}
-                    onScore={addPoint}
-                  />
-                )}
-              </Suspense>
-            </XR>
-          </Canvas>
+    {hoopPlaced && (
+      <Ball
+        canThrow={canThrow}
+        hoopPosition={hoopPosition}
+        throwRequest={throwRequest}
+        onThrowConsumed={() => setThrowRequest(null)}
+        onScore={addPoint}
+      />
+    )}
+  </Suspense>
+</Canvas>
 
           <div className="pointer-events-none absolute inset-0 z-20">
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-3">
@@ -322,7 +346,7 @@ function ShootYourShotAR() {
                     onClick={handleEnterAR}
                     className="rounded-2xl bg-secondary text-white py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg hover:bg-secondary/90 transition border border-white/20"
                   >
-                    Enter AR
+                    Start Camera
                   </button>
 
                   <button
