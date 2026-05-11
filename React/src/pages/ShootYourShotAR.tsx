@@ -66,6 +66,7 @@ function Ball({
   const velocity = useRef(new THREE.Vector3(0, 0, 0));
   const [isThrown, setIsThrown] = useState(false);
   const hasScored = useRef(false);
+  const hasBounced = useRef(false);
 
   const resetBall = () => {
     if (!ballRef.current) return;
@@ -74,6 +75,7 @@ function Ball({
     velocity.current.set(0, 0, 0);
     setIsThrown(false);
     hasScored.current = false;
+    hasBounced.current = false;
   };
 
   useFrame(() => {
@@ -99,19 +101,43 @@ function Ball({
     const isFalling = velocity.current.y < 0;
 
     const wentThroughHoop =
-      isFalling &&
-      Math.abs(ballPosition.x - rimCenter.x) < 0.25 &&
-      Math.abs(ballPosition.z - rimCenter.z) < 0.25 &&
-      ballPosition.y < rimCenter.y + 0.16 &&
-      ballPosition.y > rimCenter.y - 0.18;
+    isFalling &&
+    Math.abs(ballPosition.x - rimCenter.x) < 0.25 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.25 &&
+    ballPosition.y < rimCenter.y + 0.16 &&
+    ballPosition.y > rimCenter.y - 0.18;
+
+    const hitRim =
+    !wentThroughHoop &&
+    !hasBounced.current &&
+    Math.abs(ballPosition.x - rimCenter.x) < 0.42 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.42 &&
+    Math.abs(ballPosition.y - rimCenter.y) < 0.18;
+
+    const hitBackboard =
+    !wentThroughHoop &&
+    !hasBounced.current &&
+    Math.abs(ballPosition.x - hoop.x) < 0.75 &&
+    ballPosition.y > hoop.y + 0.05 &&
+    ballPosition.y < hoop.y + 0.85 &&
+    ballPosition.z < hoop.z + 0.08 &&
+    ballPosition.z > hoop.z - 0.12;
 
     if (wentThroughHoop && !hasScored.current) {
-      hasScored.current = true;
-      onScore();
+    hasScored.current = true;
+    onScore();
+    }
+
+    if ((hitRim || hitBackboard) && !hasScored.current) {
+    hasBounced.current = true;
+
+    velocity.current.x *= -0.35;
+    velocity.current.y = Math.abs(velocity.current.y) * 0.45;
+    velocity.current.z *= -0.45;
     }
 
     if (ballPosition.y < -2 || ballPosition.z < -8 || ballPosition.z > 2) {
-      resetBall();
+    resetBall();
     }
   });
 
@@ -136,6 +162,9 @@ function ShootYourShotAR() {
   const [hoopPosition, setHoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
+  const [motionEnabled, setMotionEnabled] = useState(!isMobileDevice);
+  const [currentHeading, setCurrentHeading] = useState<number | null>(null);
+  const [anchoredHeading, setAnchoredHeading] = useState<number | null>(null);
 
   const {
     score,
@@ -146,6 +175,52 @@ function ShootYourShotAR() {
     resetGame,
     addPoint,
   } = useBasketballGame();
+
+  const angleDifference = (a: number, b: number) => {
+    const diff = Math.abs(a - b) % 360;
+    return diff > 180 ? 360 - diff : diff;
+    };
+
+  const hoopVisible =
+    !isMobileDevice ||
+    anchoredHeading === null ||
+    currentHeading === null ||
+    angleDifference(currentHeading, anchoredHeading) < 28;
+
+  const enableMotion = async () => {
+    try {
+        const DeviceOrientationEventWithPermission =
+        DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+            requestPermission?: () => Promise<'granted' | 'denied'>;
+        };
+
+        if (DeviceOrientationEventWithPermission.requestPermission) {
+        const permission =
+            await DeviceOrientationEventWithPermission.requestPermission();
+
+        if (permission !== 'granted') return;
+        }
+
+        setMotionEnabled(true);
+    } catch {
+        setMotionEnabled(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!motionEnabled || !isMobileDevice) return;
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+        if (event.alpha === null) return;
+        setCurrentHeading(event.alpha);
+    };
+
+    window.addEventListener('deviceorientation', handleOrientation, true);
+
+    return () => {
+        window.removeEventListener('deviceorientation', handleOrientation, true);
+    };
+    }, [motionEnabled, isMobileDevice]);
 
   const canThrow = hoopPlaced && status === 'playing';
 
@@ -184,8 +259,13 @@ function ShootYourShotAR() {
 
   const handlePlaceHoop = () => {
     setHoopPosition([0, 0.75, -4]);
+
+    if (isMobileDevice && currentHeading !== null) {
+        setAnchoredHeading(currentHeading);
+    }
+
     setHoopPlaced(true);
-  };
+    };
 
   const handleRestart = () => {
     resetGame();
@@ -273,9 +353,9 @@ function ShootYourShotAR() {
       <PlacementReticle position={[0, -0.4, -2.2]} />
     )}
 
-    {hoopPlaced && <Hoop position={hoopPosition} />}
+    {hoopPlaced && hoopVisible && <Hoop position={hoopPosition} />}
 
-    {hoopPlaced && (
+    {hoopPlaced && hoopVisible && (
       <Ball
         canThrow={canThrow}
         hoopPosition={hoopPosition}
@@ -349,15 +429,27 @@ function ShootYourShotAR() {
                     Start Camera
                   </button>
 
-                  <button
+                  {isMobileDevice && cameraReady && !motionEnabled && (
+                <button
+                    type="button"
+                    onClick={enableMotion}
+                    className="rounded-2xl bg-white text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg border border-secondary/20"
+                >
+                    Enable Motion
+                </button>
+                )}
+                </>
+              )}
+
+              {isMobileDevice && cameraReady && motionEnabled && !hoopPlaced && (
+                <button
                     type="button"
                     onClick={handlePlaceHoop}
                     className="rounded-2xl bg-white text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg border border-secondary/20"
-                  >
+                >
                     Place Hoop
-                  </button>
-                </>
-              )}
+                </button>
+                )}
 
               {hoopPlaced && status === 'idle' && (
                 <button
