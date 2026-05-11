@@ -166,7 +166,7 @@ function ShootYourShotAR() {
     typeof window !== 'undefined' &&
     window.matchMedia('(max-width: 768px)').matches;
 
-  const [hoopPlaced, setHoopPlaced] = useState(true);
+  const [hoopPlaced] = useState(true);
   const [hoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
@@ -217,13 +217,6 @@ function ShootYourShotAR() {
     };
 
   const handleRestart = () => {
-    resetGame();
-    setThrowRequest(null);
-    setHasShotOnce(false);
-  };
-
-  const handleRepositionHoop = () => {
-    setHoopPlaced(false);
     resetGame();
     setThrowRequest(null);
     setHasShotOnce(false);
@@ -339,16 +332,17 @@ function ShootYourShotAR() {
               </div>
             </div>
 
-            {isMobileDevice && !hoopPlaced && (
-              <div className="absolute top-28 left-4 right-4 rounded-2xl bg-white/90 border border-white/40 px-4 py-3 text-center shadow-md">
-                <p className="text-secondary font-extrabold">
-                  Place the hoop before starting the game.
-                </p>
-                <p className="text-secondary/70 text-sm font-semibold mt-1">
-                  In AR mode, it will appear in your space.
-                </p>
-              </div>
-            )}
+            {isMobileDevice && !cameraReady && (
+                <div className="absolute top-28 left-4 right-4 rounded-2xl bg-white/90 border border-white/40 px-4 py-3 text-center shadow-md">
+                    <p className="text-secondary font-extrabold">
+                    Start your camera to enter AR mode.
+                    </p>
+
+                    <p className="text-secondary/70 text-sm font-semibold mt-1">
+                    The hoop and basketball will appear over your real environment.
+                    </p>
+                </div>
+                )}
 
             {countdown !== null && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -368,17 +362,15 @@ function ShootYourShotAR() {
             )}
 
             <div className="pointer-events-auto absolute bottom-5 left-4 right-4 flex flex-col gap-3">
-              {isMobileDevice && !hoopPlaced && (
-                <>
-                  <button
+              {isMobileDevice && !cameraReady && (
+                <button
                     type="button"
                     onClick={handleEnterAR}
                     className="rounded-2xl bg-secondary text-white py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg hover:bg-secondary/90 transition border border-white/20"
-                  >
+                >
                     Start Camera
-                  </button>
-                </>
-              )}
+                </button>
+                )}
 
               {hoopPlaced && status === 'idle' && (
                 <button
@@ -389,19 +381,6 @@ function ShootYourShotAR() {
                   Start Game
                 </button>
               )}
-
-              {isMobileDevice &&
-                hoopPlaced &&
-                status !== 'playing' &&
-                status !== 'countdown' && (
-                  <button
-                    type="button"
-                    onClick={handleRepositionHoop}
-                    className="rounded-2xl bg-white/90 text-secondary py-3 px-5 text-center font-extrabold shadow-md border border-white/40"
-                  >
-                    Reposition Hoop
-                  </button>
-                )}
             </div>
           </div>
 
