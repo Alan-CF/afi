@@ -92,12 +92,12 @@ export default function Filters({
             </h4>
 
             <div className="flex flex-wrap gap-2">
-              {values.map((value) => {
+              {values.map((value, index) => {
                 const selected = searchParams.get(group) === value;
 
                 return (
                   <button
-                    key={value}
+                    key={`${group}-${value}-${index}`}
                     onClick={() => handleFilterClick(group, value)}
                     className={`rounded-full px-3 py-1 text-sm transition-colors ${
                       selected
