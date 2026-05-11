@@ -52,7 +52,10 @@ export function useAddItemToCart() {
   const [addToCartError, setAddToCartError] = useState<Error | null>(null);
 
   const addItemToCart = useCallback(
-    async (pricedProductId: number, productDetails: Record<string, string>) => {
+    async (
+      pricedProductId: number,
+      productDetails: Record<string, string> = {}
+    ) => {
       try {
         setIsAddingToCart(true);
         setAddToCartError(null);

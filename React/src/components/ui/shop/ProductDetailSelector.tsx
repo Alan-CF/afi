@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export type ProductSelectorEntry = {
   key: string;
@@ -9,23 +9,40 @@ export type ProductSelectorEntry = {
 interface ProductDetailSelectorProps {
   selectors: ProductSelectorEntry[];
   className?: string;
+  onSelectionChange?: (selection: Record<string, string>) => void;
 }
 
 export default function ProductDetailSelector({
   selectors,
   className = '',
+  onSelectionChange,
 }: ProductDetailSelectorProps) {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     {}
   );
+
+  const selectedValues = useMemo(
+    () =>
+      selectors.reduce<Record<string, string>>((accumulator, selector) => {
+        const current = selectedOptions[selector.key];
+        accumulator[selector.key] = selector.options.includes(current)
+          ? current
+          : selector.options[0];
+        return accumulator;
+      }, {}),
+    [selectors, selectedOptions]
+  );
+
+  useEffect(() => {
+    onSelectionChange?.(selectedValues);
+  }, [onSelectionChange, selectedValues]);
 
   if (selectors.length === 0) {
     return null;
   }
 
   const getSelectedValue = (selector: ProductSelectorEntry) => {
-    const current = selectedOptions[selector.key];
-    return selector.options.includes(current) ? current : selector.options[0];
+    return selectedValues[selector.key];
   };
 
   return (

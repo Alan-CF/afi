@@ -1,4 +1,5 @@
 import ProductView from '../../components/ui/shop/ProductView';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDetailedProduct } from '../../hooks/useShopProducts';
 import { useAddItemToCart } from '../../hooks/useCart';
@@ -11,6 +12,9 @@ export default function ProductDetail() {
     : null;
 
   const { addItemToCart, isAddingToCart, addToCartError } = useAddItemToCart();
+  const [selectedDetails, setSelectedDetails] = useState<
+    Record<string, string>
+  >({});
 
   const { product, loading, error } = useDetailedProduct(productIdNumber);
 
@@ -19,7 +23,7 @@ export default function ProductDetail() {
       return;
     }
 
-    void addItemToCart(product.id, {});
+    void addItemToCart(product.id, selectedDetails);
   };
 
   return (
@@ -28,6 +32,7 @@ export default function ProductDetail() {
       productLoading={loading}
       productError={error}
       onAddToCart={handleAddToCart}
+      onDetailSelectionChange={setSelectedDetails}
       isAddingToCart={isAddingToCart}
       addToCartError={addToCartError}
     />

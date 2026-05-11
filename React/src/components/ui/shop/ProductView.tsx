@@ -11,6 +11,7 @@ interface ProductViewProps {
   productLoading?: boolean;
   productError?: Error | null;
   onAddToCart?: () => void;
+  onDetailSelectionChange?: (selection: Record<string, string>) => void;
   isAddingToCart?: boolean;
   addToCartError?: Error | null;
 }
@@ -84,6 +85,7 @@ export default function ProductView({
   productLoading,
   productError,
   onAddToCart,
+  onDetailSelectionChange,
   isAddingToCart,
   addToCartError,
 }: ProductViewProps) {
@@ -153,7 +155,10 @@ export default function ProductView({
                   'No description available for this product.'}
               </p>
 
-              <ProductDetailSelector selectors={selectors} />
+              <ProductDetailSelector
+                selectors={selectors}
+                onSelectionChange={onDetailSelectionChange}
+              />
 
               {detailEntries.length > 0 ? (
                 <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
