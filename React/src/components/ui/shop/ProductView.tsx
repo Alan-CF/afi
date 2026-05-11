@@ -8,8 +8,11 @@ import Button from '../Button';
 
 interface ProductViewProps {
   product?: DetailedPricedProduct | null;
-  loading?: boolean;
-  error?: Error | null;
+  productLoading?: boolean;
+  productError?: Error | null;
+  onAddToCart?: () => void;
+  isAddingToCart?: boolean;
+  addToCartError?: Error | null;
 }
 
 type DetailEntry = {
@@ -78,8 +81,11 @@ function ProductDetailsSkeleton() {
 
 export default function ProductView({
   product,
-  loading,
-  error,
+  productLoading,
+  productError,
+  onAddToCart,
+  isAddingToCart,
+  addToCartError,
 }: ProductViewProps) {
   const imageUrls = product?.imageUrls ?? [];
   const name = product?.name ?? 'Product';
@@ -106,15 +112,15 @@ export default function ProductView({
         <div className="w-full lg:max-w-3xl lg:flex-1">
           <ProductVisualizer
             imageUrls={imageUrls}
-            loading={loading}
-            error={error}
+            loading={productLoading}
+            error={productError}
           />
         </div>
 
         <aside className="flex w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-md lg:max-w-xl lg:flex-1">
-          {loading ? (
+          {productLoading ? (
             <ProductDetailsSkeleton />
-          ) : error ? (
+          ) : productError ? (
             <p className="font-lato text-sm text-red-600">
               Unable to load product details.
             </p>
@@ -171,10 +177,16 @@ export default function ProductView({
           <Button
             variant="primary"
             className="hover:cursor-pointer"
-            onClick={() => alert('Added to cart!')}
+            onClick={() => onAddToCart?.()}
+            disabled={!product || !onAddToCart || isAddingToCart}
           >
-            Add to Cart
+            {isAddingToCart ? 'Adding...' : 'Add to Cart'}
           </Button>
+          {addToCartError ? (
+            <p className="font-lato text-sm text-red-600">
+              {addToCartError.message}
+            </p>
+          ) : null}
         </aside>
       </div>
     </div>
