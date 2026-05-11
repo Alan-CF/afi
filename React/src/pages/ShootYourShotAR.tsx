@@ -162,9 +162,6 @@ function ShootYourShotAR() {
   const [hoopPosition, setHoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
-  const [motionEnabled, setMotionEnabled] = useState(!isMobileDevice);
-  const [currentHeading, setCurrentHeading] = useState<number | null>(null);
-  const [anchoredHeading, setAnchoredHeading] = useState<number | null>(null);
 
   const {
     score,
@@ -175,52 +172,6 @@ function ShootYourShotAR() {
     resetGame,
     addPoint,
   } = useBasketballGame();
-
-  const angleDifference = (a: number, b: number) => {
-    const diff = Math.abs(a - b) % 360;
-    return diff > 180 ? 360 - diff : diff;
-    };
-
-  const hoopVisible =
-    !isMobileDevice ||
-    anchoredHeading === null ||
-    currentHeading === null ||
-    angleDifference(currentHeading, anchoredHeading) < 28;
-
-  const enableMotion = async () => {
-    try {
-        const DeviceOrientationEventWithPermission =
-        DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-            requestPermission?: () => Promise<'granted' | 'denied'>;
-        };
-
-        if (DeviceOrientationEventWithPermission.requestPermission) {
-        const permission =
-            await DeviceOrientationEventWithPermission.requestPermission();
-
-        if (permission !== 'granted') return;
-        }
-
-        setMotionEnabled(true);
-    } catch {
-        setMotionEnabled(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!motionEnabled || !isMobileDevice) return;
-
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-        if (event.alpha === null) return;
-        setCurrentHeading(event.alpha);
-    };
-
-    window.addEventListener('deviceorientation', handleOrientation, true);
-
-    return () => {
-        window.removeEventListener('deviceorientation', handleOrientation, true);
-    };
-    }, [motionEnabled, isMobileDevice]);
 
   const canThrow = hoopPlaced && status === 'playing';
 
@@ -259,11 +210,6 @@ function ShootYourShotAR() {
 
   const handlePlaceHoop = () => {
     setHoopPosition([0, 0.75, -4]);
-
-    if (isMobileDevice && currentHeading !== null) {
-        setAnchoredHeading(currentHeading);
-    }
-
     setHoopPlaced(true);
     };
 
@@ -353,9 +299,9 @@ function ShootYourShotAR() {
       <PlacementReticle position={[0, -0.4, -2.2]} />
     )}
 
-    {hoopPlaced && hoopVisible && <Hoop position={hoopPosition} />}
+    {hoopPlaced && <Hoop position={hoopPosition} />}
 
-    {hoopPlaced && hoopVisible && (
+    {hoopPlaced && (
       <Ball
         canThrow={canThrow}
         hoopPosition={hoopPosition}
@@ -428,28 +374,15 @@ function ShootYourShotAR() {
                   >
                     Start Camera
                   </button>
-
-                  {isMobileDevice && cameraReady && !motionEnabled && (
-                <button
-                    type="button"
-                    onClick={enableMotion}
-                    className="rounded-2xl bg-white text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg border border-secondary/20"
-                >
-                    Enable Motion
-                </button>
-                )}
+                  <button
+                        type="button"
+                        onClick={handlePlaceHoop}
+                        className="rounded-2xl bg-white text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg border border-secondary/20"
+                    >
+                        Place Hoop
+                    </button>
                 </>
               )}
-
-              {isMobileDevice && cameraReady && motionEnabled && !hoopPlaced && (
-                <button
-                    type="button"
-                    onClick={handlePlaceHoop}
-                    className="rounded-2xl bg-white text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg border border-secondary/20"
-                >
-                    Place Hoop
-                </button>
-                )}
 
               {hoopPlaced && status === 'idle' && (
                 <button
