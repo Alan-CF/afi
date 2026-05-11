@@ -222,3 +222,52 @@ export function useCartItem(cartItemId: number) {
     error,
   };
 }
+
+export function useUpdateCartItemDetails(
+  cartItemId: number,
+  productDetails: Record<string, string>
+) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const updateCartItemDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const session = await getSession();
+      const profileId = session?.user?.id;
+
+      if (!profileId) {
+        throw new Error('You must be signed in to update cart item details.');
+      }
+
+      const { error } = await supabase.rpc('update_cart_item_details', {
+        p_profile_id: profileId,
+        p_cart_item_id: cartItemId,
+        p_product_details: productDetails,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      notifyCartUpdated();
+    } catch (err) {
+      console.error('Error in useUpdateCartItemDetails hook:', err);
+      setError(
+        err instanceof Error
+          ? err
+          : new Error('Failed to update cart item details')
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    updateCartItemDetails,
+    loading,
+    error,
+  };
+}
