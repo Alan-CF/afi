@@ -168,7 +168,11 @@ export default function ProductView({
               ) : null}
             </>
           )}
-          <Button variant="primary" onClick={() => alert('Added to cart!')}>
+          <Button
+            variant="primary"
+            className="hover:cursor-pointer"
+            onClick={() => alert('Added to cart!')}
+          >
             Add to Cart
           </Button>
         </aside>

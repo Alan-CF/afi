@@ -1,6 +1,6 @@
 import useShopProducts from '../../hooks/useShopProducts';
 import ProductCard from '../../components/ui/shop/ProductCard';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import Filters from '../../components/layout/Shop/Filters';
 import ThunderChat from '../../components/layout/Shop/ThunderChat';
@@ -20,6 +20,7 @@ function ProductsSkeleton() {
 }
 
 export default function ShopProducts() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(
     searchParams.get('search') || ''
@@ -149,7 +150,11 @@ export default function ShopProducts() {
           ) : (
             <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onClick={() => navigate(`/shop/products/${product.id}`)}
+                />
               ))}
             </div>
           )}
