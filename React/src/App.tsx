@@ -21,6 +21,7 @@ import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
 import MainLayout from './components/layout/MainLayout';
+import PointsHistory from './pages/PointsHistory';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
 
         <Route path="/rooms/chat" element={<RoomChat />} />
         <Route path="/rooms/:roomId" element={<RoomChat />} />
+        <Route path="/pointshistory" element={<PointsHistory />} />
       </Routes>
     </>
   );
