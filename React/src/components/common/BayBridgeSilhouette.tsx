@@ -1,6 +1,6 @@
 export default function BayBridgeSilhouette({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 1200 120" className={className} preserveAspectRatio="xMidYEnd slice" aria-hidden>
+    <svg viewBox="0 0 1200 120" className={className} preserveAspectRatio="xMidYMax slice" aria-hidden>
       <rect x="220" y="20" width="6" height="100" fill="currentColor" />
       <rect x="270" y="20" width="6" height="100" fill="currentColor" />
       <path d="M 220 20 L 248 5 L 276 20 Z" fill="currentColor" />

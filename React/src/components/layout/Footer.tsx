@@ -57,8 +57,8 @@ function AccordionGroup({
         className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-64 pb-4' : 'max-h-0'}`}
       >
         <ul className="flex flex-col gap-3">
-          {links.map((link) => (
-            <li key={link.to}>
+          {links.map((link, index) => (
+            <li key={`${link.to}-${link.label}-${index}`}>
               <button
                 onClick={() => navigate(link.to)}
                 className="font-lato text-sm text-white/70 hover:text-primary transition-colors duration-150 cursor-pointer text-left"

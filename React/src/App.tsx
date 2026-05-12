@@ -8,8 +8,8 @@ import Rooms from './pages/Rooms/Rooms';
 import CreateRoom from './pages/Rooms/CreateRoom';
 import RoomChat from './pages/Rooms/RoomChat';
 import Ranking from './pages/Ranking';
-import Shop from './pages/Shop';
-import ShopProducts from './pages/ShopProducts';
+import Shop from './pages/Shop/Shop';
+import ShopProducts from './pages/Shop/ShopProducts';
 import Events from './pages/Events';
 import Legacy from './pages/Legacy';
 import Statistics from './pages/Statistics';
@@ -20,6 +20,8 @@ import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
+import ProductDetail from './pages/Shop/ProductDetail';
+import ShoppingCartItem from './pages/Shop/ShopingCartItem';
 import MainLayout from './components/layout/MainLayout';
 
 function App() {
@@ -40,8 +42,12 @@ function App() {
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/rooms/create" element={<CreateRoom />} />
           <Route path="/ranking" element={<Ranking />} />
+
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/products" element={<ShopProducts />} />
+          <Route path="/shop/products/:productId" element={<ProductDetail />} />
+          <Route path="/shop/cart/:itemId" element={<ShoppingCartItem />} />
+
           <Route path="/events" element={<Events />} />
           <Route path="/legacy" element={<Legacy />} />
           <Route path="/stats" element={<Statistics />} />
