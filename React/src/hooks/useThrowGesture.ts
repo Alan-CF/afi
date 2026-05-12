@@ -41,7 +41,7 @@ export function useThrowGesture({ enabled, onThrow }: Props) {
     const sidePower = Math.max(Math.min(deltaX / 450, 1), -1);
 
     onThrow({
-        x: sidePower * 0.055,
+        x: sidePower * 0.095,
         y: 0.085 + swipePower * 0.045,
         z: -0.035 - swipePower * 0.045,
         });

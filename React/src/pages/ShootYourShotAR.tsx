@@ -102,8 +102,8 @@ function Ball({
 
     const wentThroughHoop =
     isFalling &&
-    Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.32 &&
+    Math.abs(ballPosition.x - rimCenter.x) < 0.23 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.23 &&
     ballPosition.y < rimCenter.y + 0.2 &&
     ballPosition.y > rimCenter.y - 0.22;
 
@@ -113,8 +113,8 @@ function Ball({
     Math.abs(ballPosition.y - rimCenter.y) < 0.2;
 
     const insideScoringArea =
-    Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.32;
+    Math.abs(ballPosition.x - rimCenter.x) < 0.23 &&
+    Math.abs(ballPosition.z - rimCenter.z) < 0.23;
 
     const hitRim =
     !wentThroughHoop &&
@@ -139,9 +139,13 @@ function Ball({
     if ((hitRim || hitBackboard) && !hasScored.current) {
     hasBounced.current = true;
 
-    velocity.current.x *= -0.35;
-    velocity.current.y = Math.abs(velocity.current.y) * 0.45;
-    velocity.current.z *= -0.45;
+    velocity.current.x =
+        velocity.current.x * -0.75 + (ballPosition.x - rimCenter.x) * 0.025;
+
+    velocity.current.y = Math.abs(velocity.current.y) * 0.28;
+
+    velocity.current.z =
+        velocity.current.z * -0.25 + (ballPosition.z - rimCenter.z) * 0.025;
     }
 
     if (ballPosition.y < -2 || ballPosition.z < -8 || ballPosition.z > 2) {
