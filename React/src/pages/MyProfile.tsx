@@ -166,7 +166,6 @@ export default function MyProfile() {
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] text-text font-[family-name:var(--font-lato)]">
-      <NavBar />
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
 
