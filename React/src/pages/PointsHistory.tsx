@@ -5,7 +5,6 @@ import { usePointLogs } from "../hooks/usePointLogs";
 import {
   ClockIcon,
   ArrowLeftIcon,
-  FunnelIcon,
 } from "@heroicons/react/24/solid";
 
 type SortKey = "points" | "date";
@@ -86,8 +85,6 @@ export default function PointsHistory() {
                     : "bg-transparent text-gray-400 border-gray-200 hover:border-gray-400"
                 }`}
               >
-                {/* <FunnelIcon className="h-3.5 w-3.5" /> */}
-
                 {label}
 
                 {sortKey === key && (
