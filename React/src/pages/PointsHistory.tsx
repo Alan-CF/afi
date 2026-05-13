@@ -11,8 +11,8 @@ type SortKey = "points" | "date";
 type SortDir = "asc" | "desc";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "points", label: "Points" },
   { key: "date", label: "Date" },
+  { key: "points", label: "Points" },
 ];
 
 export default function PointsHistory() {
