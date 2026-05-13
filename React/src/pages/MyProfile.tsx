@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import NavBar from "../components/layout/NavBar";
 import { useProfile } from "../hooks/useProfile";
 import { supabase } from "../lib/supabaseClient";
 import AvatarUpload from "../components/ui/AvatarUpload";
