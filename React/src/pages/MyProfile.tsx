@@ -40,10 +40,10 @@ const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
 };
 
 function getLeague(coins: number): { name: string; emoji: string } {
-  if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
-  if (coins <= 10000) return { name: "Silver",   emoji: "🥈" };
-  if (coins <= 15000) return { name: "Gold",     emoji: "🥇" };
-  if (coins <= 20000) return { name: "Sapphire", emoji: "♦️" };
+  if (coins <= 10000)  return { name: "Bronze",  emoji: "🥉" };
+  if (coins <= 20000) return { name: "Silver",   emoji: "🥈" };
+  if (coins <= 40000) return { name: "Gold",     emoji: "🥇" };
+  if (coins <= 60000) return { name: "Sapphire", emoji: "♦️" };
   return { name: "Diamond", emoji: "💎" };
 }
 
