@@ -22,40 +22,42 @@ import FriendInviteProvider from './components/ui/FriendInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
 import MainLayout from './components/layout/MainLayout';
 import PointsHistory from './pages/PointsHistory';
+import PointsToastGlobal from "./components/ui/PointsToastGlobal";
 
 function App() {
   return (
     <>
-      <ScrollToTop />
-      <FriendInviteProvider />
-      <Routes>
-        <Route path="/login" element={<Login />} />
+      <PointsToastGlobal />
+        <ScrollToTop />
+        <FriendInviteProvider />
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
-        <Route element={<MainLayout />}>
-          <Route path="/quizzes" element={<Quizzes />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/fanatic" element={<Fanatic />} />
-          <Route path="/myprofile" element={<MyProfile />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/profile/:profileId" element={<PublicProfile />} />
-          <Route path="/rooms" element={<Rooms />} />
-          <Route path="/rooms/create" element={<CreateRoom />} />
-          <Route path="/ranking" element={<Ranking />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/shop/products" element={<ShopProducts />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/legacy" element={<Legacy />} />
-          <Route path="/stats" element={<Statistics />} />
-          <Route path="/achievements" element={<Achievements />} />
-          <Route path="/news" element={<News />} />
-          <Route path="/news/:slug" element={<NewsDetail />} />
-        </Route>
+          <Route element={<MainLayout />}>
+            <Route path="/quizzes" element={<Quizzes />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/fanatic" element={<Fanatic />} />
+            <Route path="/myprofile" element={<MyProfile />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/profile/:profileId" element={<PublicProfile />} />
+            <Route path="/rooms" element={<Rooms />} />
+            <Route path="/rooms/create" element={<CreateRoom />} />
+            <Route path="/ranking" element={<Ranking />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/products" element={<ShopProducts />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/legacy" element={<Legacy />} />
+            <Route path="/stats" element={<Statistics />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/news" element={<News />} />
+            <Route path="/news/:slug" element={<NewsDetail />} />
+          </Route>
 
-        <Route path="/rooms/chat" element={<RoomChat />} />
-        <Route path="/rooms/:roomId" element={<RoomChat />} />
-        <Route path="/pointshistory" element={<PointsHistory />} />
-      </Routes>
-    </>
+          <Route path="/rooms/chat" element={<RoomChat />} />
+          <Route path="/rooms/:roomId" element={<RoomChat />} />
+          <Route path="/pointshistory" element={<PointsHistory />} />
+        </Routes>
+      </>
   );
 }
 

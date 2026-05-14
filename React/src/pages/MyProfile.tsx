@@ -26,7 +26,6 @@ import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 import { fetchPendingFriendRequestCount } from "../lib/friends";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { usePointLogs } from "../hooks/usePointLogs";
-import PointsCard from "../components/ui/PointsCard";
 
 const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
   "first-spark": FireIcon,
@@ -61,7 +60,6 @@ export default function MyProfile() {
   const [pendingCount, setPendingCount] = useState(0);
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [toast, setToast] = useState<{ points: number; label: string } | null>(null);
 
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
@@ -456,14 +454,6 @@ export default function MyProfile() {
             )}
           </div>
         </section>
-
-        {toast && (
-          <PointsCard
-            points={toast.points}
-            label={toast.label}
-            onDone={() => setToast(null)}
-          />
-        )}
 
         {user && (
           <div className="flex justify-center mt-8">
