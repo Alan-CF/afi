@@ -1,16 +1,18 @@
-import { ProductGroupCard } from '../components/ui/shop/ProductGroupCard';
+import { ProductGroupCard } from '../../components/ui/shop/ProductGroupCard';
 import {
   useCategories,
   useCollections,
   usePlayers,
-} from '../hooks/useShopGroups';
-import ShopCarousel from '../components/ui/shop/Carrousel';
-import ShopHero from '../components/ui/shop/Hero';
-import ShopSeparator from '../components/ui/shop/Separator';
-import SearchBar from '../components/layout/Shop/SearchBar';
+} from '../../hooks/useShopGroups';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import ShopCarousel from '../../components/ui/shop/Carrousel';
+import ShopHero from '../../components/ui/shop/Hero';
+import ShopSeparator from '../../components/ui/shop/Separator';
+import SearchBar from '../../components/layout/Shop/SearchBar';
 import { useNavigate } from 'react-router-dom';
-import ThunderChat from '../components/layout/Shop/ThunderChat';
+import ThunderChat from '../../components/layout/Shop/ThunderChat';
 import { useState } from 'react';
+import Button from '../../components/ui/Button';
 
 function ProductGroupCardSkeleton() {
   return (
@@ -122,6 +124,29 @@ export default function Shop() {
                   />
                 ))}
           </ShopCarousel>
+          <div className="flex flex-col items-center mt-8 mb-16">
+            <div className="flex w-full max-w-3xl items-center justify-between gap-4 rounded-lg border border-secondary/20 px-6 py-6 shadow-md md:px-8 md:py-8">
+              <div className="flex items-center gap-4">
+                <MagnifyingGlassIcon className="h-10 w-10 text-secondary" />
+                <div className="text-left">
+                  <p className="font-lato text-lg font-semibold text-black">
+                    Not finding what you are looking for?
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Try browsing all products or refine your search.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                className="ml-4 px-6 py-3 text-lg font-bold font-anton"
+                onClick={() => navigate('/shop/products')}
+              >
+                View all products
+              </Button>
+            </div>
+          </div>
         </main>
 
         {!isChatOpen ? (
