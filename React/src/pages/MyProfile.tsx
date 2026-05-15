@@ -45,6 +45,8 @@ function getLeague(coins: number): { name: string; emoji: string } {
   return { name: "Diamond", emoji: "💎" };
 }
 
+const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yourself.";
+
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
   const league = getLeague(user?.fanatic_coins ?? 0);
@@ -53,7 +55,7 @@ export default function MyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [nameText, setNameText] = useState("");
   const [usernameText, setUsernameText] = useState("");
-  const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
+  const [aboutText, setAboutText] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [friends, setFriends] = useState<FriendOption[]>([]);
@@ -90,7 +92,7 @@ export default function MyProfile() {
     if (user) {
       if (user.name) setNameText(user.name);
       if (user.username) setUsernameText(user.username);
-      if (user.caption) setAboutText(user.caption);
+      setAboutText(user.caption ?? "");
     }
   }, [user]);
 
@@ -138,6 +140,13 @@ export default function MyProfile() {
     }
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!user?.caption && aboutText.trim()) {
+      await supabase.rpc("award_points", {
+        p_profile_id: authUser?.id,
+        p_event_key: "add_caption",
+      });
+    }
+
     await supabase
       .from("profiles")
       .update({
@@ -156,7 +165,7 @@ export default function MyProfile() {
   const handleCancel = () => {
     if (user?.name) setNameText(user.name);
     if (user?.username) setUsernameText(user.username);
-    if (user?.caption) setAboutText(user.caption);
+    setAboutText(user?.caption ?? "");
     setUsernameError(null);
     setIsEditing(false);
   };
@@ -287,10 +296,13 @@ export default function MyProfile() {
                   value={aboutText}
                   onChange={(e) => setAboutText(e.target.value)}
                   maxLength={200}
+                  placeholder={ABOUT_PLACEHOLDER}
                   className="w-full bg-transparent outline-none text-gray-600"
                 />
               ) : (
-                <div>{aboutText}</div>
+                <div className={aboutText ? "text-gray-600" : "text-gray-400"}>
+                  {aboutText || ABOUT_PLACEHOLDER}
+                </div>
               )}
             </div>
           </section>

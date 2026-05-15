@@ -10,11 +10,13 @@ export type PointLog = {
   description: string;
 };
 
-export function usePointLogs(limit = 5) {
+export function usePointLogs(limit = 10) {
   const [logs, setLogs] = useState<PointLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel>;
+
     const fetch = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -43,9 +45,46 @@ export function usePointLogs(limit = 5) {
             description: eventsMap[d.event_key]?.description ?? "",
         }))
         );
+
+        channel = supabase
+        .channel("point-logs-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "point_logs",
+            filter: `profile_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const newLog = payload.new as any;
+
+            const formattedLog: PointLog = {
+              id: newLog.id,
+              points: newLog.points,
+              created_at: newLog.created_at,
+              event_key: newLog.event_key,
+              label:
+                eventsMap[newLog.event_key]?.label ??
+                newLog.event_key,
+              description:
+                eventsMap[newLog.event_key]?.description ?? "",
+            };
+
+            setLogs((prev) =>
+              [formattedLog, ...prev].slice(0, limit)
+            );
+          }
+        )
+        .subscribe();
       setLoading(false);
     };
     fetch();
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [limit]);
 
   return { logs, loading };

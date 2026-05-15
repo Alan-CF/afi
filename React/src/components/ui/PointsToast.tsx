@@ -6,6 +6,7 @@ import {
   CameraIcon,
   UserPlusIcon,
   TrophyIcon,
+  ChatBubbleBottomCenterTextIcon,
 } from "@heroicons/react/24/solid";
 
 const EVENT_ICONS: Record<string, React.ElementType> = {
@@ -17,6 +18,7 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
   return_after_break: ArrowPathIcon,
   add_pfp: CameraIcon,
   add_friend: UserPlusIcon,
+  add_caption: ChatBubbleBottomCenterTextIcon,
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -28,6 +30,7 @@ const EVENT_COLORS: Record<string, string> = {
   return_after_break: "bg-green-500",
   add_pfp: "bg-pink-500",
   add_friend: "bg-teal-500",
+  add_caption: "bg-indigo-500",
 };
 
 type Props = {
