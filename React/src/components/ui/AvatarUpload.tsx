@@ -55,6 +55,14 @@ export default function AvatarUpload({
 
     setImgError(false);
     onUploadSuccess?.(publicUrl);
+
+    // Da puntos si no tenia foto antes
+    if (!avatarUrl) {
+      await supabase.rpc("award_points", {
+        p_profile_id: userId,
+        p_event_key: "add_pfp",
+      });
+    }
   };
 
   const hasValidAvatar = avatarUrl && !imgError;

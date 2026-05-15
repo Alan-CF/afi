@@ -23,14 +23,17 @@ import Achievements from './pages/Achievements/Achievements';
 import ProductDetail from './pages/Shop/ProductDetail';
 import ShoppingCartItem from './pages/Shop/ShopingCartItem';
 import MainLayout from './components/layout/MainLayout';
+import PointsHistory from './pages/PointsHistory';
+import PointsToastGlobal from "./components/ui/PointsToastGlobal";
 
 function App() {
   return (
     <>
-      <ScrollToTop />
-      <FriendInviteProvider />
-      <Routes>
-        <Route path="/login" element={<Login />} />
+      <PointsToastGlobal />
+        <ScrollToTop />
+        <FriendInviteProvider />
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
         <Route element={<MainLayout />}>
           <Route path="/quizzes" element={<Quizzes />} />
@@ -56,10 +59,11 @@ function App() {
           <Route path="/news/:slug" element={<NewsDetail />} />
         </Route>
 
-        <Route path="/rooms/chat" element={<RoomChat />} />
-        <Route path="/rooms/:roomId" element={<RoomChat />} />
-      </Routes>
-    </>
+          <Route path="/rooms/chat" element={<RoomChat />} />
+          <Route path="/rooms/:roomId" element={<RoomChat />} />
+          <Route path="/pointshistory" element={<PointsHistory />} />
+        </Routes>
+      </>
   );
 }
 

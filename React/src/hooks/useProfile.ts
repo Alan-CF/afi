@@ -44,26 +44,59 @@ export function useProfile() {
         if (profileError) {
             setUser(null);
             setError(profileError);
-        } else {
-            await supabase.rpc("update_login_streak", { user_id: authUser.id });
+            setLoading(false);
+            setHasLoadedOnce(true);
+            return;
+        }
 
-            const { data: updatedProfile, error: updatedError } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", authUser.id)
+        await supabase.rpc("update_login_streak", { user_id: authUser.id });
+
+        const { data: updatedProfile, error: updatedError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", authUser.id)
+            .single();
+
+        if (updatedError) {
+            setUser(null);
+            setError(updatedError);
+        } else {
+            setUser({
+                ...updatedProfile,
+                full_name: updatedProfile.name ?? updatedProfile.username,
+            });
+            setError(null);
+
+            const { data: latestLog } = await supabase
+                .from("point_logs")
+                .select("points, created_at, event_key, point_events(label, description)")
+                .eq("profile_id", authUser.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
                 .single();
 
-            if (updatedError) {
-                setUser(null);
-                setError(updatedError);
-            } else {
-                setUser({
-                    ...updatedProfile,
-                    full_name: updatedProfile.name ?? updatedProfile.username,
-                });
-                setError(null);
+            if (latestLog) {
+                const logDate = new Date(latestLog.created_at);
+                const now = new Date();
+                const isRecent = (now.getTime() - logDate.getTime()) < 30_000;
+
+                if (isRecent) {
+                    const toastKey = `points-toast-${latestLog.created_at}`;
+                    if (!sessionStorage.getItem(toastKey)) {
+                        sessionStorage.setItem(toastKey, "1");
+                        window.dispatchEvent(new CustomEvent("points-earned", {
+                            detail: {
+                                points: latestLog.points,
+                                label: (latestLog as any).point_events?.label ?? latestLog.event_key,
+                                description: (latestLog as any).point_events?.description ?? "",
+                                eventKey: latestLog.event_key,
+                            }
+                        }));
+                    }
+                }
             }
         }
+
         setLoading(false);
         setHasLoadedOnce(true);
     };
