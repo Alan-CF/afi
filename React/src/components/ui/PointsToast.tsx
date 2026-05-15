@@ -93,9 +93,6 @@ export default function PointsToast({
           {/* Points detail */}
           {description && (
             <div className="mb-3 rounded-xl bg-[#f8fbff] px-4 py-3.5">
-                <p className="mb-1 font-lato text-[0.58rem] uppercase tracking-[0.24em] text-[#8b94a3]">
-                Action
-                </p>
                 <p className="font-lato text-sm font-semibold text-secondary">
                 {description}
                 </p>
