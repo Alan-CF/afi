@@ -32,13 +32,14 @@ export default function AvatarFrame({
           src={frameUrl}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute select-none"
+          className="pointer-events-none absolute select-none max-w-none"
           style={{
             width: size * scale,
             height: size * scale,
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
+            objectFit: "contain",
           }}
           draggable={false}
         />

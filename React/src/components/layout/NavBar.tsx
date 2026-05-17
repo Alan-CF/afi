@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   Bars3Icon,
-  CurrencyDollarIcon,
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
@@ -116,12 +115,12 @@ export default function NavBar() {
                   <button
                     type="button"
                     onClick={() => navigate('/eshop')}
-                    className="hidden min-[900px]:inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 font-anton text-sm font-bold text-primary transition-colors hover:bg-white/20"
+                    className="hidden min-[900px]:inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-lato text-sm font-semibold text-white transition-colors hover:bg-white/20"
                     aria-label="Open eShop"
                     title="e-coins balance"
                   >
-                    <CurrencyDollarIcon className="h-4 w-4" />
-                    {(user.e_coins ?? 0).toLocaleString()}
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary font-anton text-[10px] text-secondary">e</span>
+                    <span className="tabular-nums">{(user.e_coins ?? 0).toLocaleString()}</span>
                   </button>
                 ) : null}
                 <button

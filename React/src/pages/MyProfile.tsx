@@ -19,7 +19,6 @@ import {
   UsersIcon,
   HomeIcon,
   AcademicCapIcon,
-  CurrencyDollarIcon,
 } from "@heroicons/react/24/solid";
 import AvatarFrame from "../components/ui/AvatarFrame";
 import { signOut } from "../lib/auth";
@@ -258,9 +257,9 @@ export default function MyProfile() {
                   title="Open eShop"
                 >
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                    <CurrencyDollarIcon className="h-5 w-5 text-primary" />
+                    <span className="font-anton text-base text-primary">e</span>
                   </div>
-                  <p className="text-xl font-extrabold text-secondary">{(user?.e_coins ?? 0).toLocaleString()}</p>
+                  <p className="text-xl font-extrabold text-secondary tabular-nums">{(user?.e_coins ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">e-coins</p>
                 </button>
 
