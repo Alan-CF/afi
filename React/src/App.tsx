@@ -10,6 +10,7 @@ import RoomChat from './pages/Rooms/RoomChat';
 import Ranking from './pages/Ranking';
 import Shop from './pages/Shop/Shop';
 import ShopProducts from './pages/Shop/ShopProducts';
+import EShop from './pages/Shop/EShop';
 import Events from './pages/Events';
 import Legacy from './pages/Legacy';
 import Statistics from './pages/Statistics';
@@ -50,6 +51,7 @@ function App() {
           <Route path="/shop/products" element={<ShopProducts />} />
           <Route path="/shop/products/:productId" element={<ProductDetail />} />
           <Route path="/shop/cart/:itemId" element={<ShoppingCartItem />} />
+          <Route path="/eshop" element={<EShop />} />
 
           <Route path="/events" element={<Events />} />
           <Route path="/legacy" element={<Legacy />} />

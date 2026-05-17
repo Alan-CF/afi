@@ -1,6 +1,7 @@
 import type { UserProfileData } from '../../hooks/useProfile';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
+import AvatarFrame from './AvatarFrame';
 
 interface ProfileIconProps {
   className?: React.ComponentProps<'div'>['className'];
@@ -48,16 +49,20 @@ export default function ProfileIcon(profile: ProfileIconProps) {
     );
   }
 
+  const frameId = profile.user.selected_frame_id ?? null;
+
   // User has valid image - show image
   if (profile.user.avatar_url && !imageError) {
     return (
       <div className={profile.className}>
-        <img
-          src={profile.user.avatar_url}
-          alt={profile.user.username || 'Profile'}
-          className="w-10 h-10 rounded-full object-cover"
-          onError={() => setImageError(true)}
-        />
+        <AvatarFrame frameId={frameId} size={40} scale={1.4}>
+          <img
+            src={profile.user.avatar_url}
+            alt={profile.user.username || 'Profile'}
+            className="w-10 h-10 rounded-full object-cover"
+            onError={() => setImageError(true)}
+          />
+        </AvatarFrame>
       </div>
     );
   }
@@ -68,13 +73,15 @@ export default function ProfileIcon(profile: ProfileIconProps) {
 
   return (
     <div className={profile.className}>
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm"
-        style={{ backgroundColor }}
-        title={profile.user.username || 'User'}
-      >
-        {initial}
-      </div>
+      <AvatarFrame frameId={frameId} size={40} scale={1.4}>
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm"
+          style={{ backgroundColor }}
+          title={profile.user.username || 'User'}
+        >
+          {initial}
+        </div>
+      </AvatarFrame>
     </div>
   );
 }

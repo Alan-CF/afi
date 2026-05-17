@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Bars3Icon,
+  CurrencyDollarIcon,
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
@@ -19,6 +20,7 @@ const PRIMARY_LINKS = [
   { to: '/fanatic', label: 'Fanatic' },
   { to: '/quizzes', label: 'Quizzes' },
   { to: '/shop', label: 'Shop' },
+  { to: '/eshop', label: 'eShop' },
 ];
 
 export default function NavBar() {
@@ -109,19 +111,33 @@ export default function NavBar() {
               <Bars3Icon className="w-6 h-6" />
             </button>
             {!isLoggedOut ? (
-              <button
-                type="button"
-                onClick={() => navigate('/myprofile')}
-                className="cursor-pointer"
-                aria-label="Go to profile"
-              >
-                <ProfileIcon
-                  user={user}
-                  userLoading={profileLoading}
-                  userError={profileError}
-                  hasLoadedOnce={hasLoadedOnce}
-                />
-              </button>
+              <>
+                {isLoggedIn && user ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/eshop')}
+                    className="hidden min-[900px]:inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 font-anton text-sm font-bold text-primary transition-colors hover:bg-white/20"
+                    aria-label="Open eShop"
+                    title="e-coins balance"
+                  >
+                    <CurrencyDollarIcon className="h-4 w-4" />
+                    {(user.e_coins ?? 0).toLocaleString()}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => navigate('/myprofile')}
+                  className="cursor-pointer"
+                  aria-label="Go to profile"
+                >
+                  <ProfileIcon
+                    user={user}
+                    userLoading={profileLoading}
+                    userError={profileError}
+                    hasLoadedOnce={hasLoadedOnce}
+                  />
+                </button>
+              </>
             ) : (
               <button
                 type="button"

@@ -19,7 +19,9 @@ import {
   UsersIcon,
   HomeIcon,
   AcademicCapIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/solid";
+import AvatarFrame from "../components/ui/AvatarFrame";
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
@@ -182,11 +184,13 @@ export default function MyProfile() {
             {/* Header azul */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
               <div className="mb-3">
-                <AvatarUpload
-                  avatarUrl={user?.avatar_url}
-                  userId={user?.id ?? ""}
-                  onUploadSuccess={() => refreshProfile()}
-                />
+                <AvatarFrame frameId={user?.selected_frame_id} size={88} scale={1.35}>
+                  <AvatarUpload
+                    avatarUrl={user?.avatar_url}
+                    userId={user?.id ?? ""}
+                    onUploadSuccess={() => refreshProfile()}
+                  />
+                </AvatarFrame>
               </div>
 
               {isEditing ? (
@@ -230,7 +234,7 @@ export default function MyProfile() {
 
             {/* Métricas */}
             <div className="flex flex-col justify-center flex-1 p-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
@@ -246,6 +250,19 @@ export default function MyProfile() {
                   <p className="text-xl font-extrabold text-secondary">{(user?.fanatic_coins ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/eshop")}
+                  className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3 transition-colors hover:border-primary"
+                  title="Open eShop"
+                >
+                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                    <CurrencyDollarIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-xl font-extrabold text-secondary">{(user?.e_coins ?? 0).toLocaleString()}</p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">e-coins</p>
+                </button>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
