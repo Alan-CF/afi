@@ -373,11 +373,11 @@ alter table "public"."friendships" add column "requester_profile_id" uuid not nu
 
 alter table "public"."friendships" add column "updated_at" timestamp with time zone not null default now();
 
+alter table "public"."friendships" alter column "id" drop identity if exists;
+
+alter table "public"."friendships" alter column "id" set data type uuid using gen_random_uuid();
+
 alter table "public"."friendships" alter column "id" set default gen_random_uuid();
-
-alter table "public"."friendships" alter column "id" drop identity;
-
-alter table "public"."friendships" alter column "id" set data type uuid using "id"::uuid;
 
 alter table "public"."friendships" alter column "status" set default 'pending'::text;
 
@@ -2585,6 +2585,5 @@ using (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth
   for insert
   to authenticated
 with check (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
-
 
 

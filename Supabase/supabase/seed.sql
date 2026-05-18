@@ -10,9 +10,10 @@ INSERT INTO fanatic_game_config (key, value, description) VALUES
 
 insert into public.fan_events (title, description, start_at, venue, city, country, organizer_profile_id, capacity, is_public)
 select * from (values
-  ('Dub Nation MTY Meetup', 'Watch party in Parque Fundidora — bring your jersey!', now() + interval '3 day', 'Parque Fundidora', 'Monterrey', 'MX', (select id from public.profiles order by created_at limit 1), 50, true),
-  ('Playoff Night CDMX', 'Game 3 viewing + tacos at Reforma Sports Bar', now() + interval '6 day', 'Reforma Sports Bar', 'Mexico City', 'MX', (select id from public.profiles order by created_at limit 1), 30, true),
-  ('Warriors Fan Run — Golden Gate 5K', 'Warriors-themed charity run. All ages.', now() + interval '14 day', 'Crissy Field', 'San Francisco', 'US', (select id from public.profiles order by created_at limit 1), 200, true)
+  ('Dub Nation MTY Meetup', 'Watch party in Parque Fundidora — bring your jersey!', now() + interval '3 day', 'Parque Fundidora', 'Monterrey', 'MX', (select id from public.profiles order by id limit 1), 50, true),
+  ('Playoff Night CDMX', 'Game 3 viewing + tacos at Reforma Sports Bar', now() + interval '6 day', 'Reforma Sports Bar', 'Mexico City', 'MX', (select id from public.profiles order by id limit 1), 30, true),
+  ('Warriors Fan Run — Golden Gate 5K', 'Warriors-themed charity run. All ages.', now() + interval '14 day', 'Crissy Field', 'San Francisco', 'US', (select id from public.profiles order by id limit 1), 200, true)
 ) as seed(title, description, start_at, venue, city, country, organizer_profile_id, capacity, is_public)
 where not exists (select 1 from public.fan_events)
-  and (select id from public.profiles order by created_at limit 1) is not null;
+  and (select id from public.profiles order by id limit 1) is not null;
+

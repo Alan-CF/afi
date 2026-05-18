@@ -317,7 +317,10 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
-CREATE OR REPLACE TRIGGER "fanatic_games_insert_embedding" AFTER INSERT OR UPDATE ON "public"."fanatic_games" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://upktcnvztyldwzapbuqq.supabase.co/functions/v1/question-embedding-generator', 'POST', '{"Content-type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwa3RjbnZ6dHlsZHd6YXBidXFxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxNTE0NywiZXhwIjoyMDg2NTkxMTQ3fQ.AarkOd4930aKwQh05nHjYrGa9FdO9z_EdcbhXycVREo"}', '{}', '5000');
+-- NOTE:
+-- This legacy webhook trigger depended on supabase-managed schema
+-- "supabase_functions.http_request", which is unavailable in local CLI resets.
+-- It is replaced by migration 20260330183052_remote_schema.sql using net.http_post.
 
 
 
