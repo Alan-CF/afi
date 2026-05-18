@@ -245,32 +245,34 @@ function ShootYourShotAR() {
           </h1>
 
           <p className="text-secondary/80 font-semibold mt-2 max-w-2xl mx-auto">
-            Place the hoop, launch the ball, and score as many points as you can before time runs out.
+            Place the hoop, launch the ball, and score as many points as you can
+            before time runs out.
           </p>
         </section>
 
         <section className="relative h-[72vh] min-h-[480px] max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none">
-            {!isMobileDevice && (
-  <img
-    src="/court_warriors.png"
-    alt="Warriors court"
-    className="absolute inset-0 h-full w-full object-cover"
-  />
-)}
+          {!isMobileDevice && (
+            <img
+              src="/court_warriors.png"
+              alt="Warriors court"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
 
-{isMobileDevice && (
-  <video
-    ref={videoRef}
-    className={`absolute inset-0 h-full w-full object-cover ${
-      cameraReady ? 'block' : 'hidden'
-    }`}
-    autoPlay
-    muted
-    playsInline
-  />
-)}
+          {isMobileDevice && (
+            <video
+              ref={videoRef}
+              className={`absolute inset-0 h-full w-full object-cover ${
+                cameraReady ? 'block' : 'hidden'
+              }`}
+              autoPlay
+              muted
+              playsInline
+            />
+          )}
 
-<div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/20" />
+
           <div
             className="absolute inset-0 z-10 touch-none select-none cursor-grab active:cursor-grabbing"
             onPointerDown={(event) => {
@@ -287,31 +289,31 @@ function ShootYourShotAR() {
           />
 
           <Canvas
-  className="absolute inset-0 z-[5]"
-  camera={{ position: [0, 0, 0], fov: 62 }}
-  gl={{ alpha: true }}
->
-  <Suspense fallback={null}>
-    <ambientLight intensity={1.2} />
-    <directionalLight position={[2, 4, 3]} intensity={1.5} />
+            className="absolute inset-0 z-[5]"
+            camera={{ position: [0, 0, 0], fov: 62 }}
+            gl={{ alpha: true }}
+          >
+            <Suspense fallback={null}>
+              <ambientLight intensity={1.2} />
+              <directionalLight position={[2, 4, 3]} intensity={1.5} />
 
-    {isMobileDevice && !hoopPlaced && (
-      <PlacementReticle position={[0, -0.4, -2.2]} />
-    )}
+              {isMobileDevice && !hoopPlaced && (
+                <PlacementReticle position={[0, -0.4, -2.2]} />
+              )}
 
-    {hoopPlaced && <Hoop position={hoopPosition} />}
+              {hoopPlaced && <Hoop position={hoopPosition} />}
 
-    {hoopPlaced && (
-      <Ball
-        canThrow={canThrow}
-        hoopPosition={hoopPosition}
-        throwRequest={throwRequest}
-        onThrowConsumed={() => setThrowRequest(null)}
-        onScore={addPoint}
-      />
-    )}
-  </Suspense>
-</Canvas>
+              {hoopPlaced && (
+                <Ball
+                  canThrow={canThrow}
+                  hoopPosition={hoopPosition}
+                  throwRequest={throwRequest}
+                  onThrowConsumed={() => setThrowRequest(null)}
+                  onScore={addPoint}
+                />
+              )}
+            </Suspense>
+          </Canvas>
 
           <div className="pointer-events-none absolute inset-0 z-20">
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-3">
@@ -337,16 +339,16 @@ function ShootYourShotAR() {
             </div>
 
             {isMobileDevice && !cameraReady && (
-                <div className="absolute top-28 left-4 right-4 rounded-2xl bg-white/90 border border-white/40 px-4 py-3 text-center shadow-md">
-                    <p className="text-secondary font-extrabold">
-                    Start your camera to enter AR mode.
-                    </p>
+              <div className="absolute top-28 left-4 right-4 rounded-2xl bg-white/90 border border-white/40 px-4 py-3 text-center shadow-md">
+                <p className="text-secondary font-extrabold">
+                  Start your camera to enter AR mode.
+                </p>
 
-                    <p className="text-secondary/70 text-sm font-semibold mt-1">
-                    The hoop and basketball will appear over your real environment.
-                    </p>
-                </div>
-                )}
+                <p className="text-secondary/70 text-sm font-semibold mt-1">
+                  The hoop and basketball will appear over your real environment.
+                </p>
+              </div>
+            )}
 
             {countdown !== null && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -357,35 +359,68 @@ function ShootYourShotAR() {
             )}
 
             {status === 'playing' && !hasShotOnce && (
-              <div className="absolute right-4 bottom-20 max-w-[210px] rounded-2xl bg-white/25 px-4 py-3 text-right text-white backdrop-blur-md border border-white/20 shadow-md">
-                <p className="text-xs uppercase tracking-[0.2em] font-bold text-white/70">
-                  Tip
-                </p>
-                <p className="text-sm font-extrabold">Swipe up to shoot</p>
+              <div className="absolute left-90 top-[55%] -translate-y-1/2 rounded-2xl border border-white/20 bg-black/35 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/swipe_up.png"
+                    alt="Swipe up"
+                    className="h-9 w-9 object-contain brightness-0 invert opacity-95 animate-bounce"
+                  />
+
+                  <div className="text-left">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/60">
+                      Tip
+                    </p>
+                    <p className="text-sm font-extrabold">
+                      Swipe up to shoot
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
             <div className="pointer-events-auto absolute bottom-5 left-4 right-4 flex flex-col gap-3">
               {isMobileDevice && !cameraReady && (
                 <button
-                    type="button"
-                    onClick={handleEnterAR}
-                    className="rounded-2xl bg-secondary text-white py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg hover:bg-secondary/90 transition border border-white/20"
-                >
-                    Start Camera
-                </button>
-                )}
-
-              {hoopPlaced && status === 'idle' && (
-                <button
                   type="button"
-                  onClick={startGame}
-                  className="rounded-2xl bg-primary text-secondary py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg hover:brightness-95 transition"
+                  onClick={handleEnterAR}
+                  className="rounded-2xl bg-secondary text-white py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg hover:bg-secondary/90 transition border border-white/20"
                 >
-                  Start Game
+                  Start Camera
                 </button>
               )}
             </div>
+
+            {hoopPlaced && status === 'idle' && (
+              <button
+                type="button"
+                onClick={startGame}
+                aria-label="Start game"
+                className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-[5px] transition"
+              >
+                <div className="flex flex-col items-center justify-center px-6 -translate-y-4">
+                  <div className="mb-5 animate-pulse">
+                    <img
+                      src="/tap_icon.png"
+                      alt="Tap Screen"
+                      className="h-24 w-24 object-contain drop-shadow-2xl brightness-0 invert"
+                    />
+                  </div>
+
+                  <p className="text-sm font-bold uppercase tracking-[0.35em] text-white/75">
+                    Ready?
+                  </p>
+
+                  <h2 className="mt-2 text-center text-4xl md:text-5xl font-extrabold uppercase tracking-wide text-white drop-shadow-2xl">
+                    Tap to Start
+                  </h2>
+
+                  <p className="mt-4 max-w-[320px] text-center text-base font-semibold text-white/80">
+                    Swipe up to shoot once the countdown ends.
+                  </p>
+                </div>
+              </button>
+            )}
           </div>
 
           {status === 'finished' && (
