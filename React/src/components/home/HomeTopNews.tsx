@@ -63,7 +63,7 @@ export default function HomeTopNews() {
 
   const featured = news[0];
   const secondary = news.slice(1, 4);
-  const compactMobile = news.slice(1, 5);
+  const compactMobile = news.slice(1, 4);
 
   return (
     <section aria-label="Latest News">

@@ -42,13 +42,13 @@ function QuickActions() {
       <h2 className="font-anton text-lg md:text-xl text-secondary leading-tight mb-3 md:mb-4">
         Jump In
       </h2>
-      <div className="grid grid-cols-3 gap-2 md:gap-3">
+      <div className="flex md:grid md:grid-cols-3 gap-2 md:gap-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide scroll-pl-4 md:scroll-pl-0 -mx-4 md:mx-0 px-4 md:px-0 pb-1 md:pb-0">
         {actions.map((a, i) => (
           <button
             key={a.label}
             type="button"
             onClick={() => navigate(a.to)}
-            className={`group relative flex flex-row items-center gap-2 md:gap-3 rounded-2xl bg-white border border-container-border px-3 py-2.5 md:px-4 md:py-3 text-left lift-on-hover hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-shadow overflow-hidden fade-in-up stagger-${i + 1}`}
+            className={`group relative shrink-0 md:shrink w-[170px] md:w-auto snap-start flex flex-row items-center gap-2 md:gap-3 rounded-2xl bg-white border border-container-border px-3 py-2.5 md:px-4 md:py-3 text-left lift-on-hover hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-shadow overflow-hidden fade-in-up stagger-${i + 1}`}
           >
             <span className="absolute top-0 left-0 bottom-0 w-1 bg-primary opacity-80 group-hover:opacity-100 transition-opacity" />
             <span className="flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-white transition-colors group-hover:bg-secondary/90">
@@ -58,7 +58,7 @@ function QuickActions() {
               <p className="font-anton text-sm md:text-base text-secondary leading-tight truncate">
                 {a.label}
               </p>
-              <p className="font-lato text-[0.65rem] md:text-xs text-text-light hidden sm:block truncate">
+              <p className="font-lato text-[0.65rem] md:text-xs text-text-light truncate">
                 {a.desc}
               </p>
             </div>
@@ -77,9 +77,9 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-4 md:pt-6 pb-16 md:pb-20">
         {isLoggedIn && user && (
-          <p className="font-lato text-sm text-text-light mb-4 md:mb-5">
+          <p className="font-lato text-sm text-text-light mb-3 md:mb-4">
             {getTimeOfDay()},{' '}
             <span className="font-semibold text-secondary">
               {user.name ?? user.username}

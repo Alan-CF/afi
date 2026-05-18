@@ -10,17 +10,12 @@ export default function HomeRoomsRail() {
   return (
     <section className="mt-8 md:mt-10 lg:mt-12">
       <div className="flex items-baseline justify-between mb-4 md:mb-5">
-        <div>
-          <Link
-            to="/rooms"
-            className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
-          >
-            Watch Parties
-          </Link>
-          <p className="font-lato text-sm text-text-light mt-1">
-            Join your crew or start a room.
-          </p>
-        </div>
+        <Link
+          to="/rooms"
+          className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight hover:text-[#5780AE] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+        >
+          Watch Parties
+        </Link>
         <Link
           to="/rooms"
           className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
