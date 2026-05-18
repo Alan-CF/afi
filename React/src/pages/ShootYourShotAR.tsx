@@ -3,6 +3,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useBasketballGame } from '../hooks/useBasketballGame';
 import { useThrowGesture } from '../hooks/useThrowGesture';
+import { useTexture } from '@react-three/drei';
 
 type ThrowVelocity = {
   x: number;
@@ -63,6 +64,7 @@ function Ball({
   onScore: () => void;
 }) {
   const ballRef = useRef<THREE.Mesh>(null);
+  const basketballTexture = useTexture('/basketball-texture.webp');
   const velocity = useRef(new THREE.Vector3(0, 0, 0));
   const [isThrown, setIsThrown] = useState(false);
   const hasScored = useRef(false);
@@ -155,8 +157,12 @@ function Ball({
 
   return (
     <mesh ref={ballRef} position={[0, -0.62, -1.2]}>
-      <sphereGeometry args={[0.1, 32, 32]} />
-      <meshStandardMaterial color="#f97316" />
+      <sphereGeometry args={[0.1, 48, 48]} />
+
+      <meshStandardMaterial
+        map={basketballTexture}
+        roughness={0.9}
+      />
     </mesh>
   );
 }
