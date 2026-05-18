@@ -1,17 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useWarriorsNews } from '../../hooks/useWarriorsNews';
-import { useProfile } from '../../hooks/useProfile';
 import EmptyState from '../common/EmptyState';
 import FeaturedNewsCard from './FeaturedNewsCard';
 import SecondaryNewsCard from './SecondaryNewsCard';
 import CompactNewsCard from './CompactNewsCard';
-
-function getTimeOfDay(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
 
 function SectionHeader() {
   return (
@@ -34,21 +26,10 @@ function SectionHeader() {
 
 export default function HomeTopNews() {
   const { news, loading } = useWarriorsNews(6);
-  const { user, hasLoadedOnce } = useProfile();
-  const isLoggedIn = hasLoadedOnce && user !== null;
-
-  const greeting =
-    isLoggedIn && user ? (
-      <p className="font-lato text-sm text-text-light mb-3 md:mb-4">
-        {getTimeOfDay()},{' '}
-        <span className="font-semibold text-secondary">{user.name}</span>.
-      </p>
-    ) : null;
 
   if (loading) {
     return (
       <section aria-label="Latest News">
-        {greeting}
         <SectionHeader />
         <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)] md:items-start lg:items-stretch gap-5 lg:gap-6">
           <div className="lg:h-[452px] rounded-3xl aspect-[5/4] lg:aspect-auto skeleton-shimmer" />
@@ -74,7 +55,6 @@ export default function HomeTopNews() {
   if (news.length === 0) {
     return (
       <section aria-label="Latest News">
-        {greeting}
         <SectionHeader />
         <EmptyState message="Press box is quiet. New stories drop every game day." />
       </section>
@@ -87,7 +67,6 @@ export default function HomeTopNews() {
 
   return (
     <section aria-label="Latest News">
-      {greeting}
       <SectionHeader />
 
       <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)] md:items-start lg:items-stretch gap-5 lg:gap-6">
