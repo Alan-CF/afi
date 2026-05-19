@@ -24,7 +24,7 @@ import type { ComponentType, SVGProps } from 'react';
 
 type AchievementIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
-const PROFILE_ACHIEVEMENT_ICONS: Record<string, AchievementIcon> = {
+const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, AchievementIcon> = {
   'first-spark': FireIcon,
   'ten-day-flame': BoltIcon,
   'century-fan': TrophyIcon,
