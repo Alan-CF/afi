@@ -45,7 +45,7 @@ function getLeague(coins: number): { name: string; emoji: string } {
   return { name: "Diamond", emoji: "💎" };
 }
 
-const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yourself.";
+const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yourself. ";
 
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
