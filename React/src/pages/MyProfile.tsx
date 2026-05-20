@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import AvatarUpload from "../components/ui/AvatarUpload";
 import AchievementDetailModal from "../components/ui/achievements/AchievementDetailModal";
 import { useAchievements } from "../hooks/useAchievements";
-import type { Achievement, AchievementId } from "../data/achievements";
+import type { Achievement } from "../data/achievements";
 import {
   FireIcon,
   StarIcon,
@@ -14,11 +14,6 @@ import {
   CheckIcon,
   PlusIcon,
   LockClosedIcon,
-  BoltIcon,
-  UserPlusIcon,
-  UsersIcon,
-  HomeIcon,
-  AcademicCapIcon,
 } from "@heroicons/react/24/solid";
 import type { ComponentType, SVGProps } from "react";
 import AvatarFrame from "../components/ui/AvatarFrame";
@@ -42,7 +37,17 @@ import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 import { fetchPendingFriendRequestCount } from "../lib/friends";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { usePointLogs } from "../hooks/usePointLogs";
+import type { AchievementId } from "../data/achievements";
 
+const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ComponentType<{ className?: string }>> = {
+  "first-spark": FireIcon,
+  "ten-day-flame": StarIcon,
+  "century-fan": TrophyIcon,
+  "new-teammate": StarIcon,
+  "squad-builder": StarIcon,
+  "room-rookie": StarIcon,
+  "quiz-debut": StarIcon,
+};
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 10000)  return { name: "Bronze",  emoji: "🥉" };
