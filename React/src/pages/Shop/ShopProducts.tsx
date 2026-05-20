@@ -132,7 +132,7 @@ export default function ShopProducts() {
           </div>
 
           {productsLoading ? (
-            <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
+            <div className="grid content-start justify-items-start grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),theme(spacing.96)))] gap-6 p-6">
               <ProductsSkeleton />
               <ProductsSkeleton />
               <ProductsSkeleton />
@@ -148,7 +148,7 @@ export default function ShopProducts() {
                 : 'No products available at the moment.'}
             </div>
           ) : (
-            <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
+            <div className="grid content-start justify-items-start grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),theme(spacing.96)))] gap-6 p-6">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}
