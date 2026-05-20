@@ -44,6 +44,7 @@ type Props = {
   eventKey?: string;
   onDone: () => void;
 };
+export { EVENT_ICONS, EVENT_COLORS };
 
 export default function PointsToast({
   points,
