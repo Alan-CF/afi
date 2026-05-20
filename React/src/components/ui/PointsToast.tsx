@@ -1,3 +1,5 @@
+import type { ComponentType, SVGProps } from "react";
+
 import {
   FireIcon,
   StarIcon,
@@ -9,7 +11,9 @@ import {
   ChatBubbleBottomCenterTextIcon,
 } from "@heroicons/react/24/solid";
 
-const EVENT_ICONS: Record<string, React.ElementType> = {
+type EventIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
+const EVENT_ICONS: Record<string, EventIcon> = {
   daily_login: FireIcon,
   streak_3: BoltIcon,
   streak_7: BoltIcon,
@@ -48,7 +52,7 @@ export default function PointsToast({
   eventKey,
   onDone,
 }: Props) {
-  const Icon = EVENT_ICONS[eventKey ?? ""] ?? StarIcon;
+  const Icon: EventIcon = EVENT_ICONS[eventKey ?? ""] ?? StarIcon;
   const iconColor = EVENT_COLORS[eventKey ?? ""] ?? "bg-secondary";
 
   return (
@@ -60,23 +64,22 @@ export default function PointsToast({
         className="w-full max-w-md rounded-t-[2rem] bg-white shadow-[0_-20px_60px_rgba(15,23,42,0.22)] sm:rounded-[2rem] sm:shadow-[0_20px_60px_rgba(15,23,42,0.22)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle mobile */}
         <div className="flex justify-center pt-3 sm:hidden">
           <div className="h-1 w-10 rounded-full bg-[#d7dce6]" />
         </div>
 
         <div className="p-7 pt-5">
-          {/* Top bar */}
           <div className="mb-6 flex items-center justify-between">
             <p className="font-lato text-[0.62rem] uppercase tracking-[0.3em] text-[#8b94a3]">
               Points Earned
             </p>
           </div>
 
-          {/* Badge */}
           <div className="mb-5 flex flex-col items-center gap-3">
             <div className="relative">
-              <div className={`flex h-24 w-24 items-center justify-center rounded-[1.75rem] ${iconColor}`}>
+              <div
+                className={`flex h-24 w-24 items-center justify-center rounded-[1.75rem] ${iconColor}`}
+              >
                 <Icon className="h-11 w-11 text-white" />
               </div>
             </div>
@@ -86,19 +89,17 @@ export default function PointsToast({
             </span>
           </div>
 
-          {/* Label + description */}
           <h2 className="mb-1.5 text-center font-lato text-[1.4rem] font-black tracking-tight text-secondary">
             {label}
           </h2>
 
           <hr className="mb-4 border-[#eef3fb]" />
 
-          {/* Points detail */}
           {description && (
             <div className="mb-3 rounded-xl bg-[#f8fbff] px-4 py-3.5">
-                <p className="font-lato text-sm font-semibold text-secondary">
+              <p className="font-lato text-sm font-semibold text-secondary">
                 {description}
-                </p>
+              </p>
             </div>
           )}
 
