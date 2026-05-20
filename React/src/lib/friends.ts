@@ -37,6 +37,7 @@ export type PublicProfile = {
   fanatic_coins: number;
   streak: number;
   caption: string | null;
+  selected_frame_id: string | null;
 };
 
 export type PublicFriend = {
@@ -282,7 +283,7 @@ export async function fetchPublicProfileById(
 ): Promise<PublicProfile | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, name, avatar_url, fanatic_coins, streak, caption")
+    .select("id, username, name, avatar_url, fanatic_coins, streak, caption, selected_frame_id")
     .eq("id", profileId)
     .single();
   if (error || !data) return null;
@@ -294,6 +295,7 @@ export async function fetchPublicProfileById(
     fanatic_coins: data.fanatic_coins ?? 0,
     streak: data.streak ?? 0,
     caption: data.caption ?? null,
+    selected_frame_id: (data as any).selected_frame_id ?? null,
   };
 }
 
