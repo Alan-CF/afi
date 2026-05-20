@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import NavBar from "../components/layout/NavBar";
 import { usePointLogs } from "../hooks/usePointLogs";
 import {
-  ClockIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/solid";
+import { EVENT_ICONS, EVENT_COLORS } from "../components/ui/PointsToast";
+import { StarIcon } from "@heroicons/react/24/solid";
 
 type SortKey = "points" | "date";
 type SortDir = "asc" | "desc";
@@ -115,38 +116,24 @@ export default function PointsHistory() {
               </p>
             )}
 
-            {sortedLogs.map((log) => (
-              <div
-                key={log.id}
-                className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e0e6f0]">
-                  <ClockIcon className="h-5 w-5 text-gray-400" />
+            {sortedLogs.map((log) => {
+              const Icon = EVENT_ICONS[log.event_key] ?? StarIcon;
+              const iconColor = EVENT_COLORS[log.event_key] ?? "bg-secondary";
+              return (
+                <div key={log.id} className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconColor}`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-secondary">{log.label}</p>
+                    <p className="text-xs text-gray-400">
+                      {log.description} · {new Date(log.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  </div>
+                  <p className="text-base font-extrabold text-[var(--color-primary)]">+{log.points}</p>
                 </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-secondary">
-                    {log.label}
-                  </p>
-
-                  <p className="text-xs text-gray-400">
-                    {log.description} ·{" "}
-                    {new Date(log.created_at).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      }
-                    )}
-                  </p>
-                </div>
-
-                <p className="text-base font-extrabold text-[var(--color-primary)]">
-                  +{log.points}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>
