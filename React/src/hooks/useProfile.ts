@@ -7,6 +7,8 @@ export interface UserProfileData {
     avatar_url: string;
     full_name: string;
     fanatic_coins: number;
+    e_coins: number;
+    selected_frame_id: string | null;
     caption: string | null;
     streak: number;
     name: string | null;

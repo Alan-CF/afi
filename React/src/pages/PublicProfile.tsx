@@ -18,6 +18,7 @@ import {
   type PublicProfile as PublicProfileData,
   type PublicFriend,
 } from '../lib/friends';
+import AvatarFrame from '../components/ui/AvatarFrame';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -156,19 +157,21 @@ export default function PublicProfile() {
             {/* Blue header */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
               <div className="mb-3">
-                {profile.avatar_url ? (
-                  <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white/30">
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.username}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-3xl font-extrabold text-white">
-                    {(profile.name ?? profile.username)[0]?.toUpperCase()}
-                  </div>
-                )}
+                <AvatarFrame frameId={profile.selected_frame_id} size={80} scale={1.35}>
+                  {profile.avatar_url ? (
+                    <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white/30">
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.username}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-3xl font-extrabold text-white">
+                      {(profile.name ?? profile.username)[0]?.toUpperCase()}
+                    </div>
+                  )}
+                </AvatarFrame>
               </div>
               <h1 className="text-2xl font-extrabold text-white mb-1">
                 {profile.name ?? profile.username}
