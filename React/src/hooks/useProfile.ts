@@ -110,10 +110,19 @@ export function useProfile() {
             getUser(false);
         });
 
+        const onProfileUpdated = () => getUser(false);
+        window.addEventListener("profile-updated", onProfileUpdated);
+
         return () => {
             subscription.unsubscribe();
+            window.removeEventListener("profile-updated", onProfileUpdated);
         };
     }, []);
 
-    return { user, loading, hasLoadedOnce, error, refreshProfile: () => getUser(false) };
+    const refreshProfile = async () => {
+        await getUser(false);
+        window.dispatchEvent(new CustomEvent("profile-updated"));
+    };
+
+    return { user, loading, hasLoadedOnce, error, refreshProfile };
 }

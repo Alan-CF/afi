@@ -109,6 +109,7 @@ export function useEshop() {
         eCoins: newBalance,
         owned: new Set([...s.owned, frameId]),
       }));
+      window.dispatchEvent(new CustomEvent("profile-updated"));
       return { ok: true, eCoins: newBalance };
     },
     [state.eCoins]
@@ -119,6 +120,7 @@ export function useEshop() {
       const { error } = await supabase.rpc("select_frame", { p_frame_id: frameId });
       if (error) return { ok: false, reason: error.message };
       setState((s) => ({ ...s, selectedFrameId: frameId }));
+      window.dispatchEvent(new CustomEvent("profile-updated"));
       return { ok: true };
     },
     []
