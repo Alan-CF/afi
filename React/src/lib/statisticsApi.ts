@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-const statsSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-  db: { schema: 'statistics_demo' }
-});
+const statsSupabase = supabase.schema('statistics_demo');
 
 export type PlayerStat = {
   name: string;

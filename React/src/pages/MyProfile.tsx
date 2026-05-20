@@ -29,15 +29,6 @@ import { fetchPendingFriendRequestCount } from "../lib/friends";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { usePointLogs } from "../hooks/usePointLogs";
 
-const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
-  "first-spark": FireIcon,
-  "ten-day-flame": BoltIcon,
-  "century-fan": TrophyIcon,
-  "new-teammate": UserPlusIcon,
-  "squad-builder": UsersIcon,
-  "room-rookie": HomeIcon,
-  "quiz-debut": AcademicCapIcon,
-};
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 10000)  return { name: "Bronze",  emoji: "🥉" };
@@ -47,7 +38,7 @@ function getLeague(coins: number): { name: string; emoji: string } {
   return { name: "Diamond", emoji: "💎" };
 }
 
-const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yourself.";
+const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yourself. ";
 
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
