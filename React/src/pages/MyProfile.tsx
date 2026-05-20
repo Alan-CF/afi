@@ -24,7 +24,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { usePointLogs } from "../hooks/usePointLogs";
 import type { AchievementId } from "../data/achievements";
 
-const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
+const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ComponentType<{ className?: string }>> = {
   "first-spark": FireIcon,
   "ten-day-flame": StarIcon,
   "century-fan": TrophyIcon,
