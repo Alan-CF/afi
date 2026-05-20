@@ -9,7 +9,6 @@ import {
   FireIcon,
   StarIcon,
   TrophyIcon,
-  ClockIcon,
   PencilIcon,
   CheckIcon,
   PlusIcon,
