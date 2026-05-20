@@ -15,22 +15,8 @@ import {
   PlusIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/solid";
-import type { ComponentType, SVGProps } from "react";
 import AvatarFrame from "../components/ui/AvatarFrame";
 import FramePickerModal from "../components/ui/FramePickerModal";
-
-type AchievementIcon = ComponentType<SVGProps<SVGSVGElement>>;
-
-const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, AchievementIcon> = {
-  "first-spark": FireIcon,
-  "ten-day-flame": BoltIcon,
-  "century-fan": TrophyIcon,
-  "new-teammate": UserPlusIcon,
-  "squad-builder": UsersIcon,
-  "room-rookie": HomeIcon,
-  "quiz-debut": AcademicCapIcon,
-};
-
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
