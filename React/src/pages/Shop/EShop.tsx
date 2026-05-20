@@ -7,6 +7,8 @@ import {
 import { useEshop, type Frame } from "../../hooks/useEshop";
 import { useProfile } from "../../hooks/useProfile";
 import AvatarFrame from "../../components/ui/AvatarFrame";
+import PurchaseConfirmModal from "../../components/ui/PurchaseConfirmModal";
+import PurchaseSuccessModal from "../../components/ui/PurchaseSuccessModal";
 
 function ECoinPill({
   amount,
@@ -135,6 +137,8 @@ export default function EShop() {
   } = useEshop();
 
   const [busyFrameId, setBusyFrameId] = useState<string | null>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<Frame | null>(null);
+  const [successFrame, setSuccessFrame] = useState<Frame | null>(null);
   const [feedback, setFeedback] = useState<{
     kind: "ok" | "err";
     text: string;
@@ -146,12 +150,22 @@ export default function EShop() {
     (showFeedback as any)._t = window.setTimeout(() => setFeedback(null), 2400);
   };
 
-  const handleBuy = async (frameId: string) => {
-    setBusyFrameId(frameId);
-    const result = await purchase(frameId);
+  const requestBuy = (frame: Frame) => {
+    setPendingPurchase(frame);
+  };
+
+  const confirmBuy = async () => {
+    if (!pendingPurchase) return;
+    const frame = pendingPurchase;
+    setBusyFrameId(frame.id);
+    const result = await purchase(frame.id);
     setBusyFrameId(null);
-    if (result.ok) showFeedback("ok", "Frame purchased!");
-    else showFeedback("err", result.reason);
+    setPendingPurchase(null);
+    if (result.ok) {
+      setSuccessFrame(frame);
+    } else {
+      showFeedback("err", result.reason);
+    }
   };
 
   const handleSelect = async (frameId: string) => {
@@ -161,6 +175,20 @@ export default function EShop() {
     );
     setBusyFrameId(null);
     if (!result.ok) showFeedback("err", "Could not equip frame.");
+  };
+
+  const handleUseNow = async () => {
+    if (!successFrame) return;
+    const frame = successFrame;
+    setBusyFrameId(frame.id);
+    const result = await selectFrame(frame.id);
+    setBusyFrameId(null);
+    if (result.ok) {
+      setSuccessFrame(null);
+      showFeedback("ok", `${frame.name} equipped!`);
+    } else {
+      showFeedback("err", "Could not equip frame.");
+    }
   };
 
   return (
@@ -243,7 +271,7 @@ export default function EShop() {
                   selected={isSelected}
                   canAfford={eCoins >= frame.price}
                   busy={busyFrameId === frame.id}
-                  onBuy={() => handleBuy(frame.id)}
+                  onBuy={() => requestBuy(frame)}
                   onSelect={() => handleSelect(frame.id)}
                 />
               );
@@ -251,6 +279,30 @@ export default function EShop() {
           </div>
         )}
       </main>
+
+      {pendingPurchase ? (
+        <PurchaseConfirmModal
+          isOpen={!!pendingPurchase}
+          frameId={pendingPurchase.id}
+          frameName={pendingPurchase.name}
+          price={pendingPurchase.price}
+          balance={eCoins}
+          busy={busyFrameId === pendingPurchase.id}
+          onConfirm={confirmBuy}
+          onCancel={() => setPendingPurchase(null)}
+        />
+      ) : null}
+
+      {successFrame ? (
+        <PurchaseSuccessModal
+          isOpen={!!successFrame}
+          frameId={successFrame.id}
+          frameName={successFrame.name}
+          busy={busyFrameId === successFrame.id}
+          onUseNow={handleUseNow}
+          onClose={() => setSuccessFrame(null)}
+        />
+      ) : null}
     </div>
   );
 }

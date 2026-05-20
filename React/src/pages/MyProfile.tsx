@@ -21,6 +21,7 @@ import {
   AcademicCapIcon,
 } from "@heroicons/react/24/solid";
 import AvatarFrame from "../components/ui/AvatarFrame";
+import FramePickerModal from "../components/ui/FramePickerModal";
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
@@ -63,6 +64,7 @@ export default function MyProfile() {
   const [pendingCount, setPendingCount] = useState(0);
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showFramePicker, setShowFramePicker] = useState(false);
 
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
@@ -183,11 +185,13 @@ export default function MyProfile() {
             {/* Header azul */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
               <div className="mb-3">
-                <AvatarFrame frameId={user?.selected_frame_id} size={88} scale={1.35}>
+                <AvatarFrame frameId={user?.selected_frame_id} size={96} scale={1.22}>
                   <AvatarUpload
                     avatarUrl={user?.avatar_url}
                     userId={user?.id ?? ""}
                     onUploadSuccess={() => refreshProfile()}
+                    onChangeFrame={() => setShowFramePicker(true)}
+                    size={96}
                   />
                 </AvatarFrame>
               </div>
@@ -503,6 +507,15 @@ export default function MyProfile() {
           destructive
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutConfirm(false)}
+        />
+
+        <FramePickerModal
+          isOpen={showFramePicker}
+          onClose={() => setShowFramePicker(false)}
+          currentFrameId={user?.selected_frame_id ?? null}
+          avatarUrl={user?.avatar_url}
+          username={user?.username ?? user?.name ?? ""}
+          onSaved={() => refreshProfile()}
         />
 
       </main>
