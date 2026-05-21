@@ -397,7 +397,7 @@ function ShootYourShotAR() {
               )}
             </div>
 
-            {hoopPlaced && status === 'idle' && (
+            {hoopPlaced && status === 'idle' && (!isMobileDevice || cameraReady) && (
               <button
                 type="button"
                 onClick={startGame}
