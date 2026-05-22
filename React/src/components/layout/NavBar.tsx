@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
+import { useCart } from '../../hooks/useCart';
 import Cart from './Cart';
 import ProfileIcon from '../ui/ProfileIcon';
 
@@ -29,6 +30,8 @@ export default function NavBar() {
     error: profileError,
     hasLoadedOnce,
   } = useProfile();
+
+  const { cartItems, loading: cartLoading, error: cartError } = useCart();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -103,16 +106,29 @@ export default function NavBar() {
             {(isLoggedIn || profileLoading) &&
               (() => {
                 const cartDisabled = profileLoading || !isLoggedIn;
+                const cartCount = cartItems.length;
+                const showCartCount =
+                  cartCount > 0 && !cartLoading && !cartError;
                 return (
                   <button
                     onClick={() => !cartDisabled && setIsCartOpen(true)}
                     type="button"
-                    className={`${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    className={`group relative ${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     aria-label={cartDisabled ? 'Cart disabled' : 'Open cart'}
                     aria-disabled={cartDisabled}
                     disabled={cartDisabled}
                   >
                     <ShoppingBagIcon className="w-6 h-6" />
+                    {cartLoading ? (
+                      <span
+                        className="skeleton-shimmer absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center overflow-hidden rounded-full"
+                        aria-hidden="true"
+                      ></span>
+                    ) : showCartCount ? (
+                      <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold leading-none text-secondary shadow-sm">
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })()}

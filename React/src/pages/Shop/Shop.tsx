@@ -66,7 +66,11 @@ export default function Shop() {
   return (
     <div className="flex flex-col">
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <main className="min-h-0 min-w-0 flex-1">
+        <main
+          className={`min-h-0 min-w-0 flex-1 transition-[padding] duration-300 ${
+            isChatOpen ? 'md:pr-[30rem]' : ''
+          }`}
+        >
           <SearchBar
             loading={categoriesLoading}
             onSearch={navigateToProductsSearch}
