@@ -83,7 +83,7 @@ export default function NavBar() {
             ))}
           </ul>
 
-          <div className="flex items-center gap-2 xl:gap-4 shrink-0">
+          <div className="flex items-center gap-4 lg:gap-2 xl:gap-4 shrink-0">
             {isLoggedIn && user && (
               <button
                 type="button"
@@ -95,7 +95,9 @@ export default function NavBar() {
                 <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary font-anton text-[10px] text-secondary">
                   e
                 </span>
-                <span className="tabular-nums">{(user.e_coins ?? 0).toLocaleString()}</span>
+                <span className="tabular-nums">
+                  {(user.e_coins ?? 0).toLocaleString()}
+                </span>
               </button>
             )}
             {(isLoggedIn || profileLoading) &&
