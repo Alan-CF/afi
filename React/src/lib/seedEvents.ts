@@ -68,7 +68,7 @@ export const SEED_FAN_EVENTS: UnifiedEvent[] = [
     subtitle: "The Yard, San Francisco",
     startAt: daysFromNow(2, 18, 30),
     venue: "The Yard",
-    imageUrl: "https://images.unsplash.com/photo-1518614368389-78fe05f76e6d?auto=format&fit=crop&w=1200&q=80",
+    imageUrl: "/watchparty.png",
     meta: { goingCount: 142 },
   },
   {
@@ -88,7 +88,7 @@ export const SEED_FAN_EVENTS: UnifiedEvent[] = [
     subtitle: "Crissy Field, San Francisco",
     startAt: daysFromNow(11, 8, 0),
     venue: "Crissy Field",
-    imageUrl: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1200&q=80",
+    imageUrl: "/baybridgefanrun.png",
     meta: { goingCount: 311 },
   },
   {
@@ -98,7 +98,7 @@ export const SEED_FAN_EVENTS: UnifiedEvent[] = [
     subtitle: "Bartlett Hall, San Francisco",
     startAt: daysFromNow(15, 20, 0),
     venue: "Bartlett Hall",
-    imageUrl: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80",
+    imageUrl: "/trivianight.png",
     meta: { goingCount: 54 },
   },
   {
@@ -118,7 +118,7 @@ export const SEED_FAN_EVENTS: UnifiedEvent[] = [
     subtitle: "Reforma Sports Bar, Mexico City",
     startAt: daysFromNow(28, 19, 0),
     venue: "Reforma Sports Bar",
-    imageUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80",
+    imageUrl: "/playoffnight.png",
     meta: { goingCount: 178 },
   },
 ];

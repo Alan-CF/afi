@@ -8,19 +8,28 @@ const NAV_GROUPS = [
     label: 'Fan Hub',
     links: [
       { label: 'Home', to: '/' },
-      { label: 'Leaderboard', to: '/ranking' },
+      { label: 'News', to: '/news' },
+      { label: 'Events', to: '/events' },
       { label: 'Rooms', to: '/rooms' },
+      { label: 'Leaderboard', to: '/ranking' },
+    ],
+  },
+  {
+    label: 'Games',
+    links: [
+      { label: 'Games', to: '/games' },
       { label: 'Fanatic', to: '/fanatic' },
+      { label: 'Shoot Your Shot', to: '/shoot-your-shot' },
       { label: 'Quizzes', to: '/quizzes' },
     ],
   },
   {
     label: 'Warriors',
     links: [
-      { label: 'News', to: '/news' },
       { label: 'Stats', to: '/stats' },
       { label: 'Legacy', to: '/legacy' },
       { label: 'Shop', to: '/shop' },
+      { label: 'eShop', to: '/eshop' },
     ],
   },
   {
@@ -84,7 +93,7 @@ export default function Footer() {
       </div>
 
       <div className="relative mx-auto max-w-[1280px] px-4 md:px-6 lg:px-8">
-        <div className="hidden md:grid md:grid-cols-4 gap-12 py-16">
+        <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-8 lg:gap-12 py-16">
           <div className="flex flex-col gap-6">
             <img
               src="/logo.png"
@@ -93,7 +102,7 @@ export default function Footer() {
             />
             <p className="font-lato text-sm leading-relaxed text-white/60">
               The ultimate fan engagement platform for Golden State Warriors
-              fans. Live watch-parties, predictions, stats, and fan events — all
+              fans. Live watch-parties, predictions, stats, and fan events. All
               in one place.
             </p>
             <div className="flex items-center gap-2">
@@ -136,6 +145,12 @@ export default function Footer() {
               The ultimate fan engagement platform for Golden State Warriors
               fans.
             </p>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+              <span className="font-lato text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                Stay Golden. Stay Connected.
+              </span>
+            </div>
           </div>
 
           {NAV_GROUPS.map((group) => (
