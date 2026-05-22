@@ -88,7 +88,11 @@ export default function ShopProducts() {
           </div>
         ) : null}
 
-        <main className="min-h-0 min-w-0 flex-1">
+        <main
+          className={`min-h-0 min-w-0 flex-1 transition-[padding] duration-300 ${
+            isChatOpen ? 'md:pr-[30rem]' : ''
+          }`}
+        >
           <div className="mt-6 flex w-full items-center gap-2 px-6">
             {!isDesktopFiltersOpen ? (
               <button
