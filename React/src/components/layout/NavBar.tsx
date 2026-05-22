@@ -12,12 +12,12 @@ import ProfileIcon from '../ui/ProfileIcon';
 const PRIMARY_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/news', label: 'News' },
+  { to: '/events', label: 'Events' },
   { to: '/stats', label: 'Stats' },
   { to: '/legacy', label: 'Legacy' },
   { to: '/ranking', label: 'Leaderboard' },
   { to: '/rooms', label: 'Rooms' },
-  { to: '/fanatic', label: 'Fanatic' },
-  { to: '/quizzes', label: 'Quizzes' },
+  { to: '/games', label: 'Games' },
   { to: '/shop', label: 'Shop' },
   { to: '/eshop', label: 'eShop' },
 ];
@@ -83,9 +83,24 @@ export default function NavBar() {
             ))}
           </ul>
 
-          <div className="flex items-center gap-2 xl:gap-5 shrink-0">
-            {/* Show the cart button while loading (disabled) or when logged in */
-            (isLoggedIn || profileLoading) &&
+          <div className="flex items-center gap-4 lg:gap-2 xl:gap-4 shrink-0">
+            {isLoggedIn && user && (
+              <button
+                type="button"
+                onClick={() => navigate('/eshop')}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 min-[900px]:px-3 py-1 font-lato text-xs min-[900px]:text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                aria-label="Open eShop"
+                title="e-coins balance"
+              >
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary font-anton text-[10px] text-secondary">
+                  e
+                </span>
+                <span className="tabular-nums">
+                  {(user.e_coins ?? 0).toLocaleString()}
+                </span>
+              </button>
+            )}
+            {(isLoggedIn || profileLoading) &&
               (() => {
                 const cartDisabled = profileLoading || !isLoggedIn;
                 return (
@@ -110,33 +125,19 @@ export default function NavBar() {
               <Bars3Icon className="w-6 h-6" />
             </button>
             {!isLoggedOut ? (
-              <>
-                {isLoggedIn && user ? (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/eshop')}
-                    className="hidden min-[900px]:inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-lato text-sm font-semibold text-white transition-colors hover:bg-white/20"
-                    aria-label="Open eShop"
-                    title="e-coins balance"
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary font-anton text-[10px] text-secondary">e</span>
-                    <span className="tabular-nums">{(user.e_coins ?? 0).toLocaleString()}</span>
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => navigate('/myprofile')}
-                  className="cursor-pointer"
-                  aria-label="Go to profile"
-                >
-                  <ProfileIcon
-                    user={user}
-                    userLoading={profileLoading}
-                    userError={profileError}
-                    hasLoadedOnce={hasLoadedOnce}
-                  />
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => navigate('/myprofile')}
+                className="cursor-pointer"
+                aria-label="Go to profile"
+              >
+                <ProfileIcon
+                  user={user}
+                  userLoading={profileLoading}
+                  userError={profileError}
+                  hasLoadedOnce={hasLoadedOnce}
+                />
+              </button>
             ) : (
               <button
                 type="button"

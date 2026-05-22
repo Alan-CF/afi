@@ -25,6 +25,7 @@ import ProductDetail from './pages/Shop/ProductDetail';
 import ShoppingCartItem from './pages/Shop/ShopingCartItem';
 import MainLayout from './components/layout/MainLayout';
 import ShootYourShotAR from './pages/ShootYourShotAR';
+import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from "./components/ui/PointsToastGlobal";
 
@@ -40,6 +41,7 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/quizzes" element={<Quizzes />} />
           <Route path="/" element={<Home />} />
+          <Route path="/games" element={<Games />} />
           <Route path="/fanatic" element={<Fanatic />} />
           <Route path="/myprofile" element={<MyProfile />} />
           <Route path="/friends" element={<Friends />} />

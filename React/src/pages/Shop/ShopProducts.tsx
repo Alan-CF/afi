@@ -11,7 +11,7 @@ import {
 
 function ProductsSkeleton() {
   return (
-    <div className="w-full min-w-60 max-w-96 animate-pulse">
+    <div className="w-full animate-pulse">
       <div className="h-48 w-full rounded-xl bg-gray-300" />
       <div className="mt-4 h-6 w-3/4 rounded bg-gray-300" />
       <div className="mt-2 h-4 w-1/2 rounded bg-gray-300" />
@@ -132,7 +132,7 @@ export default function ShopProducts() {
           </div>
 
           {productsLoading ? (
-            <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
+            <div className="grid content-start grid-cols-[repeat(auto-fit,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
               <ProductsSkeleton />
               <ProductsSkeleton />
               <ProductsSkeleton />
@@ -148,7 +148,7 @@ export default function ShopProducts() {
                 : 'No products available at the moment.'}
             </div>
           ) : (
-            <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(theme(spacing.60),1fr))] gap-6 p-6">
+            <div className="grid content-start grid-cols-[repeat(auto-fit,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}

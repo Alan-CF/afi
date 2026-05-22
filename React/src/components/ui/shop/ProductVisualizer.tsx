@@ -17,7 +17,9 @@ export default function ProductVisualizer({
   }
 
   const baseImage =
-    clickedImage && imageUrls.includes(clickedImage) ? clickedImage : imageUrls[0];
+    clickedImage && imageUrls.includes(clickedImage)
+      ? clickedImage
+      : imageUrls[0];
   const mainImage =
     hoveredImage && imageUrls.includes(hoveredImage) ? hoveredImage : baseImage;
 
@@ -43,7 +45,7 @@ export default function ProductVisualizer({
               type="button"
               onMouseEnter={() => setHoveredImage(url)}
               onClick={() => setClickedImage(url)}
-              className={`w-full aspect-video overflow-hidden rounded-lg bg-gray-100 border-2 transition-colors ${
+              className={`h-24 w-24 overflow-hidden rounded-lg bg-gray-100 border-2 transition-colors ${
                 isSelected ? 'border-secondary' : 'border-transparent'
               }`}
             >

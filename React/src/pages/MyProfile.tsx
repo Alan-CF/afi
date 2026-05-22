@@ -9,25 +9,31 @@ import {
   FireIcon,
   StarIcon,
   TrophyIcon,
-  ClockIcon,
   PencilIcon,
   CheckIcon,
   PlusIcon,
   LockClosedIcon,
-  BoltIcon,
-  UserPlusIcon,
-  UsersIcon,
-  HomeIcon,
-  AcademicCapIcon,
 } from "@heroicons/react/24/solid";
 import AvatarFrame from "../components/ui/AvatarFrame";
+import FramePickerModal from "../components/ui/FramePickerModal";
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 import { fetchPendingFriendRequestCount } from "../lib/friends";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { usePointLogs } from "../hooks/usePointLogs";
+import type { AchievementId } from "../data/achievements";
+import { EVENT_ICONS, EVENT_COLORS } from "../components/ui/PointsToast";
 
+const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ComponentType<{ className?: string }>> = {
+  "first-spark": FireIcon,
+  "ten-day-flame": StarIcon,
+  "century-fan": TrophyIcon,
+  "new-teammate": StarIcon,
+  "squad-builder": StarIcon,
+  "room-rookie": StarIcon,
+  "quiz-debut": StarIcon,
+};
 
 function getLeague(coins: number): { name: string; emoji: string } {
   if (coins <= 10000)  return { name: "Bronze",  emoji: "🥉" };
@@ -54,6 +60,7 @@ export default function MyProfile() {
   const [pendingCount, setPendingCount] = useState(0);
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showFramePicker, setShowFramePicker] = useState(false);
 
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
@@ -174,11 +181,13 @@ export default function MyProfile() {
             {/* Header azul */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
               <div className="mb-3">
-                <AvatarFrame frameId={user?.selected_frame_id} size={88} scale={1.35}>
+                <AvatarFrame frameId={user?.selected_frame_id} size={96} scale={1.22}>
                   <AvatarUpload
                     avatarUrl={user?.avatar_url}
                     userId={user?.id ?? ""}
                     onUploadSuccess={() => refreshProfile()}
+                    onChangeFrame={() => setShowFramePicker(true)}
+                    size={96}
                   />
                 </AvatarFrame>
               </div>
@@ -454,22 +463,26 @@ export default function MyProfile() {
             ) : logs.length === 0 ? (
               <p className="text-center text-gray-400 py-4 text-sm">No points earned yet.</p>
             ) : (
-              logs.map((log) => (
-                <div key={log.id} className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3 w-full">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e0e6f0]">
-                    <ClockIcon className="h-5 w-5 text-gray-400" />
+              logs.map((log) => {
+                const Icon = EVENT_ICONS[log.event_key] ?? StarIcon;
+                const iconColor = EVENT_COLORS[log.event_key] ?? "bg-secondary";
+                return (
+                  <div key={log.id} className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3 w-full">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconColor}`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-secondary">{log.label}</p>
+                      <p className="text-xs text-gray-400">
+                        {log.description} · {new Date(log.created_at).toLocaleDateString("en-US", {
+                          month: "numeric", day: "numeric", year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <p className="text-base font-extrabold text-primary">+{log.points}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-secondary">{log.label}</p>
-                    <p className="text-xs text-gray-400">
-                      {log.description} · {new Date(log.created_at).toLocaleDateString("en-US", {
-                        month: "numeric", day: "numeric", year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <p className="text-base font-extrabold text-primary">+{log.points}</p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>
@@ -494,6 +507,15 @@ export default function MyProfile() {
           destructive
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutConfirm(false)}
+        />
+
+        <FramePickerModal
+          isOpen={showFramePicker}
+          onClose={() => setShowFramePicker(false)}
+          currentFrameId={user?.selected_frame_id ?? null}
+          avatarUrl={user?.avatar_url}
+          username={user?.username ?? user?.name ?? ""}
+          onSaved={() => refreshProfile()}
         />
 
       </main>
