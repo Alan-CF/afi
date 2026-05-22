@@ -124,15 +124,15 @@ export default function Shop() {
                   />
                 ))}
           </ShopCarousel>
-          <div className="flex flex-col items-center mt-8 mb-16">
-            <div className="flex w-full max-w-3xl items-center justify-between gap-4 rounded-lg border border-secondary/20 px-6 py-6 shadow-md md:px-8 md:py-8">
-              <div className="flex items-center gap-4">
-                <MagnifyingGlassIcon className="h-10 w-10 text-secondary" />
-                <div className="text-left">
-                  <p className="font-lato text-lg font-semibold text-black">
+          <div className="mb-16 mt-8 flex flex-col items-center px-4 sm:px-6">
+            <div className="flex w-full max-w-3xl flex-col items-center justify-between gap-4 rounded-lg border border-secondary/20 px-4 py-5 shadow-md sm:px-6 md:flex-row md:px-8 md:py-8">
+              <div className="flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:gap-4 md:text-left">
+                <MagnifyingGlassIcon className="h-9 w-9 shrink-0 text-secondary md:h-10 md:w-10" />
+                <div>
+                  <p className="font-lato text-base font-semibold text-black md:text-lg">
                     Not finding what you are looking for?
                   </p>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 md:text-base">
                     Try browsing all products or refine your search.
                   </p>
                 </div>
@@ -140,7 +140,7 @@ export default function Shop() {
 
               <Button
                 variant="primary"
-                className="ml-4 px-6 py-3 text-lg font-bold font-anton"
+                className="w-full px-6 py-3 text-lg font-anton font-bold sm:w-auto md:ml-4"
                 onClick={() => navigate('/shop/products')}
               >
                 View all products
