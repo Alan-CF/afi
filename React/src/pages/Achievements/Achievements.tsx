@@ -1,30 +1,21 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  AcademicCapIcon,
   ArrowLeftIcon,
-  BoltIcon,
-  FireIcon,
-  HomeIcon,
   LockClosedIcon,
   StarIcon,
   TrophyIcon,
-  UserPlusIcon,
-  UsersIcon,
-} from "@heroicons/react/24/solid";
-import NavBar from "../../components/layout/NavBar";
-import AchievementDetailModal from "../../components/ui/achievements/AchievementDetailModal";
-import { useAchievements } from "../../hooks/useAchievements";
-import type { Achievement, AchievementId } from "../../data/achievements";
+} from '@heroicons/react/24/solid';
+import AchievementDetailModal from '../../components/ui/achievements/AchievementDetailModal';
+import { useAchievements } from '../../hooks/useAchievements';
+import type { Achievement } from '../../data/achievements';
 
-const ICONS: Record<AchievementId, React.ElementType> = {
-  "first-spark": FireIcon,
-  "ten-day-flame": BoltIcon,
-  "century-fan": TrophyIcon,
-  "new-teammate": UserPlusIcon,
-  "squad-builder": UsersIcon,
-  "room-rookie": HomeIcon,
-  "quiz-debut": AcademicCapIcon,
+import type { ComponentType, SVGProps } from 'react';
+
+type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+const ICONS: Record<string, IconType> = {
+  shooter: TrophyIcon,
 };
 
 export default function Achievements() {
@@ -38,8 +29,6 @@ export default function Achievements() {
 
   return (
     <div className="min-h-screen bg-[#eef3fb]">
-      <NavBar />
-
       <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-5xl flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
         <section className="rounded-[1.75rem] bg-white/95 p-4 shadow-[0_24px_70px_rgba(30,41,59,0.12)] sm:p-5 lg:p-7">
           <div className="flex items-center gap-3">
@@ -67,9 +56,9 @@ export default function Achievements() {
                 Unlocked
               </p>
               <p className="mt-1 font-lato text-3xl font-black text-secondary">
-                {loading ? "-" : unlockedCount}
+                {loading ? '-' : unlockedCount}
                 <span className="text-base font-normal text-secondary/55">
-                  /{loading ? "-" : total}
+                  /{loading ? '-' : total}
                 </span>
               </p>
             </div>
@@ -86,11 +75,11 @@ export default function Achievements() {
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#e4eaf4]">
                 <div
                   className="h-2.5 rounded-full bg-secondary transition-all duration-700"
-                  style={{ width: loading ? "0%" : `${percent}%` }}
+                  style={{ width: loading ? '0%' : `${percent}%` }}
                 />
               </div>
               <p className="mt-2 font-lato text-xs font-bold text-secondary">
-                {loading ? "-" : percent}%
+                {loading ? '-' : percent}%
               </p>
             </div>
           </div>
@@ -147,15 +136,16 @@ function AchievementCard({
   } = achievement;
 
   const Icon = ICONS[id];
-  const progress = progressTarget > 0 ? (progressCurrent / progressTarget) * 100 : 0;
+  const progress =
+    progressTarget > 0 ? (progressCurrent / progressTarget) * 100 : 0;
 
   return (
     <button
       onClick={onClick}
       className={`group relative flex min-h-36 w-full flex-col items-center justify-center gap-1.5 rounded-[1rem] border-2 px-2 py-3 text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary sm:min-h-44 sm:gap-3 sm:rounded-[1.5rem] sm:px-4 sm:py-5 ${
         unlocked
-          ? "border-[#cfd9ea] bg-[#fdfefe] hover:border-secondary"
-          : "border-[#d9e2f0] bg-[#f8fbff] hover:border-[#cfd9ea]"
+          ? 'border-[#cfd9ea] bg-[#fdfefe] hover:border-secondary'
+          : 'border-[#d9e2f0] bg-[#f8fbff] hover:border-[#cfd9ea]'
       }`}
     >
       {unlocked && (
@@ -167,11 +157,11 @@ function AchievementCard({
       <div className="relative">
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors sm:h-16 sm:w-16 ${
-            unlocked ? color : "bg-[#edf3ff]"
+            unlocked ? color : 'bg-[#edf3ff]'
           }`}
         >
           <Icon
-            className={`h-5 w-5 sm:h-8 sm:w-8 ${unlocked ? "text-white" : "text-[#8aa0bd]"}`}
+            className={`h-5 w-5 sm:h-8 sm:w-8 ${unlocked ? 'text-white' : 'text-[#8aa0bd]'}`}
           />
         </div>
         {!unlocked && (
@@ -183,7 +173,7 @@ function AchievementCard({
 
       <h3
         className={`font-lato text-[0.6rem] font-black leading-tight sm:text-sm ${
-          unlocked ? "text-secondary" : "text-[#9aa5b4]"
+          unlocked ? 'text-secondary' : 'text-[#9aa5b4]'
         }`}
       >
         {name}

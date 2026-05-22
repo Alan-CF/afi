@@ -1,22 +1,24 @@
-import { useAddItemToCart } from "../../../hooks/useCart";
-import { type PricedProduct } from "../../../hooks/useShopProducts";
-import Button from "../Button";
+import { type PricedProduct } from '../../../hooks/useShopProducts';
 
-export default function ProductCard({ product }: { product: PricedProduct }) {
-  const { addItemToCart, isAddingToCart, addToCartError } = useAddItemToCart();
+interface ProductCardProps {
+  product: PricedProduct;
+  onClick?: () => void;
+}
+
+export default function ProductCard({ product, onClick }: ProductCardProps) {
   const hasDiscount = product.discount > 0;
   const discountedPrice = product.price * (1 - product.discount);
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  const formattedPrice = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
   }).format(product.price);
-  const formattedDiscountedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  const formattedDiscountedPrice = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
   }).format(discountedPrice);
 
-  return (
-    <div className="flex h-full w-full min-w-60 max-w-96 flex-col gap-4 rounded-xl bg-white p-4 shadow-lg">
+  const productPreview = (
+    <>
       <div className="h-48 w-full overflow-hidden rounded-xl bg-gray-100">
         <img
           src={product.image_url ?? undefined}
@@ -48,24 +50,18 @@ export default function ProductCard({ product }: { product: PricedProduct }) {
             {formattedPrice}
           </p>
         )}
-        <Button
-          variant="primary"
-          onClick={() => {
-            void addItemToCart(product.id);
-          }}
-          disabled={isAddingToCart}
-          className="text-sm font-semibold"
-        >
-          <p className="font-lato">
-            {isAddingToCart ? "Adding..." : "Add to cart"}
-          </p>
-        </Button>
-        {addToCartError ? (
-          <p className="text-sm text-red-600 font-lato">
-            {addToCartError.message}
-          </p>
-        ) : null}
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className={`flex h-full w-full flex-col gap-4 rounded-xl bg-white p-4 text-left shadow-lg hover:cursor-pointer ${onClick ? 'transition-transform hover:-translate-y-0.5' : 'cursor-default disabled:opacity-100'}`}
+    >
+      {productPreview}
+    </button>
   );
 }

@@ -1,49 +1,49 @@
 import { useState, useEffect, useRef } from "react";
-import NavBar from "../components/layout/NavBar";
 import { useProfile } from "../hooks/useProfile";
 import { supabase } from "../lib/supabaseClient";
 import AvatarUpload from "../components/ui/AvatarUpload";
 import AchievementDetailModal from "../components/ui/achievements/AchievementDetailModal";
 import { useAchievements } from "../hooks/useAchievements";
-import type { Achievement, AchievementId } from "../data/achievements";
+import type { Achievement } from "../data/achievements";
 import {
   FireIcon,
   StarIcon,
   TrophyIcon,
-  ClockIcon,
   PencilIcon,
   CheckIcon,
   PlusIcon,
   LockClosedIcon,
-  BoltIcon,
-  UserPlusIcon,
-  UsersIcon,
-  HomeIcon,
-  AcademicCapIcon,
 } from "@heroicons/react/24/solid";
-
-const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ElementType> = {
-  "first-spark": FireIcon,
-  "ten-day-flame": BoltIcon,
-  "century-fan": TrophyIcon,
-  "new-teammate": UserPlusIcon,
-  "squad-builder": UsersIcon,
-  "room-rookie": HomeIcon,
-  "quiz-debut": AcademicCapIcon,
-};
+import AvatarFrame from "../components/ui/AvatarFrame";
+import FramePickerModal from "../components/ui/FramePickerModal";
 import { signOut } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchMyFriends, type FriendOption } from "../hooks/useRooms";
 import { fetchPendingFriendRequestCount } from "../lib/friends";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { usePointLogs } from "../hooks/usePointLogs";
+import type { AchievementId } from "../data/achievements";
+import { EVENT_ICONS, EVENT_COLORS } from "../components/ui/PointsToast";
+
+const PROFILE_ACHIEVEMENT_ICONS: Record<AchievementId, React.ComponentType<{ className?: string }>> = {
+  "first-spark": FireIcon,
+  "ten-day-flame": StarIcon,
+  "century-fan": TrophyIcon,
+  "new-teammate": StarIcon,
+  "squad-builder": StarIcon,
+  "room-rookie": StarIcon,
+  "quiz-debut": StarIcon,
+};
 
 function getLeague(coins: number): { name: string; emoji: string } {
-  if (coins <= 5000)  return { name: "Bronze",  emoji: "🥉" };
-  if (coins <= 10000) return { name: "Silver",   emoji: "🥈" };
-  if (coins <= 15000) return { name: "Gold",     emoji: "🥇" };
-  if (coins <= 20000) return { name: "Sapphire", emoji: "♦️" };
+  if (coins <= 10000)  return { name: "Bronze",  emoji: "🥉" };
+  if (coins <= 20000) return { name: "Silver",   emoji: "🥈" };
+  if (coins <= 40000) return { name: "Gold",     emoji: "🥇" };
+  if (coins <= 60000) return { name: "Sapphire", emoji: "♦️" };
   return { name: "Diamond", emoji: "💎" };
 }
+
+const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yourself. ";
 
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
@@ -53,17 +53,19 @@ export default function MyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [nameText, setNameText] = useState("");
   const [usernameText, setUsernameText] = useState("");
-  const [aboutText, setAboutText] = useState("Let us get to know you! Write a short bio about yourself.");
+  const [aboutText, setAboutText] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showFramePicker, setShowFramePicker] = useState(false);
+
   const friendsRowRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
 
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
+  const { logs, loading: logsLoading } = usePointLogs(1);
   const navigate = useNavigate();
 
   const onDragStart = (e: React.MouseEvent) => {
@@ -89,7 +91,7 @@ export default function MyProfile() {
     if (user) {
       if (user.name) setNameText(user.name);
       if (user.username) setUsernameText(user.username);
-      if (user.caption) setAboutText(user.caption);
+      setAboutText(user.caption ?? "");
     }
   }, [user]);
 
@@ -106,10 +108,12 @@ export default function MyProfile() {
     setUsernameError(null);
     setIsEditing(true);
   };
+
   const handleLogout = async () => {
     await signOut();
     navigate("/login");
   };
+
   const handleSave = async () => {
     const trimmedUsername = usernameText.trim();
 
@@ -120,7 +124,6 @@ export default function MyProfile() {
 
     setSaving(true);
 
-    // Verificar si el username ya existe (solo si cambió)
     if (trimmedUsername !== user?.username) {
       const { data: existing } = await supabase
         .from("profiles")
@@ -136,6 +139,13 @@ export default function MyProfile() {
     }
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!user?.caption && aboutText.trim()) {
+      await supabase.rpc("award_points", {
+        p_profile_id: authUser?.id,
+        p_event_key: "add_caption",
+      });
+    }
+
     await supabase
       .from("profiles")
       .update({
@@ -152,17 +162,15 @@ export default function MyProfile() {
   };
 
   const handleCancel = () => {
-    // Revertir cambios
     if (user?.name) setNameText(user.name);
     if (user?.username) setUsernameText(user.username);
-    if (user?.caption) setAboutText(user.caption);
+    setAboutText(user?.caption ?? "");
     setUsernameError(null);
     setIsEditing(false);
   };
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] text-text font-[family-name:var(--font-lato)]">
-      <NavBar />
 
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-12">
 
@@ -170,16 +178,18 @@ export default function MyProfile() {
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] mb-5 overflow-hidden">
           <div className="flex flex-col md:flex-row">
 
-
             {/* Header azul */}
             <div className="bg-secondary flex flex-col items-center justify-center text-center px-10 py-8 md:w-80 md:shrink-0 md:rounded-l-2xl">
-              
               <div className="mb-3">
-                <AvatarUpload
-                  avatarUrl={user?.avatar_url}
-                  userId={user?.id ?? ""}
-                  onUploadSuccess={() => refreshProfile()}
-                />
+                <AvatarFrame frameId={user?.selected_frame_id} size={96} scale={1.22}>
+                  <AvatarUpload
+                    avatarUrl={user?.avatar_url}
+                    userId={user?.id ?? ""}
+                    onUploadSuccess={() => refreshProfile()}
+                    onChangeFrame={() => setShowFramePicker(true)}
+                    size={96}
+                  />
+                </AvatarFrame>
               </div>
 
               {isEditing ? (
@@ -223,7 +233,7 @@ export default function MyProfile() {
 
             {/* Métricas */}
             <div className="flex flex-col justify-center flex-1 p-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                     <FireIcon className="h-5 w-5 text-primary" />
@@ -239,6 +249,19 @@ export default function MyProfile() {
                   <p className="text-xl font-extrabold text-secondary">{(user?.fanatic_coins ?? 0).toLocaleString()}</p>
                   <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">Points</p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/eshop")}
+                  className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3 transition-colors hover:border-primary"
+                  title="Open eShop"
+                >
+                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                    <span className="font-anton text-base text-primary">e</span>
+                  </div>
+                  <p className="text-xl font-extrabold text-secondary tabular-nums">{(user?.e_coins ?? 0).toLocaleString()}</p>
+                  <p className="text-[12px] uppercase tracking-wide text-gray-400 font-semibold">e-coins</p>
+                </button>
 
                 <div className="flex flex-col items-center rounded-xl border border-[var(--color-container-border)] shadow-sm bg-[var(--color-background)] p-3">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
@@ -267,10 +290,7 @@ export default function MyProfile() {
               </button>
             ) : (
               <div className="flex items-center gap-3">
-                <button
-                  onClick={handleCancel}
-                  className="text-xs font-bold text-gray-400"
-                >
+                <button onClick={handleCancel} className="text-xs font-bold text-gray-400">
                   Cancel
                 </button>
                 <button
@@ -292,10 +312,13 @@ export default function MyProfile() {
                   value={aboutText}
                   onChange={(e) => setAboutText(e.target.value)}
                   maxLength={200}
+                  placeholder={ABOUT_PLACEHOLDER}
                   className="w-full bg-transparent outline-none text-gray-600"
                 />
               ) : (
-                <div>{aboutText}</div>
+                <div className={aboutText ? "text-gray-600" : "text-gray-400"}>
+                  {aboutText || ABOUT_PLACEHOLDER}
+                </div>
               )}
             </div>
           </section>
@@ -328,7 +351,6 @@ export default function MyProfile() {
             onMouseLeave={onDragEnd}
             onMouseMove={onDragMove}
           >
-            {/* Add friend button */}
             <button
               onClick={() => navigate("/friends?tab=add")}
               className="flex flex-col items-center gap-1 shrink-0"
@@ -339,7 +361,6 @@ export default function MyProfile() {
               <span className="text-[10px] font-semibold text-secondary">Add</span>
             </button>
 
-            {/* Friend circles */}
             {friends.map((friend) => (
               <button
                 key={friend.id}
@@ -348,11 +369,7 @@ export default function MyProfile() {
               >
                 {friend.avatar_url ? (
                   <div className="h-14 w-14 rounded-full overflow-hidden shrink-0">
-                    <img
-                      src={friend.avatar_url}
-                      alt={friend.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={friend.avatar_url} alt={friend.name} className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div
@@ -378,10 +395,7 @@ export default function MyProfile() {
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2 px-1">
             <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Achievements</h2>
-            <button
-              onClick={() => navigate("/achievements")}
-              className="text-xs font-bold text-secondary"
-            >
+            <button onClick={() => navigate("/achievements")} className="text-xs font-bold text-secondary">
               View All
             </button>
           </div>
@@ -398,20 +412,12 @@ export default function MyProfile() {
                   }`}
                 >
                   <div className="relative">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
-                        achievement.unlocked
-                          ? `${achievement.color} shadow-md`
-                          : "bg-[#edf0f4]"
-                      }`}
-                    >
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full transition-all ${
+                      achievement.unlocked ? `${achievement.color} shadow-md` : "bg-[#edf0f4]"
+                    }`}>
                       {(() => {
                         const Icon = PROFILE_ACHIEVEMENT_ICONS[achievement.id];
-                        return (
-                          <Icon
-                            className={`h-5 w-5 ${achievement.unlocked ? "text-white" : "text-[#b0bac8]"}`}
-                          />
-                        );
+                        return <Icon className={`h-5 w-5 ${achievement.unlocked ? "text-white" : "text-[#b0bac8]"}`} />;
                       })()}
                     </div>
                     {!achievement.unlocked && (
@@ -420,11 +426,9 @@ export default function MyProfile() {
                       </div>
                     )}
                   </div>
-                  <span
-                    className={`font-lato text-[0.55rem] font-bold leading-tight tracking-tight text-center ${
-                      achievement.unlocked ? "text-secondary" : "text-[#9aa5b4]"
-                    }`}
-                  >
+                  <span className={`font-lato text-[0.55rem] font-bold leading-tight tracking-tight text-center ${
+                    achievement.unlocked ? "text-secondary" : "text-[#9aa5b4]"
+                  }`}>
                     {achievement.name}
                   </span>
                 </button>
@@ -443,33 +447,46 @@ export default function MyProfile() {
         {/* Points History */}
         <div className="flex items-center justify-between mb-2 px-1">
           <h2 className="text-[14px] font-bold uppercase tracking-widest text-[var(--color-text)]">Points History</h2>
-          <button className="text-xs font-bold text-secondary">See All</button>
+          <button
+            onClick={() => navigate("/pointshistory")}
+            className="text-xs font-bold text-secondary"
+          >
+            See All
+          </button>
         </div>
         <section className="rounded-2xl border border-gray-200 bg-[var(--color-text-light-soft)] p-4">
           <div className="flex flex-col gap-3">
-            {(() => {
-              const item = {
-                title: "Daily login",
-                subtitle: "Welcome back to AFI · 2/27/2026",
-                points: "+10",
-                icon: <ClockIcon className="h-5 w-5 text-gray-400" />,
-              };
-              return (
-                <div className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3 w-full">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e0e6f0]">
-                    {item.icon}
+            {logsLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="h-6 w-6 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
+              </div>
+            ) : logs.length === 0 ? (
+              <p className="text-center text-gray-400 py-4 text-sm">No points earned yet.</p>
+            ) : (
+              logs.map((log) => {
+                const Icon = EVENT_ICONS[log.event_key] ?? StarIcon;
+                const iconColor = EVENT_COLORS[log.event_key] ?? "bg-secondary";
+                return (
+                  <div key={log.id} className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-container-border)] shadow-sm p-3 w-full">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconColor}`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-secondary">{log.label}</p>
+                      <p className="text-xs text-gray-400">
+                        {log.description} · {new Date(log.created_at).toLocaleDateString("en-US", {
+                          month: "numeric", day: "numeric", year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <p className="text-base font-extrabold text-primary">+{log.points}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-secondary">{item.title}</p>
-                    <p className="text-xs text-gray-400">{item.subtitle}</p>
-                  </div>
-                  <p className="text-base font-extrabold text-primary">{item.points}</p>
-                </div>
-              );
-            })()}
+                );
+              })
+            )}
           </div>
         </section>
-        {/* Logout */}
+
         {user && (
           <div className="flex justify-center mt-8">
             <button
@@ -491,6 +508,16 @@ export default function MyProfile() {
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutConfirm(false)}
         />
+
+        <FramePickerModal
+          isOpen={showFramePicker}
+          onClose={() => setShowFramePicker(false)}
+          currentFrameId={user?.selected_frame_id ?? null}
+          avatarUrl={user?.avatar_url}
+          username={user?.username ?? user?.name ?? ""}
+          onSaved={() => refreshProfile()}
+        />
+
       </main>
     </div>
   );

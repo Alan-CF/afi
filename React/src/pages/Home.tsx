@@ -1,48 +1,64 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FireIcon,
   UserGroupIcon,
   AcademicCapIcon,
-} from "@heroicons/react/24/solid";
-import NavBar from "../components/layout/NavBar";
-import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
-import Footer from "../components/layout/Footer";
-import HomeTopNews from "../components/home/HomeTopNews";
-import HomeFanaticFeature from "../components/home/HomeFanaticFeature";
-import HomeRoomsRail from "../components/home/HomeRoomsRail";
-import HomeLeaderboardPreview from "../components/home/HomeLeaderboardPreview";
-import HomeStatsPreview from "../components/home/HomeStatsPreview";
-import ShopSpotlight from "../components/home/ShopSpotlight";
-import HomeAuthCTA from "../components/home/HomeAuthCTA";
+} from '@heroicons/react/24/solid';
+import ScoreboardRibbon from '../components/layout/ScoreboardRibbon';
+import HomeTopNews from '../components/home/HomeTopNews';
+import HomeEventsSection from '../components/home/HomeEventsSection';
+import HomeRoomsRail from '../components/home/HomeRoomsRail';
+import ShopSpotlight from '../components/home/ShopSpotlight';
+import HomeAuthCTA from '../components/home/HomeAuthCTA';
+import { useProfile } from '../hooks/useProfile';
+
+function getTimeOfDay(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
 function QuickActions() {
   const navigate = useNavigate();
   const actions = [
-    { icon: FireIcon,        label: "Fanatic",  desc: "Keep playing",          to: "/fanatic"  },
-    { icon: UserGroupIcon,   label: "Rooms",    desc: "Join the conversation", to: "/rooms"    },
-    { icon: AcademicCapIcon, label: "Quizzes",  desc: "Test your IQ",          to: "/quizzes"  },
+    { icon: FireIcon, label: 'Fanatic', desc: 'Keep playing', to: '/fanatic' },
+    {
+      icon: UserGroupIcon,
+      label: 'Rooms',
+      desc: 'Join the conversation',
+      to: '/rooms',
+    },
+    {
+      icon: AcademicCapIcon,
+      label: 'Quizzes',
+      desc: 'Test your IQ',
+      to: '/quizzes',
+    },
   ];
 
   return (
-    <section className="mt-8 md:mt-10 lg:mt-12">
-      <h2 className="font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight mb-4 md:mb-5">
+    <section>
+      <h2 className="font-anton text-lg md:text-xl text-secondary leading-tight mb-3 md:mb-4">
         Jump In
       </h2>
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
+      <div className="flex md:grid md:grid-cols-3 gap-2 md:gap-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none scrollbar-hide scroll-pl-4 md:scroll-pl-0 -mx-4 md:mx-0 px-4 md:px-0 pb-1 md:pb-0">
         {actions.map((a, i) => (
           <button
             key={a.label}
             type="button"
             onClick={() => navigate(a.to)}
-            className={`group relative flex flex-col items-start gap-3 md:gap-4 rounded-3xl bg-white border border-container-border p-4 md:p-6 text-left lift-on-hover hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-shadow overflow-hidden fade-in-up stagger-${i + 1}`}
+            className={`group relative shrink-0 md:shrink w-[170px] md:w-auto snap-start flex flex-row items-center gap-2 md:gap-3 rounded-2xl bg-white border border-container-border px-3 py-2.5 md:px-4 md:py-3 text-left lift-on-hover hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-shadow overflow-hidden fade-in-up stagger-${i + 1}`}
           >
-            <span className="absolute top-0 left-0 right-0 h-1 bg-primary opacity-80 group-hover:opacity-100 transition-opacity" />
-            <span className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl bg-secondary text-white transition-colors group-hover:bg-secondary/90">
-              <a.icon className="h-6 w-6" />
+            <span className="absolute top-0 left-0 bottom-0 w-1 bg-primary opacity-80 group-hover:opacity-100 transition-opacity" />
+            <span className="flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-white transition-colors group-hover:bg-secondary/90">
+              <a.icon className="h-4 w-4 md:h-5 md:w-5" />
             </span>
-            <div>
-              <p className="font-anton text-lg md:text-xl text-secondary leading-tight">{a.label}</p>
-              <p className="mt-1 font-lato text-xs md:text-sm text-text-light">
+            <div className="min-w-0">
+              <p className="font-anton text-sm md:text-base text-secondary leading-tight truncate">
+                {a.label}
+              </p>
+              <p className="font-lato text-[0.65rem] md:text-xs text-text-light truncate">
                 {a.desc}
               </p>
             </div>
@@ -54,18 +70,31 @@ function QuickActions() {
 }
 
 export default function Home() {
+  const { user, hasLoadedOnce } = useProfile();
+  const isLoggedIn = hasLoadedOnce && user !== null;
+
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
-      <NavBar />
       <ScoreboardRibbon />
 
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
-        <HomeTopNews />
-        <QuickActions />
-        <HomeFanaticFeature />
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-4 md:pt-6 pb-16 md:pb-20">
+        {isLoggedIn && user && (
+          <p className="font-lato text-sm text-text-light mb-3 md:mb-4">
+            {getTimeOfDay()},{' '}
+            <span className="font-semibold text-secondary">
+              {user.name ?? user.username}
+            </span>
+            .
+          </p>
+        )}
+
+        {isLoggedIn && <QuickActions />}
+
+        <div className={isLoggedIn ? 'mt-8 md:mt-10 lg:mt-12' : ''}>
+          <HomeTopNews />
+        </div>
+        <HomeEventsSection />
         <HomeRoomsRail />
-        <HomeLeaderboardPreview />
-        <HomeStatsPreview />
 
         <section className="mt-8 md:mt-10 lg:mt-12">
           <div className="mb-4 md:mb-5">
@@ -81,8 +110,6 @@ export default function Home() {
 
         <HomeAuthCTA />
       </main>
-
-      <Footer />
     </div>
   );
 }

@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import {
   Bars3Icon,
   ShoppingBagIcon,
-  UserCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import Cart from './Cart';
+import ProfileIcon from '../ui/ProfileIcon';
 
 const PRIMARY_LINKS = [
   { to: '/', label: 'Home' },
@@ -19,10 +19,16 @@ const PRIMARY_LINKS = [
   { to: '/fanatic', label: 'Fanatic' },
   { to: '/quizzes', label: 'Quizzes' },
   { to: '/shop', label: 'Shop' },
+  { to: '/eshop', label: 'eShop' },
 ];
 
 export default function NavBar() {
-  const { user, hasLoadedOnce } = useProfile();
+  const {
+    user,
+    loading: profileLoading,
+    error: profileError,
+    hasLoadedOnce,
+  } = useProfile();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -78,16 +84,23 @@ export default function NavBar() {
           </ul>
 
           <div className="flex items-center gap-2 xl:gap-5 shrink-0">
-            {isLoggedIn && (
-              <button
-                onClick={() => setIsCartOpen(true)}
-                type="button"
-                className="cursor-pointer"
-                aria-label="Open cart"
-              >
-                <ShoppingBagIcon className="w-6 h-6" />
-              </button>
-            )}
+            {/* Show the cart button while loading (disabled) or when logged in */
+            (isLoggedIn || profileLoading) &&
+              (() => {
+                const cartDisabled = profileLoading || !isLoggedIn;
+                return (
+                  <button
+                    onClick={() => !cartDisabled && setIsCartOpen(true)}
+                    type="button"
+                    className={`${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    aria-label={cartDisabled ? 'Cart disabled' : 'Open cart'}
+                    aria-disabled={cartDisabled}
+                    disabled={cartDisabled}
+                  >
+                    <ShoppingBagIcon className="w-6 h-6" />
+                  </button>
+                );
+              })()}
             <button
               type="button"
               className="min-[900px]:hidden cursor-pointer"
@@ -96,25 +109,35 @@ export default function NavBar() {
             >
               <Bars3Icon className="w-6 h-6" />
             </button>
-            {isLoggedIn && (
-              <button
-                type="button"
-                onClick={() => navigate('/myprofile')}
-                className="cursor-pointer"
-                aria-label="Go to profile"
-              >
-                {user?.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt=""
-                    className="w-10 h-10 rounded-full object-cover"
+            {!isLoggedOut ? (
+              <>
+                {isLoggedIn && user ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/eshop')}
+                    className="hidden min-[900px]:inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-lato text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                    aria-label="Open eShop"
+                    title="e-coins balance"
+                  >
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary font-anton text-[10px] text-secondary">e</span>
+                    <span className="tabular-nums">{(user.e_coins ?? 0).toLocaleString()}</span>
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => navigate('/myprofile')}
+                  className="cursor-pointer"
+                  aria-label="Go to profile"
+                >
+                  <ProfileIcon
+                    user={user}
+                    userLoading={profileLoading}
+                    userError={profileError}
+                    hasLoadedOnce={hasLoadedOnce}
                   />
-                ) : (
-                  <UserCircleIcon className="w-10 h-10" />
-                )}
-              </button>
-            )}
-            {isLoggedOut && (
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
                 onClick={() => navigate('/login')}
