@@ -174,7 +174,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
   ]);
 
   return (
-    <aside className="absolute inset-y-0 right-0 z-40 w-full border-l border-secondary/20 bg-white py-3 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:w-[30rem] lg:max-w-none lg:shadow-none">
+    <aside className="fixed inset-x-0 bottom-0 top-16 z-50 w-full border-l border-secondary/20 bg-white py-3 shadow-xl md:left-auto md:right-0 md:w-[30rem] md:max-w-none">
       <section className="flex h-full min-h-0 flex-col bg-white">
         <header className=" flex items-center gap-3 border-b border-gray-200 pb-3 px-4">
           <img
