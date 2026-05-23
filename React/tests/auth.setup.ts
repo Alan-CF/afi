@@ -2,7 +2,7 @@ import { test as setup, request } from '@playwright/test';
 
 const authFile = 'playwright/.auth/user.json';
 
-setup('Auth', async ({ page }) => {
+setup('auth', async ({ page }) => {
   await page.goto('/');
   const session = await getSupabaseSession();
   await page.evaluate((sessionData) => {

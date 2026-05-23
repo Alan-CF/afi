@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import 'dotenv/config';
 
 const TARGET_ENV = process.env.ENV_URL;
+console.log(`Running tests against: ${TARGET_ENV}`);
 
 export default defineConfig({
   testDir: './tests',
