@@ -88,7 +88,11 @@ export default function ShopProducts() {
           </div>
         ) : null}
 
-        <main className="min-h-0 min-w-0 flex-1">
+        <main
+          className={`min-h-0 min-w-0 flex-1 transition-[padding] duration-300 ${
+            isChatOpen ? 'md:pr-[30rem]' : ''
+          }`}
+        >
           <div className="mt-6 flex w-full items-center gap-2 px-6">
             {!isDesktopFiltersOpen ? (
               <button
@@ -132,7 +136,7 @@ export default function ShopProducts() {
           </div>
 
           {productsLoading ? (
-            <div className="grid content-start grid-cols-[repeat(auto-fit,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
+            <div className="grid content-start grid-cols-[repeat(auto-fill,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
               <ProductsSkeleton />
               <ProductsSkeleton />
               <ProductsSkeleton />
@@ -148,7 +152,7 @@ export default function ShopProducts() {
                 : 'No products available at the moment.'}
             </div>
           ) : (
-            <div className="grid content-start grid-cols-[repeat(auto-fit,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
+            <div className="grid content-start grid-cols-[repeat(auto-fill,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}
