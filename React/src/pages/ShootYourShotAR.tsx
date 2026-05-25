@@ -14,6 +14,16 @@ type ThrowVelocity = {
 
 type Position3D = [number, number, number];
 
+type ShootRankingPlayer = {
+  profile_id: string;
+  name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  avg_score: number;
+  avg_success_rate: number;
+  games_played: number;
+};
+
 function Hoop({ position }: { position: Position3D }) {
   return (
     <group position={position}>
@@ -190,6 +200,8 @@ function ShootYourShotAR() {
   const [hasShotOnce, setHasShotOnce] = useState(false);
   const [totalShots, setTotalShots] = useState(0);
   const [gameSaved, setGameSaved] = useState(false);
+  const [globalRanking, setGlobalRanking] = useState<ShootRankingPlayer[]>([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
 
   const {
     score,
@@ -245,6 +257,20 @@ function ShootYourShotAR() {
     setGameSaved(false);
   };
 
+  const loadGlobalRanking = async () => {
+    setRankingLoading(true);
+
+    const { data, error } = await supabase
+      .from('shoot_your_shot_global_ranking')
+      .select('*');
+
+    if (!error) {
+      setGlobalRanking(data ?? []);
+    }
+
+    setRankingLoading(false);
+  };
+
   useEffect(() => {
     const saveGame = async () => {
       if (status !== 'finished' || gameSaved) return;
@@ -267,6 +293,7 @@ function ShootYourShotAR() {
       });
 
       setGameSaved(true);
+      await loadGlobalRanking();
     };
 
     saveGame();
@@ -490,6 +517,67 @@ function ShootYourShotAR() {
                 <p className="mt-2 text-lg font-bold text-secondary/70">
                   {successRate}% success rate
                 </p>
+
+                <div className="mt-6 text-left">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold uppercase tracking-[0.2em] text-secondary/70">
+                      Global Top 5
+                    </h3>
+                  </div>
+
+                  {rankingLoading ? (
+                    <div className="flex justify-center py-4">
+                      <div className="h-6 w-6 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
+                    </div>
+                  ) : globalRanking.length === 0 ? (
+                    <p className="rounded-2xl bg-[var(--color-text-light-soft)] px-4 py-3 text-center text-sm font-semibold text-secondary/60">
+                      No scores yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {globalRanking.map((player, index) => (
+                        <div
+                          key={player.profile_id}
+                          className="flex items-center gap-3 rounded-2xl bg-[var(--color-text-light-soft)] px-3 py-2"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-extrabold text-white">
+                            {index + 1}
+                          </div>
+
+                          {player.avatar_url ? (
+                            <img
+                              src={player.avatar_url}
+                              alt={player.name ?? player.username ?? 'Player'}
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-secondary">
+                              {(player.name ?? player.username ?? '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-extrabold text-secondary">
+                              {player.name ?? player.username ?? 'Unknown Player'}
+                            </p>
+                            <p className="text-xs font-semibold text-secondary/50">
+                              {player.games_played} games
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="text-sm font-extrabold text-primary">
+                              {player.avg_score}
+                            </p>
+                            <p className="text-xs font-bold text-secondary/50">
+                              {player.avg_success_rate}%
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="button"
