@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useBasketballGame } from '../hooks/useBasketballGame';
 import { useThrowGesture } from '../hooks/useThrowGesture';
 import { useTexture } from '@react-three/drei';
+import { supabase } from '../lib/supabaseClient';
 
 type ThrowVelocity = {
   x: number;
@@ -180,6 +181,8 @@ function ShootYourShotAR() {
   const [hoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
+  const [totalShots, setTotalShots] = useState(0);
+  const [gameSaved, setGameSaved] = useState(false);
 
   const {
     score,
@@ -198,6 +201,7 @@ function ShootYourShotAR() {
     onThrow: (velocity) => {
       setThrowRequest(velocity);
       setHasShotOnce(true);
+      setTotalShots((current) => current + 1);
     },
   });
 
@@ -230,7 +234,36 @@ function ShootYourShotAR() {
     resetGame();
     setThrowRequest(null);
     setHasShotOnce(false);
+    setTotalShots(0);
+    setGameSaved(false);
   };
+
+  useEffect(() => {
+    const saveGame = async () => {
+      if (status !== 'finished' || gameSaved) return;
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const successRate =
+        totalShots > 0 ? Number(((score / totalShots) * 100).toFixed(2)) : 0;
+
+      await supabase.from('shoot_your_shot_games').insert({
+        profile_id: user.id,
+        score,
+        total_shots: totalShots,
+        success_rate: successRate,
+        duration_seconds: 60,
+      });
+
+      setGameSaved(true);
+    };
+
+    saveGame();
+  }, [status, gameSaved, score, totalShots]);
 
   useEffect(() => {
     return () => {
@@ -238,7 +271,10 @@ function ShootYourShotAR() {
     };
     }, []);
 
-  return (
+  const successRate =
+    totalShots > 0 ? Math.round((score / totalShots) * 100) : 0;
+
+    return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
         <section className="rounded-2xl bg-white px-4 py-6 text-center mb-5 border border-[var(--color-container-border)]">
@@ -441,7 +477,11 @@ function ShootYourShotAR() {
                 </h2>
 
                 <p className="text-6xl font-extrabold text-primary mt-4">
-                  {score}
+                  {score}/{totalShots}
+                </p>
+
+                <p className="mt-2 text-lg font-bold text-secondary/70">
+                  {successRate}% success rate
                 </p>
 
                 <button
