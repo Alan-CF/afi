@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -14,6 +14,10 @@ import {
   fetchScrapedArticle,
   type ScrapedArticle,
 } from '../services/newsScraper';
+import {
+  normalizeImageUrl,
+  type WarriorsNewsImage,
+} from '../hooks/warriorsNews';
 
 function formatPublished(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -41,6 +45,57 @@ function ArticleSkeleton() {
   );
 }
 
+function BodySkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-3xl rounded-3xl bg-white border border-container-border shadow-sm px-5 py-7 md:px-8 md:py-10">
+      <div className="flex flex-col gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-4 w-full rounded skeleton-shimmer" />
+        ))}
+        <div className="h-4 w-2/3 rounded skeleton-shimmer" />
+      </div>
+    </div>
+  );
+}
+
+const JUNK_PATTERNS: RegExp[] = [
+  /^gambling problem\??/i,
+  /^copyright\s*:?/i,
+  /^©/,
+  /^items per page\s*:?/i,
+  /^go to page\s*:?/i,
+  /^advertisement$/i,
+  /^read more on/i,
+  /^subscribe(\s+to)?\b/i,
+];
+
+function isJunk(p: string): boolean {
+  return JUNK_PATTERNS.some((re) => re.test(p));
+}
+
+function normalizeForCompare(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function isQuoteParagraph(p: string): boolean {
+  const t = p.trim();
+  return (
+    t.startsWith('"') ||
+    t.startsWith('“') ||
+    t.startsWith('‘') ||
+    t.startsWith('„')
+  );
+}
+
+function startsWithAllCapsRun(p: string): boolean {
+  return /^[A-Z][A-Z0-9'’\-]+\s+[A-Z][A-Z0-9'’\-]+/.test(p.trim());
+}
+
+function imageKey(url: string | null | undefined): string {
+  const normalized = normalizeImageUrl(url);
+  return normalized ? normalized.toLowerCase() : '';
+}
+
 export default function NewsDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -50,24 +105,33 @@ export default function NewsDetail() {
 
   const [scraped, setScraped] = useState<ScrapedArticle | null>(null);
   const [scrapedLoading, setScrapedLoading] = useState(false);
+  const [scrapedAttempted, setScrapedAttempted] = useState(false);
 
   useEffect(() => {
-    if (!article) return;
-    let cancelled = false;
+    if (!article) {
+      setScraped(null);
+      setScrapedLoading(false);
+      setScrapedAttempted(false);
+      return;
+    }
     const controller = new AbortController();
+    setScraped(null);
     setScrapedLoading(true);
+    setScrapedAttempted(false);
     fetchScrapedArticle(article.id, article, controller.signal)
       .then((data) => {
-        if (!cancelled) setScraped(data);
+        if (!controller.signal.aborted) setScraped(data);
       })
       .catch(() => {
-        if (!cancelled) setScraped(null);
+        if (!controller.signal.aborted) setScraped(null);
       })
       .finally(() => {
-        if (!cancelled) setScrapedLoading(false);
+        if (!controller.signal.aborted) {
+          setScrapedLoading(false);
+          setScrapedAttempted(true);
+        }
       });
     return () => {
-      cancelled = true;
       controller.abort();
     };
   }, [article]);
@@ -77,16 +141,76 @@ export default function NewsDetail() {
     Date.now() - new Date(article.publishedAt).getTime() < 60 * 60 * 1000;
 
   const heroImage = article ? (article.image ?? article.thumbnail) : null;
-  const author = article?.author;
+  const heroKey = imageKey(heroImage);
+  const secondaryImage: WarriorsNewsImage | null =
+    article?.gallery?.find(
+      (img) => img.url && imageKey(img.url) && imageKey(img.url) !== heroKey
+    ) ?? null;
+
+  const author = scraped?.author ?? article?.author;
   const sourceLabel = scraped?.source ?? article?.sourceName ?? article?.source;
   const originalUrl = article?.originalUrl ?? article?.link;
   const body = scraped?.body ?? article?.body ?? null;
-  const bodyParagraphs = body
-    ? body
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean)
-    : [];
+
+  function splitBody(raw: string): string[] {
+    const byBlank = raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    if (byBlank.length > 1) return byBlank;
+    return raw.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+  }
+
+  const rawParagraphs: string[] =
+    scraped?.bodyParagraphs && scraped.bodyParagraphs.length > 0
+      ? scraped.bodyParagraphs
+      : body
+        ? splitBody(body)
+        : [];
+
+  const titleKey = article ? normalizeForCompare(article.title) : '';
+  const cleanParagraphs = rawParagraphs.filter((p, i) => {
+    if (isJunk(p)) return false;
+    if (i < 2 && titleKey.length > 10) {
+      const pKey = normalizeForCompare(p);
+      if (pKey === titleKey || pKey.startsWith(titleKey)) return false;
+    }
+    return true;
+  });
+
+  const extractorFailed = scrapedAttempted && cleanParagraphs.length === 0;
+  const imageInsertIndex =
+    secondaryImage && cleanParagraphs.length >= 4
+      ? Math.max(1, Math.floor(cleanParagraphs.length * 0.4))
+      : -1;
+
+  function renderParagraph(p: string, key: string) {
+    if (isQuoteParagraph(p)) {
+      return (
+        <blockquote
+          key={key}
+          className="border-l-4 border-primary pl-5 py-1 font-lato text-lg md:text-xl text-secondary leading-8 md:leading-9 font-medium italic"
+        >
+          {p}
+        </blockquote>
+      );
+    }
+    if (startsWithAllCapsRun(p)) {
+      return (
+        <p
+          key={key}
+          className="font-lato text-base md:text-lg text-secondary leading-8 md:leading-9 font-semibold"
+        >
+          {p}
+        </p>
+      );
+    }
+    return (
+      <p
+        key={key}
+        className="font-lato text-base md:text-lg text-secondary leading-8 md:leading-9"
+      >
+        {p}
+      </p>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
@@ -134,7 +258,7 @@ export default function NewsDetail() {
                 {article.title}
               </h1>
               {article.description && (
-                <p className="mt-4 font-lato text-base md:text-lg text-text-light leading-relaxed">
+                <p className="mt-4 font-lato text-base md:text-lg text-text leading-relaxed">
                   {article.description}
                 </p>
               )}
@@ -155,36 +279,48 @@ export default function NewsDetail() {
             </header>
 
             <div className="mt-8 md:mt-10 fade-in-up stagger-3">
-              {scrapedLoading && bodyParagraphs.length === 0 && (
-                <div className="flex flex-col gap-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-4 w-full rounded skeleton-shimmer"
-                    />
-                  ))}
+              {scrapedLoading && cleanParagraphs.length === 0 && <BodySkeleton />}
+
+              {!scrapedLoading && cleanParagraphs.length > 0 && (
+                <div className="mx-auto w-full max-w-3xl rounded-3xl bg-white border border-container-border shadow-sm px-5 py-7 md:px-8 md:py-10">
+                  <div className="flex flex-col gap-6 md:gap-7">
+                    {cleanParagraphs.map((p, i) => (
+                      <Fragment key={`p-${i}`}>
+                        {i === imageInsertIndex && secondaryImage && (
+                          <figure className="my-2">
+                            <div className="relative aspect-[16/9] rounded-3xl overflow-hidden bg-secondary/10 border border-container-border shadow-sm">
+                              <NewsImageOrFallback
+                                thumbnail={secondaryImage.url}
+                                alt={secondaryImage.caption ?? article.title}
+                              />
+                            </div>
+                            {secondaryImage.caption && (
+                              <figcaption className="mt-3 font-lato text-xs md:text-sm text-text-light italic text-center">
+                                {secondaryImage.caption}
+                              </figcaption>
+                            )}
+                          </figure>
+                        )}
+                        {renderParagraph(p, `p-${i}`)}
+                      </Fragment>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {!scrapedLoading && bodyParagraphs.length > 0 && (
-                <div className="flex flex-col gap-5 font-lato text-base md:text-lg text-text leading-8">
-                  {bodyParagraphs.map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
-              )}
-
-              {!scrapedLoading && bodyParagraphs.length === 0 && (
-                <div className="rounded-3xl bg-white border border-container-border p-6 md:p-8">
-                  <p className="font-lato text-base md:text-lg text-text-light leading-relaxed">
-                    Full article content is available from the original source.
+              {!scrapedLoading && cleanParagraphs.length === 0 && (
+                <div className="mx-auto w-full max-w-3xl rounded-3xl bg-white border border-container-border shadow-sm px-5 py-7 md:px-8 md:py-10">
+                  <p className="font-lato text-base md:text-lg text-text leading-relaxed">
+                    {extractorFailed
+                      ? 'Unable to load full content. Read the complete article from the original source.'
+                      : 'Full article content is available from the original source.'}
                   </p>
                 </div>
               )}
             </div>
 
             {originalUrl && (
-              <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 fade-in-up stagger-4">
+              <div className="mt-8 md:mt-10 mx-auto w-full max-w-3xl flex flex-col sm:flex-row gap-3 fade-in-up stagger-4">
                 <a
                   href={originalUrl}
                   target="_blank"

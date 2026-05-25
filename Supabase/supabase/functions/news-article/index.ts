@@ -1,10 +1,9 @@
 import {
-  DOMParser,
-  type HTMLDocument,
-  type Element,
-} from "https://deno.land/x/deno_dom@v0.1.49/deno-dom-wasm.ts";
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2";
 
-const CORS_HEADERS = {
+const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
@@ -23,30 +22,81 @@ const ALLOWED_HOSTS = new Set<string>([
   "espn.in",
 ]);
 
-const FETCH_TIMEOUT_MS = 8000;
-const MAX_BYTES = 2_000_000;
-const USER_AGENT =
-  "Mozilla/5.0 (compatible; AFI-NewsBot/1.0; +https://afi.local)";
+const FORBIDDEN_HOSTS = new Set<string>([
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "::1",
+]);
 
-interface Extracted {
+const FORBIDDEN_PROTOCOLS = new Set<string>([
+  "file:",
+  "data:",
+  "javascript:",
+  "ftp:",
+  "ws:",
+  "wss:",
+]);
+
+const APIFY_DEFAULT_ACTOR = "apify/website-content-crawler";
+const APIFY_TIMEOUT_MS = 60_000;
+const MIN_BODY_CHARS = 300;
+const MIN_PARAGRAPHS = 2;
+const MIN_PARAGRAPH_CHARS = 40;
+const CACHE_TABLE = "news_article_cache";
+
+interface RequestPayload {
+  url?: string;
+  title?: string | null;
+  description?: string | null;
+  image?: string | null;
+  publishedAt?: string | null;
+  source?: string | null;
+}
+
+interface ArticleResponse {
   title: string | null;
   author: string | null;
   source: string | null;
   publishedAt: string | null;
   image: string | null;
   body: string | null;
+  bodyParagraphs: string[];
+  originalUrl: string;
+  provider: "cache" | "apify" | null;
+  error: string | null;
 }
 
-function emptyArticle(originalUrl: string | null = null) {
-  return {
-    title: null,
-    author: null,
-    source: null,
-    publishedAt: null,
-    image: null,
-    body: null,
-    originalUrl,
+interface CacheRow {
+  original_url: string;
+  title: string | null;
+  description: string | null;
+  image_url: string | null;
+  source: string | null;
+  published_at: string | null;
+  body: string | null;
+  body_paragraphs: string[] | null;
+  provider: string | null;
+}
+
+interface ApifyItem {
+  text?: string;
+  markdown?: string;
+  content?: string;
+  pageContent?: string;
+  title?: string;
+  metadata?: {
+    title?: string;
+    author?: string;
+    description?: string;
+    publishedAt?: string;
+    publishedTime?: string;
+    image?: string;
+    source?: string;
+    siteName?: string;
   };
+  author?: string;
+  byline?: string;
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -59,8 +109,33 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function fail(message: string, status = 400, originalUrl: string | null = null): Response {
-  return jsonResponse({ ...emptyArticle(originalUrl), error: message }, status);
+function emptyResponse(
+  originalUrl: string,
+  error: string | null,
+  meta?: Partial<ArticleResponse>,
+): ArticleResponse {
+  return {
+    title: meta?.title ?? null,
+    author: meta?.author ?? null,
+    source: meta?.source ?? null,
+    publishedAt: meta?.publishedAt ?? null,
+    image: meta?.image ?? null,
+    body: null,
+    bodyParagraphs: [],
+    originalUrl,
+    provider: null,
+    error,
+  };
+}
+
+function isPrivateIp(host: string): boolean {
+  if (FORBIDDEN_HOSTS.has(host)) return true;
+  if (/^10\./.test(host)) return true;
+  if (/^192\.168\./.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
+  if (/^169\.254\./.test(host)) return true;
+  if (/^f[cd][0-9a-f]{2}:/i.test(host)) return true;
+  return false;
 }
 
 function isAllowedHost(host: string): boolean {
@@ -72,235 +147,366 @@ function isAllowedHost(host: string): boolean {
   return false;
 }
 
-function pickJsonLdAuthor(author: unknown): string | null {
-  if (!author) return null;
-  if (typeof author === "string") return author;
-  if (Array.isArray(author)) {
-    const first =
-      (author as Array<unknown>).find(
-        (a) => a && typeof a === "object" && (a as { name?: string }).name,
-      ) ?? author[0];
-    if (typeof first === "string") return first;
-    return (first as { name?: string } | undefined)?.name ?? null;
+function validateUrl(raw: unknown): { url: URL | null; error: string | null } {
+  if (!raw || typeof raw !== "string")
+    return { url: null, error: "missing url" };
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return { url: null, error: "invalid url" };
   }
-  return (author as { name?: string }).name ?? null;
+  if (FORBIDDEN_PROTOCOLS.has(parsed.protocol)) {
+    return { url: null, error: "forbidden protocol" };
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return { url: null, error: "unsupported protocol" };
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (isPrivateIp(host))
+    return { url: null, error: "private host not allowed" };
+  if (!isAllowedHost(host)) return { url: null, error: "hostname not allowed" };
+  return { url: parsed, error: null };
 }
 
-function pickJsonLdImage(image: unknown): string | null {
-  if (!image) return null;
-  if (typeof image === "string") return image;
-  if (Array.isArray(image)) {
-    const first = image[0];
-    if (typeof first === "string") return first;
-    return (first as { url?: string } | undefined)?.url ?? null;
-  }
-  return (image as { url?: string }).url ?? null;
+function getServiceClient(): SupabaseClient | null {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
-function pickJsonLdPublisher(publisher: unknown): string | null {
-  if (!publisher) return null;
-  if (typeof publisher === "string") return publisher;
-  return (publisher as { name?: string }).name ?? null;
+async function readCache(
+  client: SupabaseClient,
+  originalUrl: string,
+): Promise<CacheRow | null> {
+  const { data, error } = await client
+    .from(CACHE_TABLE)
+    .select(
+      "original_url,title,description,image_url,source,published_at,body,body_paragraphs,provider",
+    )
+    .eq("original_url", originalUrl)
+    .maybeSingle();
+  if (error) {
+    console.error("news-article cache read failed:", error.message);
+    return null;
+  }
+  return data as CacheRow | null;
 }
 
-function isArticleType(t: unknown): boolean {
-  if (typeof t === "string") {
-    return t === "NewsArticle" || t === "Article" || t === "ReportageNewsArticle";
+async function writeCache(
+  client: SupabaseClient,
+  row: {
+    original_url: string;
+    title: string | null;
+    description: string | null;
+    image_url: string | null;
+    source: string | null;
+    published_at: string | null;
+    body: string;
+    body_paragraphs: string[];
+    provider: string;
+  },
+): Promise<void> {
+  const { error } = await client.from(CACHE_TABLE).upsert(
+    {
+      ...row,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "original_url" },
+  );
+  if (error) {
+    console.error("news-article cache write failed:", error.message);
   }
-  if (Array.isArray(t)) {
-    return t.some(
-      (x) =>
-        typeof x === "string" &&
-        (x === "NewsArticle" || x === "Article" || x === "ReportageNewsArticle"),
-    );
+}
+
+function cleanText(raw: string): string {
+  return raw
+    .replace(/\r\n/g, "\n")
+    .replace(/[\t ]+/g, " ")
+    .replace(/[ ]{2,}/g, " ")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+const NAVIGATION_PATTERNS: RegExp[] = [
+  /^(home|news|scores|standings|schedule|stats|teams|players|watch|listen)$/i,
+  /^(more|menu|search|sign in|log in|subscribe|follow|share|tweet|comments?)$/i,
+  /^(facebook|twitter|instagram|threads|tiktok|youtube|reddit|copy link)$/i,
+  /^(read more|continue reading|next|previous|loading|advertisement|sponsored)$/i,
+  /^(privacy policy|terms of use|cookie policy|do not sell|nielsen measurement|copyright)/i,
+  /^©/,
+  /espn\s*plus/i,
+  /^enjoying this article/i,
+];
+
+const NOISE_LINE_PATTERNS: RegExp[] = [
+  /^(watch|read|listen):/i,
+  /^play\s+video/i,
+  /^video duration/i,
+  /^embed\s+code/i,
+  /^getty images$/i,
+  /^ap photo$/i,
+  /^photo:/i,
+  /^image:/i,
+  /^caption:/i,
+  /^\d{1,2}:\d{2}$/,
+  /^\d+\s+(comments?|shares?|likes?|views?)/i,
+];
+
+function isNoiseLine(line: string): boolean {
+  if (line.length < 30) {
+    for (const re of NAVIGATION_PATTERNS) {
+      if (re.test(line)) return true;
+    }
+  }
+  for (const re of NOISE_LINE_PATTERNS) {
+    if (re.test(line)) return true;
   }
   return false;
 }
 
-function parseJsonLd(doc: HTMLDocument): Partial<Extracted> {
-  const out: Partial<Extracted> = {};
-  const scripts = Array.from(
-    doc.querySelectorAll('script[type="application/ld+json"]'),
-  ) as Element[];
-  for (const s of scripts) {
-    const txt = s.textContent ?? "";
-    if (!txt.trim()) continue;
-    let data: unknown;
-    try {
-      data = JSON.parse(txt);
-    } catch {
-      continue;
-    }
-    const root = data as { "@graph"?: unknown[] } | unknown[] | Record<string, unknown>;
-    const candidates: unknown[] = Array.isArray(root)
-      ? root
-      : Array.isArray((root as { "@graph"?: unknown[] })["@graph"])
-        ? ((root as { "@graph"?: unknown[] })["@graph"] as unknown[])
-        : [root];
-    for (const c of candidates) {
-      if (!c || typeof c !== "object") continue;
-      const obj = c as Record<string, unknown>;
-      if (!isArticleType(obj["@type"])) continue;
-      out.title ??=
-        (obj.headline as string | undefined) ?? (obj.name as string | undefined) ?? null;
-      out.author ??= pickJsonLdAuthor(obj.author);
-      out.source ??= pickJsonLdPublisher(obj.publisher);
-      out.publishedAt ??= (obj.datePublished as string | undefined) ?? null;
-      out.image ??= pickJsonLdImage(obj.image);
-      const ab = obj.articleBody;
-      out.body ??= typeof ab === "string" && ab.trim().length > 0 ? ab : null;
-    }
+function toParagraphs(cleaned: string): string[] {
+  const blocks = cleaned
+    .split(/\n{2,}/)
+    .map((b) =>
+      b
+        .replace(/\n+/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim(),
+    )
+    .filter(Boolean);
+
+  const fromMarkdown =
+    blocks.length > 1
+      ? blocks
+      : cleaned
+          .split(/\n+/)
+          .map((b) => b.trim())
+          .filter(Boolean);
+
+  const filtered: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of fromMarkdown) {
+    const p = raw.replace(/^[#>*\-•·\d\.\)\s]+/, "").trim();
+    if (!p) continue;
+    if (p.length < MIN_PARAGRAPH_CHARS) continue;
+    if (isNoiseLine(p)) continue;
+    const key = p.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    filtered.push(p);
   }
-  return out;
+  return filtered;
 }
 
-function metaContent(doc: HTMLDocument, selectors: string[]): string | null {
-  for (const sel of selectors) {
-    const el = doc.querySelector(sel);
-    const v = el?.getAttribute("content");
-    if (v && v.trim()) return v.trim();
+function extractRawText(item: ApifyItem): string {
+  const candidates = [item.text, item.markdown, item.content, item.pageContent];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim().length > 0) return c;
   }
-  return null;
+  return "";
 }
 
-function parseMeta(doc: HTMLDocument): Partial<Extracted> {
-  return {
-    title: metaContent(doc, [
-      'meta[property="og:title"]',
-      'meta[name="twitter:title"]',
-    ]),
-    author: metaContent(doc, [
-      'meta[name="author"]',
-      'meta[property="article:author"]',
-    ]),
-    source: metaContent(doc, ['meta[property="og:site_name"]']),
-    publishedAt: metaContent(doc, ['meta[property="article:published_time"]']),
-    image: metaContent(doc, [
-      'meta[property="og:image"]',
-      'meta[name="twitter:image"]',
-    ]),
-  };
-}
-
-function extractBody(doc: HTMLDocument): string | null {
-  const containers = ["article", "main", '[itemprop="articleBody"]'];
-  for (const sel of containers) {
-    const root = doc.querySelector(sel);
-    if (!root) continue;
-    const ps = Array.from(root.querySelectorAll("p")) as Element[];
-    const paragraphs = ps
-      .map((p) => (p.textContent ?? "").replace(/\s+/g, " ").trim())
-      .filter((t) => t.length >= 40);
-    if (paragraphs.length >= 2) {
-      const seen = new Set<string>();
-      const dedup: string[] = [];
-      for (const p of paragraphs) {
-        if (!seen.has(p)) {
-          seen.add(p);
-          dedup.push(p);
-        }
-      }
-      const body = dedup.join("\n\n");
-      if (body.length >= 200) return body;
-    }
-  }
-  return null;
-}
-
-function toIsoSafe(v: string | null): string | null {
-  if (!v) return null;
-  const t = Date.parse(v);
-  if (Number.isNaN(t)) return v;
+function toIso(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return value;
   return new Date(t).toISOString();
+}
+
+async function callApify(targetUrl: string): Promise<ApifyItem | null> {
+  const token = Deno.env.get("APIFY_TOKEN");
+  if (!token) {
+    console.error("APIFY_TOKEN not configured");
+    return null;
+  }
+  const actorId = (
+    Deno.env.get("APIFY_ACTOR_ID") ?? APIFY_DEFAULT_ACTOR
+  ).trim();
+  const safeActorId = actorId.replace("/", "~");
+
+  const endpoint = `https://api.apify.com/v2/acts/${safeActorId}/run-sync-get-dataset-items?token=${encodeURIComponent(
+    token,
+  )}`;
+
+  const body = {
+    startUrls: [{ url: targetUrl }],
+    crawlerType: "playwright:adaptive",
+    maxCrawlPages: 1,
+    maxCrawlDepth: 0,
+    maxResults: 1,
+    proxyConfiguration: { useApifyProxy: true },
+    saveMarkdown: true,
+    saveHtml: false,
+    saveFiles: false,
+    saveScreenshots: false,
+    removeCookieWarnings: true,
+    removeElementsCssSelector:
+      "nav, footer, header, aside, script, style, .ad, .ads, .advertisement, .related, .recommended",
+  };
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), APIFY_TIMEOUT_MS);
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      console.error(`apify run-sync returned ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0] as ApifyItem;
+  } catch (err) {
+    const reason =
+      (err as Error).name === "AbortError" ? "timeout" : (err as Error).message;
+    console.error("apify call failed:", reason);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function handlePost(req: Request): Promise<Response> {
+  let payload: RequestPayload;
+  try {
+    payload = await req.json();
+  } catch {
+    return jsonResponse(emptyResponse("", "invalid json body"), 400);
+  }
+
+  const { url, error: urlError } = validateUrl(payload.url);
+  if (!url) {
+    return jsonResponse(
+      emptyResponse(
+        typeof payload.url === "string" ? payload.url : "",
+        urlError,
+      ),
+      400,
+    );
+  }
+
+  const originalUrl = url.toString();
+  const fallbackMeta: Partial<ArticleResponse> = {
+    title: payload.title ?? null,
+    image: payload.image ?? null,
+    publishedAt: toIso(payload.publishedAt ?? null),
+    source: payload.source ?? null,
+  };
+
+  const client = getServiceClient();
+
+  if (client) {
+    const cached = await readCache(client, originalUrl);
+    if (
+      cached &&
+      cached.body &&
+      cached.body.length >= MIN_BODY_CHARS &&
+      Array.isArray(cached.body_paragraphs) &&
+      cached.body_paragraphs.length >= MIN_PARAGRAPHS
+    ) {
+      const response: ArticleResponse = {
+        title: cached.title ?? fallbackMeta.title ?? null,
+        author: null,
+        source: cached.source ?? fallbackMeta.source ?? null,
+        publishedAt: cached.published_at ?? fallbackMeta.publishedAt ?? null,
+        image: cached.image_url ?? fallbackMeta.image ?? null,
+        body: cached.body,
+        bodyParagraphs: cached.body_paragraphs,
+        originalUrl,
+        provider: "cache",
+        error: null,
+      };
+      return jsonResponse(response, 200);
+    }
+  }
+
+  const apifyItem = await callApify(originalUrl);
+  if (!apifyItem) {
+    return jsonResponse(
+      emptyResponse(originalUrl, "extractor unavailable", fallbackMeta),
+      200,
+    );
+  }
+
+  const rawText = extractRawText(apifyItem);
+  if (!rawText) {
+    return jsonResponse(
+      emptyResponse(originalUrl, "no content extracted", fallbackMeta),
+      200,
+    );
+  }
+
+  const cleaned = cleanText(rawText);
+  const paragraphs = toParagraphs(cleaned);
+  const body = paragraphs.join("\n\n");
+
+  if (paragraphs.length < MIN_PARAGRAPHS || body.length < MIN_BODY_CHARS) {
+    return jsonResponse(
+      emptyResponse(originalUrl, "content too short", fallbackMeta),
+      200,
+    );
+  }
+
+  const meta = apifyItem.metadata ?? {};
+  const title = meta.title ?? apifyItem.title ?? fallbackMeta.title ?? null;
+  const author = meta.author ?? apifyItem.author ?? apifyItem.byline ?? null;
+  const source = meta.source ?? meta.siteName ?? fallbackMeta.source ?? null;
+  const publishedAt = toIso(
+    meta.publishedAt ?? meta.publishedTime ?? fallbackMeta.publishedAt ?? null,
+  );
+  const image = meta.image ?? fallbackMeta.image ?? null;
+  const description = meta.description ?? payload.description ?? null;
+
+  if (client) {
+    await writeCache(client, {
+      original_url: originalUrl,
+      title,
+      description,
+      image_url: image,
+      source,
+      published_at: publishedAt,
+      body,
+      body_paragraphs: paragraphs,
+      provider: "apify",
+    });
+  }
+
+  const response: ArticleResponse = {
+    title,
+    author,
+    source,
+    publishedAt,
+    image,
+    body,
+    bodyParagraphs: paragraphs,
+    originalUrl,
+    provider: "apify",
+    error: null,
+  };
+  return jsonResponse(response, 200);
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
-
+  if (req.method !== "POST") {
+    return jsonResponse(emptyResponse("", "method not allowed"), 405);
+  }
   try {
-    if (req.method !== "POST") {
-      return fail("method not allowed", 405);
-    }
-
-    let payload: { url?: string };
-    try {
-      payload = await req.json();
-    } catch {
-      return fail("invalid json body");
-    }
-    const target = payload?.url;
-    if (!target || typeof target !== "string") {
-      return fail("missing url");
-    }
-
-    let parsed: URL;
-    try {
-      parsed = new URL(target);
-    } catch {
-      return fail("invalid url");
-    }
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-      return fail("unsupported protocol", 400, target);
-    }
-    if (!isAllowedHost(parsed.hostname)) {
-      return fail("hostname not allowed", 400, parsed.toString());
-    }
-
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-    let html: string;
-    try {
-      const res = await fetch(parsed.toString(), {
-        method: "GET",
-        headers: {
-          "User-Agent": USER_AGENT,
-          Accept: "text/html,application/xhtml+xml",
-        },
-        signal: ctrl.signal,
-        redirect: "follow",
-      });
-      if (!res.ok) return fail(`upstream ${res.status}`, 502, parsed.toString());
-      const ct = (res.headers.get("content-type") ?? "").toLowerCase();
-      if (!ct.includes("html")) return fail("not html", 415, parsed.toString());
-      html = await res.text();
-      if (html.length > MAX_BYTES) {
-        return fail("response too large", 413, parsed.toString());
-      }
-    } catch (err) {
-      const reason = (err as Error).name === "AbortError" ? "timeout" : "fetch failed";
-      return fail(reason, 504, parsed.toString());
-    } finally {
-      clearTimeout(timer);
-    }
-
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    if (!doc) return fail("parse failed", 502, parsed.toString());
-
-    const fromJsonLd = parseJsonLd(doc);
-    const fromMeta = parseMeta(doc);
-
-    const merged: Extracted = {
-      title: fromJsonLd.title ?? fromMeta.title ?? null,
-      author: fromJsonLd.author ?? fromMeta.author ?? null,
-      source: fromJsonLd.source ?? fromMeta.source ?? null,
-      publishedAt: toIsoSafe(fromJsonLd.publishedAt ?? fromMeta.publishedAt ?? null),
-      image: fromJsonLd.image ?? fromMeta.image ?? null,
-      body: fromJsonLd.body ?? extractBody(doc),
-    };
-
-    return jsonResponse({
-      title: merged.title,
-      author: merged.author,
-      source: merged.source,
-      publishedAt: merged.publishedAt,
-      image: merged.image,
-      body: merged.body,
-      originalUrl: parsed.toString(),
-    });
+    return await handlePost(req);
   } catch (err) {
     console.error("news-article unhandled:", err);
-    return fail("internal error", 500);
+    return jsonResponse(emptyResponse("", "internal error"), 200);
   }
 });
