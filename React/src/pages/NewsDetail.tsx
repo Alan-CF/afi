@@ -47,12 +47,15 @@ function ArticleSkeleton() {
 
 function BodySkeleton() {
   return (
-    <div className="mx-auto w-full max-w-3xl rounded-3xl bg-white border border-container-border shadow-sm px-5 py-7 md:px-8 md:py-10">
-      <div className="flex flex-col gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-4 w-full rounded skeleton-shimmer" />
-        ))}
-        <div className="h-4 w-2/3 rounded skeleton-shimmer" />
+    <div className="w-full rounded-3xl bg-white border border-container-border shadow-sm overflow-hidden">
+      <div className="h-1 w-full bg-primary" />
+      <div className="px-6 py-8 md:px-12 md:py-12">
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-4 w-full rounded skeleton-shimmer" />
+          ))}
+          <div className="h-4 w-2/3 rounded skeleton-shimmer" />
+        </div>
       </div>
     </div>
   );
@@ -153,9 +156,15 @@ export default function NewsDetail() {
   const body = scraped?.body ?? article?.body ?? null;
 
   function splitBody(raw: string): string[] {
-    const byBlank = raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    const byBlank = raw
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean);
     if (byBlank.length > 1) return byBlank;
-    return raw.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+    return raw
+      .split(/\n+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
   }
 
   const rawParagraphs: string[] =
@@ -176,6 +185,7 @@ export default function NewsDetail() {
   });
 
   const extractorFailed = scrapedAttempted && cleanParagraphs.length === 0;
+  const isVideoArticle = !!originalUrl && /\/video\/clip\//i.test(originalUrl);
   const imageInsertIndex =
     secondaryImage && cleanParagraphs.length >= 4
       ? Math.max(1, Math.floor(cleanParagraphs.length * 0.4))
@@ -186,7 +196,7 @@ export default function NewsDetail() {
       return (
         <blockquote
           key={key}
-          className="border-l-4 border-primary pl-5 py-1 font-lato text-lg md:text-xl text-secondary leading-8 md:leading-9 font-medium italic"
+          className="my-2 border-l-4 border-primary bg-primary/5 rounded-r-2xl pl-6 pr-5 py-4 font-lato text-lg md:text-2xl text-secondary leading-9 md:leading-10 font-medium italic"
         >
           {p}
         </blockquote>
@@ -279,55 +289,70 @@ export default function NewsDetail() {
             </header>
 
             <div className="mt-8 md:mt-10 fade-in-up stagger-3">
-              {scrapedLoading && cleanParagraphs.length === 0 && <BodySkeleton />}
+              {scrapedLoading && cleanParagraphs.length === 0 && (
+                <BodySkeleton />
+              )}
 
               {!scrapedLoading && cleanParagraphs.length > 0 && (
-                <div className="mx-auto w-full max-w-3xl rounded-3xl bg-white border border-container-border shadow-sm px-5 py-7 md:px-8 md:py-10">
-                  <div className="flex flex-col gap-6 md:gap-7">
-                    {cleanParagraphs.map((p, i) => (
-                      <Fragment key={`p-${i}`}>
-                        {i === imageInsertIndex && secondaryImage && (
-                          <figure className="my-2">
-                            <div className="relative aspect-[16/9] rounded-3xl overflow-hidden bg-secondary/10 border border-container-border shadow-sm">
-                              <NewsImageOrFallback
-                                thumbnail={secondaryImage.url}
-                                alt={secondaryImage.caption ?? article.title}
-                              />
-                            </div>
-                            {secondaryImage.caption && (
-                              <figcaption className="mt-3 font-lato text-xs md:text-sm text-text-light italic text-center">
-                                {secondaryImage.caption}
-                              </figcaption>
-                            )}
-                          </figure>
-                        )}
-                        {renderParagraph(p, `p-${i}`)}
-                      </Fragment>
-                    ))}
+                <div className="w-full rounded-3xl bg-white border border-container-border shadow-sm overflow-hidden">
+                  <div className="h-1 w-full bg-primary" />
+                  <div className="px-6 py-8 md:px-12 md:py-12">
+                    <div className="flex flex-col gap-6 md:gap-7">
+                      {cleanParagraphs.map((p, i) => (
+                        <Fragment key={`p-${i}`}>
+                          {i === imageInsertIndex && secondaryImage && (
+                            <figure className="my-4 -mx-6 md:-mx-12">
+                              <div className="relative aspect-[16/9] overflow-hidden bg-secondary/10 shadow-sm">
+                                <NewsImageOrFallback
+                                  thumbnail={secondaryImage.url}
+                                  alt={secondaryImage.caption ?? article.title}
+                                />
+                              </div>
+                              {secondaryImage.caption && (
+                                <figcaption className="mt-3 px-6 md:px-12 font-lato text-xs md:text-sm text-text-light italic text-center">
+                                  {secondaryImage.caption}
+                                </figcaption>
+                              )}
+                            </figure>
+                          )}
+                          {renderParagraph(p, `p-${i}`)}
+                        </Fragment>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
               {!scrapedLoading && cleanParagraphs.length === 0 && (
-                <div className="mx-auto w-full max-w-3xl rounded-3xl bg-white border border-container-border shadow-sm px-5 py-7 md:px-8 md:py-10">
-                  <p className="font-lato text-base md:text-lg text-text leading-relaxed">
-                    {extractorFailed
-                      ? 'Unable to load full content. Read the complete article from the original source.'
-                      : 'Full article content is available from the original source.'}
-                  </p>
+                <div className="w-full rounded-3xl bg-white border border-container-border shadow-sm overflow-hidden">
+                  <div className="h-1 w-full bg-primary" />
+                  <div className="px-6 py-8 md:px-12 md:py-12">
+                    {isVideoArticle && (
+                      <p className="mb-3 font-lato text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                        Video Story
+                      </p>
+                    )}
+                    <p className="font-lato text-base md:text-lg text-secondary leading-relaxed">
+                      {isVideoArticle
+                        ? 'This story plays as a video. Watch the full clip on ESPN.'
+                        : extractorFailed
+                          ? 'Unable to load full content. Read the complete article from the original source.'
+                          : 'Full article content is available from the original source.'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
 
             {originalUrl && (
-              <div className="mt-8 md:mt-10 mx-auto w-full max-w-3xl flex flex-col sm:flex-row gap-3 fade-in-up stagger-4">
+              <div className="mt-8 md:mt-10 w-full flex flex-col sm:flex-row gap-3 fade-in-up stagger-4">
                 <a
                   href={originalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 font-lato text-sm font-bold text-white hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
                 >
-                  Read original source
+                  {isVideoArticle ? 'Watch on ESPN' : 'Read original source'}
                   <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                 </a>
                 <button

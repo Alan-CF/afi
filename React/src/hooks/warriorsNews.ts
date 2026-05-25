@@ -125,48 +125,57 @@ function pickCategory(cats?: EspnCategory[]): string | undefined {
   return cats[0]?.description;
 }
 
+function isVideoLink(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return /\/video\/(clip|playlist)\//i.test(url);
+}
+
 export async function fetchWarriorsNews(
   limit = 6,
   signal?: AbortSignal,
 ): Promise<WarriorsNewsItem[]> {
   try {
-    const res = await fetch(`${ESPN_BASE}/news?team=9&limit=${limit}`, { signal });
+    const fetchLimit = Math.min(limit + 6, 50);
+    const res = await fetch(`${ESPN_BASE}/news?team=9&limit=${fetchLimit}`, { signal });
     if (!res.ok) return [];
     const data = await res.json();
     const articles: EspnArticle[] = data.articles ?? [];
-    return articles.slice(0, limit).map((a) => {
-      const id = String(a.id ?? a.headline ?? "");
-      const title = a.headline ?? "";
-      const slug = createArticleSlug(id, title);
-      const { hero, thumb, gallery } = pickImages(a.images);
-      const link =
-        a.links?.web?.href ?? a.links?.mobile?.href ?? "https://www.nba.com/warriors/news";
-      const publishedAt = a.published
-        ? new Date(a.published).toISOString()
-        : new Date().toISOString();
-      const updatedAt = a.lastModified ? new Date(a.lastModified).toISOString() : undefined;
-      const author = a.byline?.trim() || undefined;
-      const sourceName = a.source?.trim() || "ESPN";
-      const category = pickCategory(a.categories);
-      return {
-        id,
-        title,
-        link,
-        publishedAt,
-        thumbnail: thumb,
-        description: a.description ?? "",
-        slug,
-        image: hero,
-        originalUrl: link,
-        author,
-        source: sourceName,
-        sourceName,
-        provider: sourceName,
-        updatedAt,
-        category,
-        gallery,
-      };
-    });
+    return articles
+      .map((a) => {
+        const id = String(a.id ?? a.headline ?? "");
+        const title = a.headline ?? "";
+        const slug = createArticleSlug(id, title);
+        const { hero, thumb, gallery } = pickImages(a.images);
+        const link =
+          a.links?.web?.href ?? a.links?.mobile?.href ?? "https://www.nba.com/warriors/news";
+        const publishedAt = a.published
+          ? new Date(a.published).toISOString()
+          : new Date().toISOString();
+        const updatedAt = a.lastModified ? new Date(a.lastModified).toISOString() : undefined;
+        const author = a.byline?.trim() || undefined;
+        const sourceName = a.source?.trim() || "ESPN";
+        const category = pickCategory(a.categories);
+        return {
+          id,
+          title,
+          link,
+          publishedAt,
+          thumbnail: thumb,
+          description: a.description ?? "",
+          slug,
+          image: hero,
+          originalUrl: link,
+          author,
+          source: sourceName,
+          sourceName,
+          provider: sourceName,
+          updatedAt,
+          category,
+          gallery,
+        };
+      })
+      .filter((item) => !isVideoLink(item.link))
+      .slice(0, limit);
   } catch (err) {
     if ((err as Error).name !== "AbortError") console.warn("fetchWarriorsNews:", err);
     return [];
