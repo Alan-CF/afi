@@ -7,6 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
+const authFile = path.resolve(__dirname, 'playwright/.auth/user.json');
+
 export default defineConfig({
   testDir: './tests',
   /* Run tests in files in parallel */
@@ -32,7 +34,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'React/playwright/.auth/user.json',
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
@@ -41,7 +43,7 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
-        storageState: 'React/playwright/.auth/user.json',
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
@@ -50,7 +52,7 @@ export default defineConfig({
       name: 'webkit',
       use: {
         ...devices['Desktop Safari'],
-        storageState: 'React/playwright/.auth/user.json',
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
@@ -58,7 +60,7 @@ export default defineConfig({
       name: 'mobile-chrome',
       use: {
         ...devices['Pixel 7'],
-        storageState: 'React/playwright/.auth/user.json',
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
@@ -66,7 +68,7 @@ export default defineConfig({
       name: 'mobile-safari',
       use: {
         ...devices['iPhone 14'],
-        storageState: 'React/playwright/.auth/user.json',
+        storageState: authFile,
       },
       dependencies: ['setup'],
     },
