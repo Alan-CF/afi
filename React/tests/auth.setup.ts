@@ -5,10 +5,20 @@ const authFile = 'playwright/.auth/user.json';
 setup('auth', async ({ page }) => {
   await page.goto('/');
   const session = await getSupabaseSession();
-  await page.evaluate((sessionData) => {
-    localStorage.setItem('supabase.auth.token', JSON.stringify(sessionData));
-  }, session);
+  const supabaseId = process.env.SUPABASE_ID;
+
+  await page.evaluate(
+    ({ sessionData, supabaseId }) => {
+      localStorage.setItem(
+        `sb-${supabaseId}-auth-token`,
+        JSON.stringify(sessionData)
+      );
+    },
+    { sessionData: session, supabaseId }
+  );
   await page.context().storageState({ path: authFile });
+
+  await page.reload();
 });
 
 async function getSupabaseSession() {

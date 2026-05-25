@@ -32,7 +32,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'React/playwright/.auth/user.json',
       },
       dependencies: ['setup'],
     },
@@ -41,7 +41,7 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'React/playwright/.auth/user.json',
       },
       dependencies: ['setup'],
     },
@@ -50,7 +50,7 @@ export default defineConfig({
       name: 'webkit',
       use: {
         ...devices['Desktop Safari'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'React/playwright/.auth/user.json',
       },
       dependencies: ['setup'],
     },
@@ -58,7 +58,7 @@ export default defineConfig({
       name: 'mobile-chrome',
       use: {
         ...devices['Pixel 7'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'React/playwright/.auth/user.json',
       },
       dependencies: ['setup'],
     },
@@ -66,14 +66,15 @@ export default defineConfig({
       name: 'mobile-safari',
       use: {
         ...devices['iPhone 14'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'React/playwright/.auth/user.json',
       },
       dependencies: ['setup'],
     },
   ],
   webServer: {
-    command: 'npm run build && npm run preview', // El comando para levantar tu app
+    command: 'npm run build && npm run preview',
     url: 'http://localhost:4173', // La URL que Playwright esperará que esté activa
     reuseExistingServer: !process.env.CI, // En tu PC local, reutiliza el servidor si ya está abierto
+    timeout: 120 * 1000,
   },
 });
