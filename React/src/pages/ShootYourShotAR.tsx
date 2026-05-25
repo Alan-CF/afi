@@ -27,22 +27,22 @@ type ShootRankingPlayer = {
 function Hoop({ position }: { position: Position3D }) {
   return (
     <group position={position}>
-      <mesh position={[0, 0.45, 0]}>
+      <mesh position={[0, 0.34, 0]}>
         <boxGeometry args={[1.4, 0.85, 0.08]} />
         <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      <mesh position={[0, 0.45, 0.045]}>
+      <mesh position={[0, 0.34, 0.045]}>
         <boxGeometry args={[0.55, 0.35, 0.01]} />
         <meshStandardMaterial color="#1D428A" />
       </mesh>
 
-      <mesh position={[0, 0, 0.38]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, -0.11, 0.38]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.28, 0.025, 16, 64]} />
         <meshStandardMaterial color="#f97316" />
       </mesh>
 
-      <mesh position={[0, -0.7, -0.05]}>
+      <mesh position={[0, -0.81, -0.05]}>
         <cylinderGeometry args={[0.04, 0.04, 1.4, 24]} />
         <meshStandardMaterial color="#1D428A" />
       </mesh>
