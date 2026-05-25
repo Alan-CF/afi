@@ -1,8 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const TARGET_ENV = process.env.ENV_URL;
-console.log(`Running tests against: ${TARGET_ENV}`);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 export default defineConfig({
   testDir: './tests',
@@ -16,7 +19,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: TARGET_ENV,
+    baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
   },
 
@@ -68,4 +71,9 @@ export default defineConfig({
       dependencies: ['setup'],
     },
   ],
+  webServer: {
+    command: 'npm run build && npm run preview', // El comando para levantar tu app
+    url: 'http://localhost:4173', // La URL que Playwright esperará que esté activa
+    reuseExistingServer: !process.env.CI, // En tu PC local, reutiliza el servidor si ya está abierto
+  },
 });
