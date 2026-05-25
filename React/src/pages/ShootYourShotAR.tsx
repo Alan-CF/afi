@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useBasketballGame } from '../hooks/useBasketballGame';
 import { useThrowGesture } from '../hooks/useThrowGesture';
 import { useTexture } from '@react-three/drei';
+import { supabase } from '../lib/supabaseClient';
 
 type ThrowVelocity = {
   x: number;
@@ -13,25 +14,35 @@ type ThrowVelocity = {
 
 type Position3D = [number, number, number];
 
+type ShootRankingPlayer = {
+  profile_id: string;
+  name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  avg_score: number;
+  avg_success_rate: number;
+  games_played: number;
+};
+
 function Hoop({ position }: { position: Position3D }) {
   return (
     <group position={position}>
-      <mesh position={[0, 0.45, 0]}>
+      <mesh position={[0, 0.34, 0]}>
         <boxGeometry args={[1.4, 0.85, 0.08]} />
         <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      <mesh position={[0, 0.45, 0.045]}>
+      <mesh position={[0, 0.34, 0.045]}>
         <boxGeometry args={[0.55, 0.35, 0.01]} />
         <meshStandardMaterial color="#1D428A" />
       </mesh>
 
-      <mesh position={[0, 0, 0.38]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, -0.11, 0.38]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.28, 0.025, 16, 64]} />
         <meshStandardMaterial color="#f97316" />
       </mesh>
 
-      <mesh position={[0, -0.7, -0.05]}>
+      <mesh position={[0, -0.81, -0.05]}>
         <cylinderGeometry args={[0.04, 0.04, 1.4, 24]} />
         <meshStandardMaterial color="#1D428A" />
       </mesh>
@@ -70,10 +81,18 @@ function Ball({
   const hasScored = useRef(false);
   const hasBounced = useRef(false);
 
+  const getRandomStartPosition = (): Position3D => {
+    const randomX = THREE.MathUtils.randFloatSpread(0.8); 
+    const randomZ = THREE.MathUtils.randFloat(-1.35, -1.05);
+
+    return [randomX, -0.62, randomZ];
+  };
+
   const resetBall = () => {
     if (!ballRef.current) return;
 
-    ballRef.current.position.set(0, -0.62, -1.2);
+    const [x, y, z] = getRandomStartPosition();
+    ballRef.current.position.set(x, y, z);
     velocity.current.set(0, 0, 0);
     setIsThrown(false);
     hasScored.current = false;
@@ -84,7 +103,6 @@ function Ball({
     if (!ballRef.current) return;
 
     if (throwRequest && canThrow && !isThrown) {
-      ballRef.current.position.set(0, -0.62, -1.2);
       velocity.current.set(throwRequest.x, throwRequest.y, throwRequest.z);
       setIsThrown(true);
       hasScored.current = false;
@@ -180,6 +198,12 @@ function ShootYourShotAR() {
   const [hoopPosition] = useState<Position3D>([0, 0.75, -4]);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
+  const [totalShots, setTotalShots] = useState(0);
+  const [gameSaved, setGameSaved] = useState(false);
+  const [globalRanking, setGlobalRanking] = useState<ShootRankingPlayer[]>([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingMode, setRankingMode] = useState<'global' | 'friends'>('global');
+  const [friendsRanking, setFriendsRanking] = useState<ShootRankingPlayer[]>([]);
 
   const {
     score,
@@ -198,6 +222,7 @@ function ShootYourShotAR() {
     onThrow: (velocity) => {
       setThrowRequest(velocity);
       setHasShotOnce(true);
+      setTotalShots((current) => current + 1);
     },
   });
 
@@ -230,7 +255,56 @@ function ShootYourShotAR() {
     resetGame();
     setThrowRequest(null);
     setHasShotOnce(false);
+    setTotalShots(0);
+    setGameSaved(false);
   };
+
+  const loadRankings = async () => {
+    setRankingLoading(true);
+
+    const [globalResponse, friendsResponse] = await Promise.all([
+      supabase.from('shoot_your_shot_global_ranking').select('*'),
+      supabase.rpc('get_shoot_your_shot_friends_ranking'),
+    ]);
+
+    if (!globalResponse.error) {
+      setGlobalRanking(globalResponse.data ?? []);
+    }
+
+    if (!friendsResponse.error) {
+      setFriendsRanking(friendsResponse.data ?? []);
+    }
+
+    setRankingLoading(false);
+  };
+
+  useEffect(() => {
+    const saveGame = async () => {
+      if (status !== 'finished' || gameSaved) return;
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const successRate =
+        totalShots > 0 ? Number(((score / totalShots) * 100).toFixed(2)) : 0;
+
+      await supabase.from('shoot_your_shot_games').insert({
+        profile_id: user.id,
+        score,
+        total_shots: totalShots,
+        success_rate: successRate,
+        duration_seconds: 60,
+      });
+
+      setGameSaved(true);
+      await loadRankings();
+    };
+
+    saveGame();
+  }, [status, gameSaved, score, totalShots]);
 
   useEffect(() => {
     return () => {
@@ -238,7 +312,13 @@ function ShootYourShotAR() {
     };
     }, []);
 
-  return (
+  const successRate =
+    totalShots > 0 ? Math.round((score / totalShots) * 100) : 0;
+
+  const activeRanking =
+    rankingMode === 'global' ? globalRanking : friendsRanking;
+
+    return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
         <section className="rounded-2xl bg-white px-4 py-6 text-center mb-5 border border-[var(--color-container-border)]">
@@ -441,8 +521,105 @@ function ShootYourShotAR() {
                 </h2>
 
                 <p className="text-6xl font-extrabold text-primary mt-4">
-                  {score}
+                  {score}/{totalShots}
                 </p>
+
+                <p className="mt-2 text-lg font-bold text-secondary/70">
+                  {successRate}% success rate
+                </p>
+
+                <div className="mt-6 text-left">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-extrabold uppercase tracking-[0.2em] text-secondary/70">
+                      Top 5
+                    </h3>
+
+                    <div className="grid grid-cols-2 rounded-xl bg-[var(--color-text-light-soft)] p-1">
+                      <button
+                        type="button"
+                        onClick={() => setRankingMode('global')}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide transition ${
+                          rankingMode === 'global'
+                            ? 'bg-secondary text-white'
+                            : 'text-secondary/60'
+                        }`}
+                      >
+                        Global
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setRankingMode('friends')}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide transition ${
+                          rankingMode === 'friends'
+                            ? 'bg-secondary text-white'
+                            : 'text-secondary/60'
+                        }`}
+                      >
+                        Friends
+                      </button>
+                    </div>
+                  </div>
+
+                  {rankingLoading ? (
+                    <div className="flex justify-center py-4">
+                      <div className="h-6 w-6 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
+                    </div>
+                  ) : activeRanking.length === 0 ? (
+                    <p className="rounded-2xl bg-[var(--color-text-light-soft)] px-4 py-3 text-center text-sm font-semibold text-secondary/60">
+                      {rankingMode === 'global'
+                        ? 'No scores yet.'
+                        : 'No friend scores yet.'}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeRanking.map((player, index) => (
+                        <div
+                          key={player.profile_id}
+                          className="flex items-center gap-3 rounded-2xl bg-[var(--color-text-light-soft)] px-3 py-2"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-extrabold text-white">
+                            {index + 1}
+                          </div>
+
+                          {player.avatar_url ? (
+                            <img
+                              src={player.avatar_url}
+                              alt={player.name ?? player.username ?? 'Player'}
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-secondary">
+                              {(player.name ?? player.username ?? '?')
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-extrabold text-secondary">
+                              {player.name ?? player.username ?? 'Unknown Player'}
+                            </p>
+
+                            <p className="text-xs font-semibold text-secondary/50">
+                              {player.games_played} games
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="text-sm font-extrabold text-primary">
+                              {player.avg_score}
+                            </p>
+
+                            <p className="text-xs font-bold text-secondary/50">
+                              {player.avg_success_rate}%
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="button"
