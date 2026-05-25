@@ -835,7 +835,10 @@ function markdownToPlainText(raw: string): string {
   out = out.replace(/^\s*[-*+]\s+/gm, "");
   out = out.replace(/\\([\[\]\\()*_`#+\-.!>])/g, "$1");
   out = out.replace(/(\*\*|__)(.+?)\1/g, "$2");
-  out = out.replace(/(?<![A-Za-z0-9])(\*|_)(?=\S)([^*_\n]+?)\1(?![A-Za-z0-9])/g, "$2");
+  out = out.replace(
+    /(?<![A-Za-z0-9])(\*|_)(?=\S)([^*_\n]+?)\1(?![A-Za-z0-9])/g,
+    "$2",
+  );
   out = out.replace(/`([^`\n]+)`/g, "$1");
   out = out.replace(/\n{3,}/g, "\n\n");
   return out;
@@ -887,9 +890,10 @@ function stripTrailingCredit(p: string): string {
     .trim();
 }
 
-function sanitizeCachedParagraphs(
-  paragraphs: string[],
-): { paragraphs: string[]; changed: boolean } {
+function sanitizeCachedParagraphs(paragraphs: string[]): {
+  paragraphs: string[];
+  changed: boolean;
+} {
   const seen = new Set<string>();
   const out: string[] = [];
   let changed = false;
@@ -939,10 +943,16 @@ function isSectionHeader(p: string): boolean {
 
 function isPickInfoLine(p: string): boolean {
   if (!p) return false;
-  if (/^[A-Z][A-Za-z'’\-\.\s]+(?:\s*\([^)]+\))?\s*,\s*[A-Z][A-Z\/]{0,5}\s*,\s*[A-Z][A-Za-z'’\-\s]+$/.test(p)) {
+  if (
+    /^[A-Z][A-Za-z'’\-\.\s]+(?:\s*\([^)]+\))?\s*,\s*[A-Z][A-Z\/]{0,5}\s*,\s*[A-Z][A-Za-z'’\-\s]+$/.test(
+      p,
+    )
+  ) {
     return true;
   }
-  if (/^(Freshman|Sophomore|Junior|Senior|Graduate|Redshirt(?:\s+\w+)?)$/i.test(p)) {
+  if (
+    /^(Freshman|Sophomore|Junior|Senior|Graduate|Redshirt(?:\s+\w+)?)$/i.test(p)
+  ) {
     return true;
   }
   return false;
@@ -950,7 +960,9 @@ function isPickInfoLine(p: string): boolean {
 
 function isCombineStatLine(p: string): boolean {
   if (!p) return false;
-  return /^(Height(\s+without\s+shoes)?|Weight|Standing\s+reach|Wingspan|Body\s+fat|Vertical|Max\s+vert(?:ical)?|Lane\s+agility|Shuttle\s+run|Three[-\s]quarter\s+sprint|Hand\s+(length|width))\s*[:|]/i.test(p);
+  return /^(Height(\s+without\s+shoes)?|Weight|Standing\s+reach|Wingspan|Body\s+fat|Vertical|Max\s+vert(?:ical)?|Lane\s+agility|Shuttle\s+run|Three[-\s]quarter\s+sprint|Hand\s+(length|width))\s*[:|]/i.test(
+    p,
+  );
 }
 
 function toParagraphs(cleaned: string): string[] {
@@ -986,10 +998,7 @@ function toParagraphs(cleaned: string): string[] {
     if (!p) continue;
     if (isNoiseLine(p)) continue;
     const structural =
-      rank ||
-      isSectionHeader(p) ||
-      isPickInfoLine(p) ||
-      isCombineStatLine(p);
+      rank || isSectionHeader(p) || isPickInfoLine(p) || isCombineStatLine(p);
     if (!structural && p.length < MIN_PARAGRAPH_CHARS) continue;
     if (structural && p.length < 4) continue;
     const key = p.toLowerCase();

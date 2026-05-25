@@ -34,18 +34,18 @@ export default function GameScheduleCard({ event, className = "" }: Props) {
   return (
     <button
       type="button"
-      onClick={() => navigate(isLive ? "/rooms" : "/events")}
+      onClick={() => navigate(`/events/game/${event.id}`)}
       className={`group relative flex flex-col w-full text-left rounded-3xl bg-white border border-container-border overflow-hidden lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${isLive ? "border-l-4 border-l-live" : ""} ${className}`}
       aria-label={event.title}
     >
       <div className="flex items-center justify-between px-5 md:px-6 pt-5 md:pt-6">
-        <p className="font-lato text-xs text-text-light tabular-nums">
+        <p className="font-lato text-xs font-bold text-[#475569] tabular-nums">
           {formatDateTime(event.startAt)}
         </p>
         {isLive ? (
           <LiveBadge />
         ) : (
-          <span className={`font-lato text-[0.625rem] font-bold uppercase tracking-[0.16em] ${isFinal && hasScore ? "text-text-light" : "text-primary"}`}>
+          <span className={`font-lato text-[0.625rem] font-bold uppercase tracking-[0.16em] ${isFinal && hasScore ? "text-[#475569]" : "text-primary"}`}>
             {statusLabel}
           </span>
         )}
@@ -114,16 +114,16 @@ export default function GameScheduleCard({ event, className = "" }: Props) {
       <div className="flex items-center justify-between px-5 md:px-6 pb-5 md:pb-6 gap-3 mt-auto">
         <div className="min-w-0 flex-1">
           {event.venue && (
-            <p className="font-lato text-xs text-text-light truncate">{event.venue}</p>
+            <p className="font-lato text-xs font-bold text-[#1f3668] truncate">{event.venue}</p>
           )}
           {event.meta.broadcast && (
-            <p className="font-lato text-[0.625rem] text-text-light/70 uppercase tracking-wider truncate">
+            <p className="font-lato text-[0.625rem] font-bold text-[#475569] uppercase tracking-wider truncate">
               {event.meta.broadcast}
             </p>
           )}
         </div>
         <span className="font-lato text-xs font-bold text-secondary group-hover:text-[#5780AE] transition-colors shrink-0">
-          {isLive ? "Join room →" : "Reserve a room →"}
+          See details →
         </span>
       </div>
     </button>

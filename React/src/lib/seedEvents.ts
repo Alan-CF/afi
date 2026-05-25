@@ -1,4 +1,5 @@
 import type { UnifiedEvent } from "../hooks/events";
+import { listSeedFanEventDetails } from "./seedFanEventDetails";
 
 const WARRIORS_LOGO = "https://a.espncdn.com/i/teamlogos/nba/500/gs.png";
 
@@ -60,67 +61,20 @@ export const SEED_GAMES: UnifiedEvent[] = [
   buildGame("seed-game-okc", "OKC", 24, false, "Paycom Center", "TNT"),
 ];
 
-export const SEED_FAN_EVENTS: UnifiedEvent[] = [
-  {
-    id: "seed-fan-watch-mission",
+export const SEED_FAN_EVENTS: UnifiedEvent[] = listSeedFanEventDetails().map(
+  (seed) => ({
+    id: seed.id,
     type: "fan",
-    title: "Watch Party · Mission Bay",
-    subtitle: "The Yard, San Francisco",
-    startAt: daysFromNow(2, 18, 30),
-    venue: "The Yard",
-    imageUrl: "/watchparty.png",
-    meta: { goingCount: 142 },
-  },
-  {
-    id: "seed-fan-jersey-signing",
-    type: "fan",
-    title: "Legends Jersey Signing",
-    subtitle: "Warriors Pop-up, Oakland",
-    startAt: daysFromNow(7, 14, 0),
-    venue: "Warriors Pop-up Store",
-    imageUrl: "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?auto=format&fit=crop&w=1200&q=80",
-    meta: { goingCount: 86 },
-  },
-  {
-    id: "seed-fan-bay-bridge-run",
-    type: "fan",
-    title: "Bay Bridge Fan Run",
-    subtitle: "Crissy Field, San Francisco",
-    startAt: daysFromNow(11, 8, 0),
-    venue: "Crissy Field",
-    imageUrl: "/baybridgefanrun.png",
-    meta: { goingCount: 311 },
-  },
-  {
-    id: "seed-fan-trivia-night",
-    type: "fan",
-    title: "Warriors Trivia Night",
-    subtitle: "Bartlett Hall, San Francisco",
-    startAt: daysFromNow(15, 20, 0),
-    venue: "Bartlett Hall",
-    imageUrl: "/trivianight.png",
-    meta: { goingCount: 54 },
-  },
-  {
-    id: "seed-fan-court-session",
-    type: "fan",
-    title: "Pickup at the Pier",
-    subtitle: "Pier 70, San Francisco",
-    startAt: daysFromNow(20, 17, 0),
-    venue: "Pier 70 Courts",
-    imageUrl: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80",
-    meta: { goingCount: 92 },
-  },
-  {
-    id: "seed-fan-finals-watch",
-    type: "fan",
-    title: "Playoff Night CDMX",
-    subtitle: "Reforma Sports Bar, Mexico City",
-    startAt: daysFromNow(28, 19, 0),
-    venue: "Reforma Sports Bar",
-    imageUrl: "/playoffnight.png",
-    meta: { goingCount: 178 },
-  },
-];
+    title: seed.title,
+    subtitle: [seed.venue, seed.city].filter(Boolean).join(", "),
+    startAt: seed.startAt,
+    venue: seed.venue,
+    imageUrl: seed.coverImageUrl,
+    tags: seed.tags,
+    meta: {
+      goingCount: seed.attendees.length,
+    },
+  })
+);
 
 export const SEED_EVENTS: UnifiedEvent[] = [...SEED_GAMES, ...SEED_FAN_EVENTS];
