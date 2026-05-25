@@ -71,10 +71,18 @@ function Ball({
   const hasScored = useRef(false);
   const hasBounced = useRef(false);
 
+  const getRandomStartPosition = (): Position3D => {
+    const randomX = THREE.MathUtils.randFloatSpread(0.8); 
+    const randomZ = THREE.MathUtils.randFloat(-1.35, -1.05);
+
+    return [randomX, -0.62, randomZ];
+  };
+
   const resetBall = () => {
     if (!ballRef.current) return;
 
-    ballRef.current.position.set(0, -0.62, -1.2);
+    const [x, y, z] = getRandomStartPosition();
+    ballRef.current.position.set(x, y, z);
     velocity.current.set(0, 0, 0);
     setIsThrown(false);
     hasScored.current = false;
@@ -85,7 +93,6 @@ function Ball({
     if (!ballRef.current) return;
 
     if (throwRequest && canThrow && !isThrown) {
-      ballRef.current.position.set(0, -0.62, -1.2);
       velocity.current.set(throwRequest.x, throwRequest.y, throwRequest.z);
       setIsThrown(true);
       hasScored.current = false;
