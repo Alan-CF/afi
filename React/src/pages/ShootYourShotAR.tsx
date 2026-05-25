@@ -202,6 +202,8 @@ function ShootYourShotAR() {
   const [gameSaved, setGameSaved] = useState(false);
   const [globalRanking, setGlobalRanking] = useState<ShootRankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingMode, setRankingMode] = useState<'global' | 'friends'>('global');
+  const [friendsRanking, setFriendsRanking] = useState<ShootRankingPlayer[]>([]);
 
   const {
     score,
@@ -257,15 +259,20 @@ function ShootYourShotAR() {
     setGameSaved(false);
   };
 
-  const loadGlobalRanking = async () => {
+  const loadRankings = async () => {
     setRankingLoading(true);
 
-    const { data, error } = await supabase
-      .from('shoot_your_shot_global_ranking')
-      .select('*');
+    const [globalResponse, friendsResponse] = await Promise.all([
+      supabase.from('shoot_your_shot_global_ranking').select('*'),
+      supabase.rpc('get_shoot_your_shot_friends_ranking'),
+    ]);
 
-    if (!error) {
-      setGlobalRanking(data ?? []);
+    if (!globalResponse.error) {
+      setGlobalRanking(globalResponse.data ?? []);
+    }
+
+    if (!friendsResponse.error) {
+      setFriendsRanking(friendsResponse.data ?? []);
     }
 
     setRankingLoading(false);
@@ -293,7 +300,7 @@ function ShootYourShotAR() {
       });
 
       setGameSaved(true);
-      await loadGlobalRanking();
+      await loadRankings();
     };
 
     saveGame();
@@ -307,6 +314,9 @@ function ShootYourShotAR() {
 
   const successRate =
     totalShots > 0 ? Math.round((score / totalShots) * 100) : 0;
+
+  const activeRanking =
+    rankingMode === 'global' ? globalRanking : friendsRanking;
 
     return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
@@ -519,23 +529,51 @@ function ShootYourShotAR() {
                 </p>
 
                 <div className="mt-6 text-left">
-                  <div className="mb-3 flex items-center justify-between">
+                  <div className="mb-3 flex items-center justify-between gap-3">
                     <h3 className="text-sm font-extrabold uppercase tracking-[0.2em] text-secondary/70">
-                      Global Top 5
+                      Top 5
                     </h3>
+
+                    <div className="grid grid-cols-2 rounded-xl bg-[var(--color-text-light-soft)] p-1">
+                      <button
+                        type="button"
+                        onClick={() => setRankingMode('global')}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide transition ${
+                          rankingMode === 'global'
+                            ? 'bg-secondary text-white'
+                            : 'text-secondary/60'
+                        }`}
+                      >
+                        Global
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setRankingMode('friends')}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide transition ${
+                          rankingMode === 'friends'
+                            ? 'bg-secondary text-white'
+                            : 'text-secondary/60'
+                        }`}
+                      >
+                        Friends
+                      </button>
+                    </div>
                   </div>
 
                   {rankingLoading ? (
                     <div className="flex justify-center py-4">
                       <div className="h-6 w-6 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
                     </div>
-                  ) : globalRanking.length === 0 ? (
+                  ) : activeRanking.length === 0 ? (
                     <p className="rounded-2xl bg-[var(--color-text-light-soft)] px-4 py-3 text-center text-sm font-semibold text-secondary/60">
-                      No scores yet.
+                      {rankingMode === 'global'
+                        ? 'No scores yet.'
+                        : 'No friend scores yet.'}
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      {globalRanking.map((player, index) => (
+                      {activeRanking.map((player, index) => (
                         <div
                           key={player.profile_id}
                           className="flex items-center gap-3 rounded-2xl bg-[var(--color-text-light-soft)] px-3 py-2"
@@ -552,7 +590,9 @@ function ShootYourShotAR() {
                             />
                           ) : (
                             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-secondary">
-                              {(player.name ?? player.username ?? '?').charAt(0).toUpperCase()}
+                              {(player.name ?? player.username ?? '?')
+                                .charAt(0)
+                                .toUpperCase()}
                             </div>
                           )}
 
@@ -560,6 +600,7 @@ function ShootYourShotAR() {
                             <p className="truncate text-sm font-extrabold text-secondary">
                               {player.name ?? player.username ?? 'Unknown Player'}
                             </p>
+
                             <p className="text-xs font-semibold text-secondary/50">
                               {player.games_played} games
                             </p>
@@ -569,6 +610,7 @@ function ShootYourShotAR() {
                             <p className="text-sm font-extrabold text-primary">
                               {player.avg_score}
                             </p>
+
                             <p className="text-xs font-bold text-secondary/50">
                               {player.avg_success_rate}%
                             </p>
