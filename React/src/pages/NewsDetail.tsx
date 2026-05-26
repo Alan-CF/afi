@@ -50,6 +50,18 @@ function BodySkeleton() {
     <div className="w-full rounded-3xl bg-white border border-container-border shadow-sm overflow-hidden">
       <div className="h-1 w-full bg-primary" />
       <div className="px-6 py-8 md:px-12 md:py-12">
+        <div className="mb-5 flex items-center gap-3">
+          <span className="relative inline-flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+          </span>
+          <p className="font-lato text-xs md:text-sm font-bold uppercase tracking-[0.18em] text-primary">
+            Obtaining full article from original source
+          </p>
+        </div>
+        <p className="mb-6 font-lato text-sm md:text-base text-text-light leading-relaxed">
+          We're pulling the story body from ESPN. This usually takes a few seconds.
+        </p>
         <div className="flex flex-col gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-4 w-full rounded skeleton-shimmer" />
