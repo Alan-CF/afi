@@ -28,6 +28,24 @@ function write(seedId: string, attending: boolean) {
   }
 }
 
+export function listAttendingSeedIds(): Set<string> {
+  const result = new Set<string>();
+  if (typeof window === "undefined") return result;
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      const value = window.localStorage.getItem(key);
+      if (value === "1") {
+        result.add(key.slice(STORAGE_PREFIX.length));
+      }
+    }
+  } catch (_err) {
+    void _err;
+  }
+  return result;
+}
+
 export interface UseSeedAttendanceResult {
   isAttending: boolean;
   toggle: () => Promise<void>;

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 
 interface Props {
@@ -24,10 +25,28 @@ function buildOsmDirectionsUrl(lat: number, lng: number): string {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
 }
 
-function buildOsmQuerySrc(query: string): string {
-  return `https://www.openstreetmap.org/export/embed.html?layer=mapnik&query=${encodeURIComponent(
-    query
-  )}`;
+async function geocodeQuery(
+  query: string,
+  signal: AbortSignal
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+      query
+    )}`;
+    const res = await fetch(url, {
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{ lat: string; lon: string }>;
+    if (!data || data.length === 0) return null;
+    const lat = Number.parseFloat(data[0].lat);
+    const lng = Number.parseFloat(data[0].lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
 }
 
 export default function EventMapPreview({
@@ -38,19 +57,41 @@ export default function EventMapPreview({
   height = "h-40 md:h-52",
   rounded = "rounded-2xl",
 }: Props) {
-  const hasCoords = typeof lat === "number" && typeof lng === "number";
-  const src = hasCoords
-    ? buildOsmSrc(lat as number, lng as number)
-    : query
-    ? buildOsmQuerySrc(query)
-    : null;
+  const [resolved, setResolved] = useState<{ lat: number; lng: number } | null>(
+    typeof lat === "number" && typeof lng === "number"
+      ? { lat, lng }
+      : null
+  );
+  const [resolving, setResolving] = useState(false);
 
-  if (!src) {
+  useEffect(() => {
+    if (typeof lat === "number" && typeof lng === "number") {
+      setResolved({ lat, lng });
+      return;
+    }
+    if (!query || !query.trim()) {
+      setResolved(null);
+      return;
+    }
+    const controller = new AbortController();
+    setResolving(true);
+    geocodeQuery(query.trim(), controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        setResolved(result);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setResolving(false);
+      });
+    return () => controller.abort();
+  }, [lat, lng, query]);
+
+  if (!resolved) {
     return (
       <div
-        className={`flex w-full items-center justify-center bg-[#eef3fb] font-lato text-sm text-[#475569] ${height} ${rounded}`}
+        className={`flex w-full items-center justify-center border border-container-border bg-[#f6f8fc] font-lato text-sm font-bold text-[#475569] ${height} ${rounded}`}
       >
-        Location not set
+        {resolving ? "Locating map..." : "Location not set"}
       </div>
     );
   }
@@ -60,23 +101,21 @@ export default function EventMapPreview({
       className={`relative overflow-hidden border border-container-border bg-white ${height} ${rounded}`}
     >
       <iframe
-        src={src}
+        src={buildOsmSrc(resolved.lat, resolved.lng)}
         title={label ?? "Event location map"}
         className="absolute inset-0 h-full w-full border-0"
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      {hasCoords && (
-        <a
-          href={buildOsmDirectionsUrl(lat as number, lng as number)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 font-lato text-[0.7rem] font-bold text-secondary shadow-[0_8px_18px_rgba(15,23,42,0.18)] transition-colors hover:bg-white"
-        >
-          Open map
-          <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-        </a>
-      )}
+      <a
+        href={buildOsmDirectionsUrl(resolved.lat, resolved.lng)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-container-border bg-white px-3 py-1.5 font-lato text-[0.7rem] font-bold text-secondary shadow-[0_4px_12px_rgba(15,23,42,0.1)] transition-colors hover:bg-[#edf3ff]"
+      >
+        Open map
+        <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+      </a>
     </div>
   );
 }

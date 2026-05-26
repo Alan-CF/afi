@@ -121,7 +121,7 @@ export default function Events() {
           (a, b) =>
             new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
         )
-        .slice(0, 12),
+        .slice(0, 6),
     [future]
   );
 
@@ -150,9 +150,6 @@ export default function Events() {
                 <h2 className="mt-2 font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
                   Warriors Games
                 </h2>
-                <p className="mt-1 font-lato text-xs md:text-sm font-bold text-[#475569]">
-                  Upcoming matchups and watch rooms.
-                </p>
               </header>
               <SectionGrid
                 events={games}
@@ -169,9 +166,6 @@ export default function Events() {
                 <h2 className="mt-2 font-anton text-xl md:text-2xl lg:text-3xl text-secondary leading-tight">
                   Fan Events
                 </h2>
-                <p className="mt-1 font-lato text-xs md:text-sm font-bold text-[#475569]">
-                  Watch parties, meetups, and fan-run moments.
-                </p>
               </header>
 
               <SectionGrid

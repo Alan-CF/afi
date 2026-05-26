@@ -2,16 +2,28 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   LockClosedIcon,
+  PhotoIcon,
+  PlusIcon,
+  StarIcon,
+  TrashIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/solid";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import LocationPicker, {
   type PickedLocation,
 } from "../components/events/LocationPicker";
 import {
+  deleteEventImage,
+  deleteFanEvent,
   fetchFanEventDetail,
+  listEventImages,
+  setEventMainImage,
   updateFanEvent,
+  uploadEventImage,
+  validateEventImageFile,
   type FanEventDetail,
+  type FanEventImage,
 } from "../lib/eventsApi";
 import { useProfile } from "../hooks/useProfile";
 
@@ -72,6 +84,68 @@ export default function EditEvent() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [existingImages, setExistingImages] = useState<FanEventImage[]>([]);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const newImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (validId == null) return;
+    listEventImages(validId)
+      .then(setExistingImages)
+      .catch((err) => {
+        console.error("listEventImages:", err);
+      });
+  }, [validId]);
+
+  useEffect(() => {
+    const urls = newImageFiles.map((file) => URL.createObjectURL(file));
+    setNewImagePreviews(urls);
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url);
+    };
+  }, [newImageFiles]);
+
+  const visibleExisting = existingImages.filter(
+    (img) => !pendingDeleteIds.includes(img.id)
+  );
+
+  function handleMarkRemove(id: number) {
+    setPendingDeleteIds((current) =>
+      current.includes(id) ? current : [...current, id]
+    );
+    setImageError(null);
+  }
+
+  function handleAddImages(event: React.ChangeEvent<HTMLInputElement>) {
+    const list = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (list.length === 0) return;
+    const valid: File[] = [];
+    let lastError: string | null = null;
+    for (const file of list) {
+      const error = validateEventImageFile(file);
+      if (error) {
+        lastError = error;
+        continue;
+      }
+      valid.push(file);
+    }
+    if (lastError) setImageError(lastError);
+    if (valid.length > 0) {
+      setNewImageFiles((current) => [...current, ...valid]);
+      setImageError(lastError);
+    }
+  }
+
+  function handleRemoveNew(index: number) {
+    setNewImageFiles((current) => current.filter((_, i) => i !== index));
+    setImageError(null);
+  }
 
   useEffect(() => {
     if (!hasLoadedOnce) return;
@@ -136,6 +210,25 @@ export default function EditEvent() {
     startAt.length > 0 &&
     !submitting;
 
+  async function handleDelete() {
+    if (!event || !isOrganizer || deleting) return;
+    const confirmed = window.confirm(
+      `Delete "${event.title}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      setDeleting(true);
+      setSubmitError(null);
+      await deleteFanEvent(event.id);
+      navigate("/events", { replace: true });
+    } catch (err) {
+      console.error("EditEvent delete:", err);
+      setSubmitError("Couldn't delete event. Please try again later.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function handleSubmit(formEvent: React.FormEvent) {
     formEvent.preventDefault();
     if (!canSubmit || !event) return;
@@ -163,21 +256,57 @@ export default function EditEvent() {
           ? {}
           : {
               venue: buildVenueLine(location),
-              address: location.address || null,
               city: location.city || null,
-              state: location.state || null,
               country: location.country || null,
-              countryCode: location.countryCode || null,
-              lat: Number.isFinite(location.lat) ? location.lat : null,
-              lng: Number.isFinite(location.lng) ? location.lng : null,
             }),
       });
+
+      const removedImages = existingImages.filter((img) =>
+        pendingDeleteIds.includes(img.id)
+      );
+      for (const image of removedImages) {
+        try {
+          await deleteEventImage(image);
+        } catch (err) {
+          console.error("EditEvent delete image:", err);
+        }
+      }
+
+      const remainingExisting = existingImages.filter(
+        (img) => !pendingDeleteIds.includes(img.id)
+      );
+      const maxSort = remainingExisting.reduce(
+        (acc, img) => Math.max(acc, img.sortOrder),
+        -1
+      );
+
+      const uploadedImages: FanEventImage[] = [];
+      for (let i = 0; i < newImageFiles.length; i++) {
+        try {
+          const uploaded = await uploadEventImage(
+            event.id,
+            newImageFiles[i],
+            maxSort + 1 + i
+          );
+          uploadedImages.push(uploaded);
+        } catch (err) {
+          console.error("EditEvent upload image:", err);
+        }
+      }
+
+      const coverCandidate = remainingExisting[0] ?? uploadedImages[0] ?? null;
+      if (coverCandidate) {
+        try {
+          await setEventMainImage(event.id, coverCandidate);
+        } catch (err) {
+          console.error("EditEvent set main image:", err);
+        }
+      }
+
       navigate(`/events/${event.id}`, { replace: true });
     } catch (err) {
       console.error("EditEvent:", err);
-      setSubmitError(
-        err instanceof Error ? err.message : "Could not save changes."
-      );
+      setSubmitError("Couldn't save changes. Please try again later.");
     } finally {
       setSubmitting(false);
     }
@@ -231,6 +360,103 @@ export default function EditEvent() {
               onSubmit={handleSubmit}
               className="mt-6 flex flex-1 flex-col gap-5"
             >
+              <div>
+                <label className="mb-2 block font-anton text-lg text-secondary">
+                  Images
+                </label>
+                <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#c9d6ea] bg-white p-3">
+                  {visibleExisting.length === 0 &&
+                  newImageFiles.length === 0 ? (
+                    <p className="font-lato text-xs text-[#475569]">
+                      No images yet. Add one below.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {visibleExisting.map((image, index) => (
+                        <div
+                          key={image.id}
+                          className="relative aspect-square overflow-hidden rounded-xl border border-container-border bg-[#f6f8fc]"
+                        >
+                          <img
+                            src={image.imageUrl}
+                            alt={`Existing ${index + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            onError={(e) => {
+                              (
+                                e.currentTarget as HTMLImageElement
+                              ).style.display = "none";
+                            }}
+                          />
+                          {index === 0 && (
+                            <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 font-lato text-[0.55rem] font-bold uppercase tracking-[0.16em] text-secondary">
+                              <StarIcon className="h-3 w-3" />
+                              Cover
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleMarkRemove(image.id)}
+                            disabled={submitting}
+                            aria-label="Remove image"
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-[#be123c] shadow-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <XMarkIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {newImagePreviews.map((url, index) => (
+                        <div
+                          key={`new-${url}-${index}`}
+                          className="relative aspect-square overflow-hidden rounded-xl border-2 border-dashed border-secondary/40 bg-[#f6faff]"
+                        >
+                          <img
+                            src={url}
+                            alt={`New ${index + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                          <span className="absolute left-1.5 top-1.5 rounded-full bg-secondary px-2 py-0.5 font-lato text-[0.55rem] font-bold uppercase tracking-[0.16em] text-white">
+                            New
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNew(index)}
+                            disabled={submitting}
+                            aria-label="Remove new image"
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-[#be123c] shadow-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <XMarkIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => newImageInputRef.current?.click()}
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c9d6ea] bg-[#fbfdff] px-4 py-2 font-lato text-xs font-bold uppercase tracking-[0.08em] text-secondary transition-colors hover:border-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" />
+                    <PhotoIcon className="h-3.5 w-3.5" />
+                    Add photo
+                  </button>
+                  <input
+                    ref={newImageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    className="hidden"
+                    onChange={handleAddImages}
+                    disabled={submitting}
+                  />
+                  {imageError && (
+                    <p className="font-lato text-xs text-[#be123c]">
+                      {imageError}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="mb-2 block font-anton text-lg text-secondary">
                   Event type
@@ -434,20 +660,30 @@ export default function EditEvent() {
                 </div>
               )}
 
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={submitting || deleting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#be123c] py-3 font-lato text-sm font-bold text-[#be123c] transition-colors hover:bg-[#be123c] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <TrashIcon className="h-4 w-4" />
+                {deleting ? "Deleting..." : "Delete event"}
+              </button>
+
               <div className="sticky bottom-0 mt-3 flex flex-col gap-2 bg-white/92 pt-2 sm:flex-row">
                 <button
                   type="button"
                   onClick={() =>
                     navigate(event ? `/events/${event.id}` : "/events")
                   }
-                  disabled={submitting}
+                  disabled={submitting || deleting}
                   className="w-full rounded-[1.2rem] border-2 border-secondary py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#edf3ff] disabled:opacity-60 sm:py-4 sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || deleting}
                   className="w-full rounded-[1.2rem] bg-primary py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#f3b91d] disabled:bg-[#b7c8df] disabled:text-white sm:py-4 sm:text-base"
                 >
                   {submitting ? "Saving..." : "Save changes"}

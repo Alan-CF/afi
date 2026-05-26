@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
 import GameScheduleCard from "../components/home/GameScheduleCard";
 import EmptyState from "../components/common/EmptyState";
 import EventsFilterBar, {
+  type EventsView,
   type FanEventsSortMode,
+  type ViewOption,
 } from "../components/events/EventsFilterBar";
 import type { UnifiedEvent } from "../hooks/events";
 import {
@@ -13,6 +15,8 @@ import {
   listWarriorsGameDetailsPast,
   type WarriorsGameDetail,
 } from "../lib/warriorsGameDetails";
+import { listAttendingSeedIds } from "../hooks/useSeedAttendance";
+import { useProfile } from "../hooks/useProfile";
 
 function gameToUnified(game: WarriorsGameDetail): UnifiedEvent {
   const hasFinal =
@@ -90,8 +94,25 @@ function sortEvents(
 
 export default function PreviousGames() {
   const navigate = useNavigate();
+  const { user } = useProfile();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<FanEventsSortMode>("upcoming");
+  const [view, setView] = useState<EventsView>("all");
+  const [attendingSeedIds, setAttendingSeedIds] = useState<Set<string>>(
+    () => listAttendingSeedIds()
+  );
+
+  useEffect(() => {
+    function refresh() {
+      setAttendingSeedIds(listAttendingSeedIds());
+    }
+    window.addEventListener("storage", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
 
   const all = useMemo(
     () => [
@@ -101,15 +122,28 @@ export default function PreviousGames() {
     []
   );
 
+  const viewFiltered = useMemo(() => {
+    if (view === "attending")
+      return all.filter((event) => attendingSeedIds.has(event.id));
+    return all;
+  }, [all, view, attendingSeedIds]);
+
   const filtered = useMemo(
-    () => all.filter((event) => queryMatches(event, query)),
-    [all, query]
+    () => viewFiltered.filter((event) => queryMatches(event, query)),
+    [viewFiltered, query]
   );
 
   const games = useMemo(
     () => sortEvents(filtered, sort, Date.now()),
     [filtered, sort]
   );
+
+  const viewOptions: ViewOption[] = user
+    ? [
+        { value: "all", label: "All" },
+        { value: "attending", label: "Attending" },
+      ]
+    : [{ value: "all", label: "All" }];
 
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
@@ -140,13 +174,20 @@ export default function PreviousGames() {
           onQueryChange={setQuery}
           sort={sort}
           onSortChange={setSort}
+          view={view}
+          onViewChange={setView}
+          viewOptions={viewOptions}
         />
 
         <div className="mt-5 md:mt-6">
           {games.length === 0 ? (
             <EmptyState
               variant="compact"
-              message="No games match your search."
+              message={
+                view === "attending"
+                  ? "You're not attending any games yet."
+                  : "No games match your search."
+              }
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-start">

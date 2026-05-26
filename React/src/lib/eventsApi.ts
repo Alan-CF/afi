@@ -119,6 +119,34 @@ function buildQueryError(scope: string, message: string) {
   return new Error(`${scope}: ${message}`);
 }
 
+const TYPE_PREFIX = "Type:";
+
+export function parseDescription(raw: string | null): {
+  type: string | null;
+  body: string;
+} {
+  if (!raw) return { type: null, body: "" };
+  const trimmed = raw.trimStart();
+  const lines = trimmed.split("\n");
+  const first = lines[0];
+  if (first && first.startsWith(TYPE_PREFIX)) {
+    const type = first.slice(TYPE_PREFIX.length).trim();
+    const rest = lines.slice(1).join("\n").replace(/^\s+/, "");
+    return { type: type || null, body: rest };
+  }
+  return { type: null, body: raw };
+}
+
+export function serializeDescription(
+  body: string,
+  type: string | null | undefined
+): string {
+  const cleanBody = body.trim();
+  const cleanType = (type ?? "").trim();
+  if (!cleanType) return cleanBody;
+  return `${TYPE_PREFIX} ${cleanType}\n\n${cleanBody}`;
+}
+
 export function validateEventImageFile(file: File): string | null {
   if (!EVENT_IMAGE_ALLOWED_TYPES.includes(file.type as (typeof EVENT_IMAGE_ALLOWED_TYPES)[number])) {
     return "Image must be JPG, PNG, or WEBP.";
@@ -281,12 +309,14 @@ export async function fetchFanEventDetail(
     sortOrder: row.sort_order,
   }));
 
+  const parsed = parseDescription(eventRow.description);
+
   return {
     source: "db",
     id: eventRow.id,
     seedId: null,
     title: eventRow.title,
-    description: eventRow.description,
+    description: parsed.body,
     imageUrl: eventRow.image_url,
     mainImagePath: eventRow.main_image_path,
     startAt: eventRow.start_at,
@@ -299,9 +329,9 @@ export async function fetchFanEventDetail(
     countryCode: null,
     lat: null,
     lng: null,
-    category: null,
+    category: parsed.type,
     highlights: [],
-    tags: [],
+    tags: parsed.type ? [parsed.type] : [],
     capacity: eventRow.capacity,
     isPublic: eventRow.is_public,
     organizerProfileId: eventRow.organizer_profile_id,
@@ -311,6 +341,23 @@ export async function fetchFanEventDetail(
     attendees,
     goingCount,
   };
+}
+
+export async function fetchMyAttendingEventIds(
+  userId: string
+): Promise<Set<number>> {
+  const { data, error } = await supabase
+    .from("fan_event_attendees")
+    .select("fan_event_id")
+    .eq("profile_id", userId)
+    .eq("status", "going");
+  if (error) {
+    console.error("fetchMyAttendingEventIds:", error);
+    return new Set();
+  }
+  return new Set(
+    ((data ?? []) as { fan_event_id: number }[]).map((row) => row.fan_event_id)
+  );
 }
 
 export async function fetchFanEventAttendees(
@@ -333,6 +380,115 @@ export async function fetchFanEventAttendees(
   const profileIds = Array.from(new Set(rows.map((row) => row.profile_id)));
   const profilesMap = await fetchProfileMap(profileIds);
   return hydrateAttendees(rows, profilesMap);
+}
+
+export async function deleteFanEvent(eventId: number): Promise<void> {
+  await getAuthenticatedUserId();
+
+  const { data: images, error: imagesError } = await supabase
+    .from("fan_event_images")
+    .select("storage_path")
+    .eq("fan_event_id", eventId);
+  if (imagesError) {
+    console.error("deleteFanEvent images query failed:", imagesError);
+  }
+
+  const { data: eventRow, error: eventQueryError } = await supabase
+    .from("fan_events")
+    .select("main_image_path")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (eventQueryError) {
+    console.error("deleteFanEvent event query failed:", eventQueryError);
+  }
+
+  const paths = new Set<string>();
+  for (const row of (images ?? []) as { storage_path: string | null }[]) {
+    if (row.storage_path) paths.add(row.storage_path);
+  }
+  if (eventRow?.main_image_path) {
+    paths.add(eventRow.main_image_path);
+  }
+
+  const { error } = await supabase
+    .from("fan_events")
+    .delete()
+    .eq("id", eventId);
+  if (error) {
+    throw buildQueryError("fan_events delete failed", error.message);
+  }
+
+  if (paths.size > 0) {
+    const list = Array.from(paths);
+    const { error: storageError } = await supabase.storage
+      .from("event-images")
+      .remove(list);
+    if (storageError) {
+      console.error("event-images delete failed:", storageError);
+    }
+  }
+}
+
+export async function listEventImages(
+  eventId: number
+): Promise<FanEventImage[]> {
+  const { data, error } = await supabase
+    .from("fan_event_images")
+    .select("id, fan_event_id, image_url, storage_path, sort_order")
+    .eq("fan_event_id", eventId)
+    .order("sort_order", { ascending: true });
+  if (error) {
+    throw buildQueryError(
+      "fan_event_images query failed",
+      error.message
+    );
+  }
+  return ((data ?? []) as ImageRow[]).map((row) => ({
+    id: row.id,
+    fanEventId: row.fan_event_id,
+    imageUrl: row.image_url,
+    storagePath: row.storage_path,
+    sortOrder: row.sort_order,
+  }));
+}
+
+export async function deleteEventImage(image: FanEventImage): Promise<void> {
+  await getAuthenticatedUserId();
+  if (image.storagePath) {
+    const { error: storageError } = await supabase.storage
+      .from("event-images")
+      .remove([image.storagePath]);
+    if (storageError) {
+      console.error("event-images delete failed:", storageError);
+    }
+  }
+  const { error } = await supabase
+    .from("fan_event_images")
+    .delete()
+    .eq("id", image.id);
+  if (error) {
+    throw buildQueryError("fan_event_images delete failed", error.message);
+  }
+}
+
+export async function setEventMainImage(
+  eventId: number,
+  image: FanEventImage
+): Promise<void> {
+  await getAuthenticatedUserId();
+  const { error } = await supabase
+    .from("fan_events")
+    .update({
+      image_url: image.imageUrl,
+      main_image_path: image.storagePath,
+    })
+    .eq("id", eventId);
+  if (error) {
+    throw buildQueryError(
+      "fan_events main image update failed",
+      error.message
+    );
+  }
 }
 
 export async function uploadEventImage(
@@ -433,14 +589,18 @@ export async function createFanEvent(
     .filter((line) => line.length > 0);
 
   void hostBio;
-  void tags;
   void highlights;
+  const eventType = tags.length > 0 ? tags[0] : null;
+  const serializedDescription = serializeDescription(
+    input.description,
+    eventType
+  );
 
   const { data: inserted, error: insertError } = await supabase
     .from("fan_events")
     .insert({
       title: input.title.trim(),
-      description: input.description.trim(),
+      description: serializedDescription,
       venue: input.venue.trim(),
       city: input.city?.trim() ? input.city.trim() : null,
       country,
@@ -506,7 +666,9 @@ export async function updateFanEvent(
   if (input.description !== undefined) {
     const trimmed = input.description.trim();
     if (!trimmed) throw new Error("Description is required.");
-    patch.description = trimmed;
+    const type =
+      input.tags && input.tags.length > 0 ? input.tags[0].trim() : null;
+    patch.description = serializeDescription(trimmed, type);
   }
   if (input.venue !== undefined) {
     const trimmed = input.venue.trim();
