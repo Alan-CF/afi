@@ -94,7 +94,7 @@ function sortEvents(
 
 export default function PreviousGames() {
   const navigate = useNavigate();
-  const { user } = useProfile();
+  const { user, hasLoadedOnce } = useProfile();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<FanEventsSortMode>("upcoming");
   const [view, setView] = useState<EventsView>("all");
@@ -138,7 +138,8 @@ export default function PreviousGames() {
     [filtered, sort]
   );
 
-  const viewOptions: ViewOption[] = user
+  const showFullViewOptions = !hasLoadedOnce || !!user;
+  const viewOptions: ViewOption[] = showFullViewOptions
     ? [
         { value: "all", label: "All" },
         { value: "attending", label: "Attending" },

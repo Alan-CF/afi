@@ -1,5 +1,6 @@
 import {
   ArrowLeftIcon,
+  CheckIcon,
   EyeIcon,
   LockClosedIcon,
   PhotoIcon,
@@ -22,6 +23,7 @@ import {
   updateFanEvent,
   uploadEventImage,
   validateEventImageFile,
+  ValidationError,
   type FanEventDetail,
   type FanEventImage,
 } from "../lib/eventsApi";
@@ -85,6 +87,8 @@ export default function EditEvent() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   const [existingImages, setExistingImages] = useState<FanEventImage[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([]);
@@ -210,20 +214,23 @@ export default function EditEvent() {
     startAt.length > 0 &&
     !submitting;
 
-  async function handleDelete() {
+  function requestDelete() {
     if (!event || !isOrganizer || deleting) return;
-    const confirmed = window.confirm(
-      `Delete "${event.title}"? This cannot be undone.`
-    );
-    if (!confirmed) return;
+    setConfirmingDelete(true);
+  }
+
+  async function confirmDelete() {
+    if (!event || !isOrganizer || deleting) return;
     try {
       setDeleting(true);
       setSubmitError(null);
       await deleteFanEvent(event.id);
-      navigate("/events", { replace: true });
+      setConfirmingDelete(false);
+      setDeleteSuccess(true);
     } catch (err) {
       console.error("EditEvent delete:", err);
       setSubmitError("Couldn't delete event. Please try again later.");
+      setConfirmingDelete(false);
     } finally {
       setDeleting(false);
     }
@@ -242,7 +249,7 @@ export default function EditEvent() {
         parsedCapacity != null &&
         (Number.isNaN(parsedCapacity) || parsedCapacity < 1)
       ) {
-        throw new Error("Capacity must be a positive number.");
+        throw new ValidationError("Capacity must be a positive number.");
       }
       await updateFanEvent(event.id, {
         title,
@@ -306,7 +313,11 @@ export default function EditEvent() {
       navigate(`/events/${event.id}`, { replace: true });
     } catch (err) {
       console.error("EditEvent:", err);
-      setSubmitError("Couldn't save changes. Please try again later.");
+      if (err instanceof ValidationError) {
+        setSubmitError(err.message);
+      } else {
+        setSubmitError("Couldn't save changes. Please try again later.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -662,7 +673,7 @@ export default function EditEvent() {
 
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={requestDelete}
                 disabled={submitting || deleting}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#be123c] py-3 font-lato text-sm font-bold text-[#be123c] transition-colors hover:bg-[#be123c] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -693,6 +704,89 @@ export default function EditEvent() {
           )}
         </section>
       </main>
+
+      {confirmingDelete && event && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => {
+            if (!deleting) setConfirmingDelete(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-[0_30px_70px_rgba(15,23,42,0.25)]"
+            onClick={(clickEvent) => clickEvent.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1f2] text-[#be123c]">
+                <TrashIcon className="h-6 w-6" />
+              </span>
+              <div>
+                <h2 className="font-anton text-2xl text-secondary leading-tight">
+                  Delete event
+                </h2>
+                <p className="font-lato text-sm text-[#475569]">
+                  This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <p className="mt-5 font-lato text-sm text-[#1f3668]">
+              Delete{" "}
+              <span className="font-bold">"{event.title}"</span>? Attendees will
+              lose access and all images will be removed.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#be123c] px-5 py-3 font-lato text-sm font-bold text-white transition-colors hover:bg-[#9f1239] disabled:opacity-60"
+              >
+                <TrashIcon className="h-4 w-4" />
+                {deleting ? "Deleting..." : "Delete event"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleting}
+                className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-secondary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#edf3ff] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-[0_30px_70px_rgba(15,23,42,0.25)]"
+          >
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-secondary">
+              <CheckIcon className="h-7 w-7" />
+            </span>
+            <h2 className="mt-4 font-anton text-2xl text-secondary leading-tight">
+              Event deleted
+            </h2>
+            <p className="mt-1 font-lato text-sm text-[#475569]">
+              The event and its images have been removed.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/events", { replace: true })}
+              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#f3b91d]"
+            >
+              Back to events
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

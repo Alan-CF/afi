@@ -49,12 +49,7 @@ export default function EventGallery({ images, alt }: Props) {
 
   return (
     <section className="rounded-3xl border border-container-border bg-white p-5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-anton text-xl text-secondary">Gallery</h2>
-        <span className="font-lato text-xs text-[#475569] tabular-nums">
-          {cleaned.length} photos
-        </span>
-      </div>
+      <h2 className="font-anton text-xl text-secondary">Gallery</h2>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {extras.map((url, index) => (
           <button

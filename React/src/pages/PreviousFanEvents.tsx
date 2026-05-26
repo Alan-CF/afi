@@ -98,7 +98,7 @@ function sortEvents(
 
 export default function PreviousFanEvents() {
   const navigate = useNavigate();
-  const { user } = useProfile();
+  const { user, hasLoadedOnce } = useProfile();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<FanEventsSortMode>("upcoming");
   const [view, setView] = useState<EventsView>("all");
@@ -196,8 +196,8 @@ export default function PreviousFanEvents() {
     [filtered, sort]
   );
 
-  const isLoggedIn = !!user;
-  const viewOptions: ViewOption[] = isLoggedIn
+  const showFullViewOptions = !hasLoadedOnce || !!user;
+  const viewOptions: ViewOption[] = showFullViewOptions
     ? [
         { value: "all", label: "All" },
         { value: "mine", label: "My events" },

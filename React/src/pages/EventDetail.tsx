@@ -34,6 +34,7 @@ function formatDayLabel(iso: string) {
     weekday: "long",
     month: "long",
     day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -220,9 +221,8 @@ export default function EventDetail() {
         )}
 
         {!loading && !error && event && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <article className="flex flex-col gap-6">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-3xl bg-secondary md:aspect-[16/9]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr]">
+              <div className="order-1 relative aspect-[16/10] overflow-hidden rounded-3xl bg-secondary md:aspect-[16/9] lg:order-none lg:col-start-1 lg:row-start-1 lg:aspect-auto lg:h-[440px]">
                 {event.imageUrl ? (
                   <img
                     src={event.imageUrl}
@@ -262,67 +262,84 @@ export default function EventDetail() {
                 </div>
               </div>
 
-              <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-                <div className="flex flex-col gap-3 rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-                      <CalendarDaysIcon className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
-                        When
-                      </p>
-                      <p className="mt-0.5 font-anton text-base text-secondary leading-tight sm:text-lg">
-                        {formatDayLabel(event.startAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl bg-[#f6f8fc] p-3">
-                    <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-                    <div className="min-w-0">
-                      <p className="font-lato text-sm font-bold text-secondary">
-                        {formatTimeRange(event.startAt, event.endAt)}
-                      </p>
-                      {formatDurationLabel(event.startAt, event.endAt) && (
-                        <p className="mt-0.5 font-lato text-xs font-bold text-[#475569]">
-                          {formatDurationLabel(event.startAt, event.endAt)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-[#f6f8fc] p-3">
-                    <UsersIcon className="h-4 w-4 shrink-0 text-secondary" />
-                    <p className="font-lato text-sm font-bold text-secondary tabular-nums">
-                      {displayedGoingCount}
-                      {event.capacity ? ` / ${event.capacity}` : ""} going
+            <section className="order-2 grid rounded-3xl border border-container-border bg-white shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:grid-cols-3 lg:order-none lg:col-start-1 lg:row-start-2 lg:self-start">
+              <div className="flex items-center gap-3 p-4 sm:p-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <CalendarDaysIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Date
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
+                    {formatDayLabel(event.startAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 sm:p-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <ClockIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Time
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
+                    {formatTimeRange(event.startAt, event.endAt)}
+                  </p>
+                  {formatDurationLabel(event.startAt, event.endAt) && (
+                    <p className="mt-0.5 font-lato text-xs font-bold text-[#475569]">
+                      {formatDurationLabel(event.startAt, event.endAt)}
                     </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 sm:p-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <UsersIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Capacity
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight tabular-nums">
+                    {event.capacity != null
+                      ? `${event.capacity} persons`
+                      : "Open"}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <article className="order-3 flex flex-col gap-6 lg:order-none lg:col-start-1 lg:row-start-3">
+
+              <section className="rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                    <MapPinIcon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                      Where
+                    </p>
+                    <p className="mt-0.5 font-anton text-base text-secondary leading-tight sm:text-lg">
+                      {event.venue ?? "Location TBA"}
+                    </p>
+                    {buildLocationLines(event).slice(1).length > 0 && (
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        {buildLocationLines(event).slice(1).map((line) => (
+                          <p
+                            key={line}
+                            className="font-lato text-xs font-bold text-[#475569] [overflow-wrap:anywhere]"
+                          >
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-3 rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-                      <MapPinIcon className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
-                        Where
-                      </p>
-                      <p className="mt-0.5 font-anton text-base text-secondary leading-tight sm:text-lg">
-                        {event.venue ?? "Location TBA"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    {buildLocationLines(event).slice(1).map((line) => (
-                      <p
-                        key={line}
-                        className="font-lato text-xs font-bold text-[#475569] [overflow-wrap:anywhere]"
-                      >
-                        {line}
-                      </p>
-                    ))}
-                  </div>
+                <div className="mt-4">
                   <EventMapPreview
                     lat={event.lat}
                     lng={event.lng}
@@ -332,7 +349,7 @@ export default function EventDetail() {
                         : null
                     }
                     label={event.venue}
-                    height="h-36 md:h-44"
+                    height="h-56 md:h-72 lg:h-80"
                     rounded="rounded-2xl"
                   />
                 </div>
@@ -362,61 +379,71 @@ export default function EventDetail() {
                 </section>
               )}
 
-              {event.organizer && (
-                <section className="flex items-center gap-3 rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-5">
-                  {event.organizer.avatarUrl ? (
-                    <img
-                      src={event.organizer.avatarUrl}
-                      alt={event.organizer.username}
-                      className="h-12 w-12 rounded-2xl object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display =
-                          "none";
-                      }}
-                    />
-                  ) : (
-                    <InitialsAvatar
-                      username={event.organizer.username}
-                      size={48}
-                      rounded="rounded-2xl"
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#475569]">
-                      Hosted by
-                    </p>
-                    <p className="mt-0.5 font-lato text-base font-bold text-secondary">
-                      @{event.organizer.username}
-                    </p>
-                  </div>
-                </section>
-              )}
-
               <EventGallery
                 images={event.images.map((image) => image.imageUrl)}
                 alt={event.title}
               />
             </article>
 
-            <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
-              <div className="order-2 flex flex-col gap-3 rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-5 lg:order-1">
-                <AttendButton
-                  isLoggedIn={!!currentUserId}
-                  isAttending={isAttending}
-                  onToggle={handleToggleAttendance}
-                />
-                <InviteFriendsButton eventPath={eventPath} />
-                {!event.isPublic && (
-                  <div className="flex items-start gap-2 rounded-2xl bg-[#fff8de] p-3 font-lato text-xs text-secondary">
-                    <EyeSlashIcon className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
-                      Private — only people with the link can see it.
-                    </span>
-                  </div>
+            <aside className="contents lg:flex lg:flex-col lg:gap-6 lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:self-start lg:sticky lg:top-24 lg:z-10">
+              <div className="contents lg:flex lg:flex-col lg:gap-4 lg:h-[440px]">
+                {event.organizer && (
+                  <section className="order-4 flex flex-col items-center justify-center gap-4 rounded-3xl border border-container-border bg-white p-6 text-center shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-7 lg:order-1 lg:flex-1">
+                    <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#475569]">
+                      Hosted by
+                    </p>
+                    {event.organizer.avatarUrl ? (
+                      <img
+                        src={event.organizer.avatarUrl}
+                        alt={event.organizer.name ?? event.organizer.username}
+                        className="h-28 w-28 rounded-full object-cover sm:h-32 sm:w-32"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
+                        }}
+                      />
+                    ) : (
+                      <InitialsAvatar
+                        username={
+                          event.organizer.name ?? event.organizer.username
+                        }
+                        size={112}
+                        rounded="rounded-full"
+                      />
+                    )}
+                    <div className="flex flex-col items-center gap-1">
+                      <p className="font-anton text-lg font-bold text-black leading-tight sm:text-xl">
+                        {event.organizer.name ?? event.organizer.username}
+                      </p>
+                      <p className="font-lato text-sm font-bold text-[#475569]">
+                        @{event.organizer.username}
+                      </p>
+                    </div>
+                  </section>
                 )}
+
+                <div className="order-6 flex flex-col gap-3 rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:p-5 lg:order-2">
+                  <AttendButton
+                    isLoggedIn={!!currentUserId}
+                    isAttending={isAttending}
+                    onToggle={handleToggleAttendance}
+                  />
+                  <InviteFriendsButton
+                    eventPath={eventPath}
+                    eventTitle={event.title}
+                  />
+                  {!event.isPublic && (
+                    <div className="flex items-start gap-2 rounded-2xl bg-[#fff8de] p-3 font-lato text-xs text-secondary">
+                      <EyeSlashIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        Private — only people with the link can see it.
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="order-1 lg:order-2">
+              <div className="order-5 flex">
                 <AttendeeList
                   attendees={displayedAttendees}
                   goingCount={displayedGoingCount}
@@ -427,6 +454,7 @@ export default function EventDetail() {
           </div>
         )}
       </main>
+
     </div>
   );
 }

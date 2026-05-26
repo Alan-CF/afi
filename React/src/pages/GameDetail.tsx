@@ -4,7 +4,7 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   MapPinIcon,
-  UsersIcon,
+  SignalIcon,
 } from "@heroicons/react/24/solid";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import ScoreboardRibbon from "../components/layout/ScoreboardRibbon";
@@ -26,6 +26,7 @@ function formatDayLabel(iso: string) {
     weekday: "long",
     month: "long",
     day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -209,72 +210,128 @@ export default function GameDetail() {
               </div>
             </div>
 
-            <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-              <div className="flex flex-col gap-3 rounded-3xl border border-container-border bg-white p-4 sm:p-5">
-                <div className="flex items-center gap-3 border-b border-primary/40 pb-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-                    <CalendarDaysIcon className="h-5 w-5" />
-                  </span>
-                  <p className="font-anton text-base text-secondary leading-tight sm:text-lg">
+            <section className="flex flex-col gap-4 rounded-3xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] sm:hidden">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <CalendarDaysIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Date
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
                     {formatDayLabel(game.startAt)}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <ClockIcon className="h-4 w-4 shrink-0 text-secondary" />
-                  <p className="font-lato text-sm font-bold text-secondary">
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <ClockIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Tip-off
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
                     {formatTimeRange(game.startAt, game.endAt)}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <UsersIcon className="h-4 w-4 shrink-0 text-secondary" />
-                  <p className="font-lato text-sm font-bold text-secondary tabular-nums">
-                    {displayedGoingCount} going
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-lato text-xs font-bold uppercase tracking-[0.18em] text-[#475569]">
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <SignalIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
                     Broadcast
-                  </span>
-                  <span className="font-lato text-sm font-bold text-secondary">
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
                     {game.broadcast}
-                  </span>
+                  </p>
                 </div>
               </div>
+            </section>
 
-              <div className="flex flex-col overflow-hidden rounded-3xl border border-container-border bg-white">
-                {game.coverImageUrl && (
-                  <img
-                    src={game.coverImageUrl}
-                    alt={game.venue}
-                    className="aspect-[16/9] w-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
-                    }}
-                  />
-                )}
-                <div className="flex flex-col gap-3 p-4 sm:p-5">
-                  <div className="flex items-center gap-3 border-b border-primary/40 pb-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-                      <MapPinIcon className="h-5 w-5" />
-                    </span>
-                    <p className="font-anton text-base text-secondary leading-tight sm:text-lg">
+            <section className="hidden gap-4 sm:grid sm:grid-cols-3">
+              <div className="flex items-center gap-3 rounded-3xl border border-container-border bg-white p-5 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <CalendarDaysIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Date
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
+                    {formatDayLabel(game.startAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-3xl border border-container-border bg-white p-5 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <ClockIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Tip-off
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
+                    {formatTimeRange(game.startAt, game.endAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-3xl border border-container-border bg-white p-5 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                  <SignalIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                    Broadcast
+                  </p>
+                  <p className="mt-0.5 font-anton text-base text-secondary leading-tight">
+                    {game.broadcast}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-3xl border border-container-border bg-white shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
+              {game.coverImageUrl && (
+                <img
+                  src={game.coverImageUrl}
+                  alt={game.venue}
+                  className="aspect-[21/9] w-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                  }}
+                />
+              )}
+              <div className="flex flex-col gap-4 p-4 sm:p-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
+                    <MapPinIcon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+                      Where
+                    </p>
+                    <p className="mt-0.5 font-anton text-base text-secondary leading-tight sm:text-lg">
                       {game.venue}
                     </p>
+                    <p className="mt-1 font-lato text-xs font-bold text-[#475569] [overflow-wrap:anywhere]">
+                      {[game.city, game.state, game.country]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
                   </div>
-                  <p className="font-lato text-xs font-bold text-[#475569] [overflow-wrap:anywhere]">
-                    {[game.city, game.state, game.country]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </p>
-                  <EventMapPreview
-                    lat={game.lat}
-                    lng={game.lng}
-                    label={game.venue}
-                    height="h-36 md:h-44"
-                    rounded="rounded-2xl"
-                  />
                 </div>
+                <EventMapPreview
+                  lat={game.lat}
+                  lng={game.lng}
+                  label={game.venue}
+                  height="h-56 md:h-72 lg:h-80"
+                  rounded="rounded-2xl"
+                />
               </div>
             </section>
 
@@ -290,7 +347,7 @@ export default function GameDetail() {
             <EventGallery images={game.galleryImageUrls} alt={game.matchup} />
           </article>
 
-          <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start lg:z-10">
             <div className="order-2 flex flex-col gap-3 rounded-3xl border border-container-border bg-white p-4 sm:p-5 lg:order-1">
               {game.isPast ? (
                 <div className="rounded-2xl bg-[#f6f8fc] p-3 text-center font-lato text-sm font-bold text-secondary">

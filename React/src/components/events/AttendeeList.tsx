@@ -32,7 +32,7 @@ export default function AttendeeList({
   const going = attendees.filter((a) => a.status === "going");
 
   return (
-    <section className="rounded-3xl border border-container-border bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full w-full flex-col rounded-3xl border border-container-border bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-anton text-xl text-secondary">Going</h2>
         <span className="rounded-full bg-[#edf3ff] px-3 py-1 font-lato text-xs font-bold text-secondary tabular-nums">

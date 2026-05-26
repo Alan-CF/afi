@@ -19,19 +19,11 @@ export default function AttendButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isLoggedIn) {
-    return (
-      <button
-        type="button"
-        onClick={() => navigate("/login")}
-        className="w-full rounded-2xl bg-secondary px-5 py-3 text-center font-lato text-sm font-bold text-white transition-colors hover:bg-[#172b5b] sm:text-base"
-      >
-        Sign in to attend
-      </button>
-    );
-  }
-
   async function handleClick() {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
     if (busy || disabled) return;
     try {
       setBusy(true);

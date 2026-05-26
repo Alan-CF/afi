@@ -1,5 +1,12 @@
 import { supabase } from "./supabaseClient";
 
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
 export type AttendStatus = "going" | "interested" | "declined";
 
 export interface FanEventImage {
@@ -14,7 +21,12 @@ export interface EventOrganizerProfile {
   id: string;
   username: string;
   avatarUrl: string | null;
+  name: string | null;
+  points: number | null;
+  streak: number | null;
+  rank: number | null;
 }
+
 
 export interface FanEventAttendee {
   id: string;
@@ -111,7 +123,7 @@ async function getAuthenticatedUserId(): Promise<string> {
     error,
   } = await supabase.auth.getUser();
   if (error) throw error;
-  if (!user) throw new Error("You must be signed in.");
+  if (!user) throw new ValidationError("You must be signed in.");
   return user.id;
 }
 
@@ -121,10 +133,12 @@ function buildQueryError(scope: string, message: string) {
 
 const TYPE_PREFIX = "Type:";
 
-export function parseDescription(raw: string | null): {
+export interface ParsedDescription {
   type: string | null;
   body: string;
-} {
+}
+
+export function parseDescription(raw: string | null): ParsedDescription {
   if (!raw) return { type: null, body: "" };
   const trimmed = raw.trimStart();
   const lines = trimmed.split("\n");
@@ -195,6 +209,24 @@ type ProfileRow = {
   avatar_url: string | null;
 };
 
+type OrganizerProfileRow = {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  name: string | null;
+  fanatic_coins: number | null;
+  streak: number | null;
+};
+
+async function computeProfileRank(points: number): Promise<number | null> {
+  const { count, error } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .gt("fanatic_coins", points);
+  if (error) return null;
+  return (count ?? 0) + 1;
+}
+
 async function fetchProfileMap(
   profileIds: string[]
 ): Promise<Map<string, ProfileRow>> {
@@ -258,7 +290,7 @@ export async function fetchFanEventDetail(
       .order("created_at", { ascending: true }),
     supabase
       .from("profiles")
-      .select("id, username, avatar_url")
+      .select("id, username, avatar_url, name, fanatic_coins, streak")
       .eq("id", eventRow.organizer_profile_id)
       .maybeSingle(),
   ]);
@@ -290,12 +322,23 @@ export async function fetchFanEventDetail(
   const attendees = hydrateAttendees(attendeeRows, profilesMap);
   const goingCount = attendees.filter((a) => a.status === "going").length;
 
-  const organizerRow = organizerResult.data as ProfileRow | null;
+  const organizerRow = organizerResult.data as OrganizerProfileRow | null;
+  const organizerPoints =
+    typeof organizerRow?.fanatic_coins === "number"
+      ? organizerRow.fanatic_coins
+      : null;
+  const organizerRank =
+    organizerPoints != null ? await computeProfileRank(organizerPoints) : null;
   const organizer: EventOrganizerProfile | null = organizerRow
     ? {
         id: organizerRow.id,
         username: organizerRow.username,
         avatarUrl: organizerRow.avatar_url ?? null,
+        name: organizerRow.name ?? null,
+        points: organizerPoints,
+        streak:
+          typeof organizerRow.streak === "number" ? organizerRow.streak : null,
+        rank: organizerRank,
       }
     : null;
 
@@ -498,7 +541,7 @@ export async function uploadEventImage(
 ): Promise<FanEventImage> {
   const userId = await getAuthenticatedUserId();
   const validationError = validateEventImageFile(file);
-  if (validationError) throw new Error(validationError);
+  if (validationError) throw new ValidationError(validationError);
 
   const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
   const storagePath = `${userId}/${eventId}/${sortOrder}-${Date.now()}.${ext}`;
@@ -548,34 +591,34 @@ export async function createFanEvent(
 ): Promise<number> {
   const userId = await getAuthenticatedUserId();
 
-  if (!input.title.trim()) throw new Error("Title is required.");
-  if (!input.description.trim()) throw new Error("Description is required.");
-  if (!input.venue.trim()) throw new Error("Location is required.");
-  if (!input.startAt) throw new Error("Start date is required.");
+  if (!input.title.trim()) throw new ValidationError("Title is required.");
+  if (!input.description.trim()) throw new ValidationError("Description is required.");
+  if (!input.venue.trim()) throw new ValidationError("Location is required.");
+  if (!input.startAt) throw new ValidationError("Start date is required.");
 
   const startDate = new Date(input.startAt);
   if (Number.isNaN(startDate.getTime())) {
-    throw new Error("Invalid start date.");
+    throw new ValidationError("Invalid start date.");
   }
 
   let endIso: string | null = null;
   if (input.endAt) {
     const endDate = new Date(input.endAt);
     if (Number.isNaN(endDate.getTime())) {
-      throw new Error("Invalid end date.");
+      throw new ValidationError("Invalid end date.");
     }
     if (endDate.getTime() <= startDate.getTime()) {
-      throw new Error("End date must be after start date.");
+      throw new ValidationError("End date must be after start date.");
     }
     endIso = endDate.toISOString();
   }
 
   const imageFiles = input.imageFiles ?? [];
-  if (imageFiles.length === 0) throw new Error("At least one photo is required.");
+  if (imageFiles.length === 0) throw new ValidationError("At least one photo is required.");
 
   for (const file of imageFiles) {
     const gValidation = validateEventImageFile(file);
-    if (gValidation) throw new Error(gValidation);
+    if (gValidation) throw new ValidationError(gValidation);
   }
 
   const country = input.country?.trim() ? input.country.trim() : "US";
@@ -660,19 +703,19 @@ export async function updateFanEvent(
 
   if (input.title !== undefined) {
     const trimmed = input.title.trim();
-    if (!trimmed) throw new Error("Title is required.");
+    if (!trimmed) throw new ValidationError("Title is required.");
     patch.title = trimmed;
   }
   if (input.description !== undefined) {
     const trimmed = input.description.trim();
-    if (!trimmed) throw new Error("Description is required.");
+    if (!trimmed) throw new ValidationError("Description is required.");
     const type =
       input.tags && input.tags.length > 0 ? input.tags[0].trim() : null;
     patch.description = serializeDescription(trimmed, type);
   }
   if (input.venue !== undefined) {
     const trimmed = input.venue.trim();
-    if (!trimmed) throw new Error("Location is required.");
+    if (!trimmed) throw new ValidationError("Location is required.");
     patch.venue = trimmed;
   }
   if (input.city !== undefined) {
@@ -682,10 +725,10 @@ export async function updateFanEvent(
     patch.country = input.country?.trim() ? input.country.trim() : "US";
   }
   if (input.startAt !== undefined) {
-    if (!input.startAt) throw new Error("Start date is required.");
+    if (!input.startAt) throw new ValidationError("Start date is required.");
     const startDate = new Date(input.startAt);
     if (Number.isNaN(startDate.getTime())) {
-      throw new Error("Invalid start date.");
+      throw new ValidationError("Invalid start date.");
     }
     patch.start_at = startDate.toISOString();
   }
@@ -695,7 +738,7 @@ export async function updateFanEvent(
     } else {
       const endDate = new Date(input.endAt);
       if (Number.isNaN(endDate.getTime())) {
-        throw new Error("Invalid end date.");
+        throw new ValidationError("Invalid end date.");
       }
       patch.end_at = endDate.toISOString();
     }

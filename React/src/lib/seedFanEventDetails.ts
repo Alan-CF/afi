@@ -7,8 +7,12 @@ export interface SeedEventAttendee {
 export interface SeedEventOrganizer {
   id: string;
   username: string;
+  name: string;
   avatarUrl: string | null;
   bio: string;
+  points?: number | null;
+  streak?: number | null;
+  rank?: number | null;
 }
 
 export interface SeedFanEventDetail {
@@ -145,6 +149,7 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-the-yard",
       username: "theyard.sf",
+      name: "The Yard SF",
       avatarUrl: null,
       bio: "Outdoor beer garden steps from Chase Center. Every home game, every road game.",
     },
@@ -187,6 +192,7 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-warriors-popup",
       username: "warriors.popup",
+      name: "Warriors Pop-up Store",
       avatarUrl: null,
       bio: "Official Warriors merch hub in Oakland. Drops, signings, and limited collabs.",
     },
@@ -229,6 +235,7 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-warriors-foundation",
       username: "warriors.foundation",
+      name: "Warriors Community Foundation",
       avatarUrl: null,
       bio: "Funding youth basketball and education across the Bay Area.",
     },
@@ -272,6 +279,7 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-bartlett-hall",
       username: "bartletthall",
+      name: "Bartlett Hall",
       avatarUrl: null,
       bio: "Union Square gastropub. Weekly Bay Area sports trivia nights.",
     },
@@ -314,6 +322,7 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-pier70-courts",
       username: "pier70.run",
+      name: "Pier 70 Runs",
       avatarUrl: null,
       bio: "Weekly pickup runs on the SF waterfront. No frills, just hoops.",
     },
@@ -357,6 +366,7 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-reforma-sports",
       username: "reforma.sports",
+      name: "Reforma Sports Bar",
       avatarUrl: null,
       bio: "El punto de encuentro de Dub Nation en CDMX. Cada partido, cada playoff.",
     },
@@ -402,6 +412,7 @@ const PAST_SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-the-yard",
       username: "theyard.sf",
+      name: "The Yard SF",
       avatarUrl: null,
       bio: "",
     },
@@ -442,6 +453,7 @@ const PAST_SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-warriors-popup",
       username: "warriors.popup",
+      name: "Warriors Pop-up Store",
       avatarUrl: null,
       bio: "",
     },
@@ -483,6 +495,7 @@ const PAST_SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-warriors-foundation",
       username: "warriors.foundation",
+      name: "Warriors Community Foundation",
       avatarUrl: null,
       bio: "",
     },
@@ -525,6 +538,7 @@ const PAST_SEED_DETAILS: SeedFanEventDetail[] = [
     organizer: {
       id: "seed-org-bartlett-hall",
       username: "bartletthall",
+      name: "Bartlett Hall",
       avatarUrl: null,
       bio: "",
     },

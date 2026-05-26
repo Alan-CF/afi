@@ -9,10 +9,12 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EventImagesUploader from "../components/events/EventImagesUploader";
+import EventMapPreview from "../components/events/EventMapPreview";
+import EventQRCode from "../components/events/EventQRCode";
 import LocationPicker, {
   type PickedLocation,
 } from "../components/events/LocationPicker";
-import { createFanEvent } from "../lib/eventsApi";
+import { createFanEvent, ValidationError } from "../lib/eventsApi";
 import { useProfile } from "../hooks/useProfile";
 
 const EVENT_TYPES = [
@@ -126,7 +128,14 @@ function SuccessModal({ eventId, onClose, onGo }: SuccessModalProps) {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-5 flex flex-col items-center gap-2 rounded-2xl bg-[#f6f8fc] p-4">
+          <EventQRCode url={url} size={200} />
+          <p className="font-lato text-[0.7rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
+            Scan to attend
+          </p>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3">
           <button
             type="button"
             onClick={handleCopy}
@@ -168,6 +177,7 @@ export default function CreateEvent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdEventId, setCreatedEventId] = useState<number | null>(null);
+  const [confirmedDetails, setConfirmedDetails] = useState(false);
 
   useEffect(() => {
     if (!hasLoadedOnce) return;
@@ -215,7 +225,7 @@ export default function CreateEvent() {
         parsedCapacity != null &&
         (Number.isNaN(parsedCapacity) || parsedCapacity < 1)
       ) {
-        throw new Error("Capacity must be a positive number.");
+        throw new ValidationError("Capacity must be a positive number.");
       }
       const eventId = await createFanEvent({
         title,
@@ -238,7 +248,11 @@ export default function CreateEvent() {
       setCreatedEventId(eventId);
     } catch (err) {
       console.error("CreateEvent:", err);
-      setError("Couldn't create event. Please try again later.");
+      if (err instanceof ValidationError) {
+        setError(err.message);
+      } else {
+        setError("Couldn't create event. Please try again later.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -566,7 +580,7 @@ export default function CreateEvent() {
               {title || "Untitled event"}
             </h3>
             {description.trim() && (
-              <p className="font-lato text-xs leading-5 text-[#1f3668] [overflow-wrap:anywhere]">
+              <p className="whitespace-pre-wrap font-lato text-xs leading-5 text-[#1f3668] [overflow-wrap:anywhere]">
                 {description.trim()}
               </p>
             )}
@@ -600,6 +614,17 @@ export default function CreateEvent() {
               </div>
             </div>
 
+            {location && (
+              <EventMapPreview
+                lat={Number.isFinite(location.lat) ? location.lat : null}
+                lng={Number.isFinite(location.lng) ? location.lng : null}
+                query={locationLine}
+                label={location.venue || locationLine}
+                height="h-40 md:h-48"
+                rounded="rounded-xl"
+              />
+            )}
+
             {parsedCapacity != null && Number.isFinite(parsedCapacity) && (
               <div className="rounded-xl bg-[#f6f8fc] p-3">
                 <p className="font-lato text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
@@ -615,7 +640,7 @@ export default function CreateEvent() {
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
-                  alt={user.username ?? "Host"}
+                  alt={user.full_name ?? user.username ?? "Host"}
                   className="h-9 w-9 shrink-0 rounded-full object-cover"
                   onError={(event) => {
                     (event.currentTarget as HTMLImageElement).style.display =
@@ -624,23 +649,30 @@ export default function CreateEvent() {
                 />
               ) : (
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary font-anton text-sm text-primary">
-                  {user?.username?.slice(0, 1).toUpperCase() ?? "?"}
+                  {(user?.full_name ?? user?.username)
+                    ?.slice(0, 1)
+                    .toUpperCase() ?? "?"}
                 </div>
               )}
               <div className="min-w-0">
                 <p className="font-lato text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
                   Hosted by
                 </p>
-                <p className="font-lato text-xs font-bold text-secondary">
-                  @{user?.username ?? "you"}
+                <p className="font-lato text-xs font-bold text-black">
+                  {user?.full_name ?? user?.username ?? "You"}
                 </p>
+                {user?.username && (
+                  <p className="font-lato text-[0.7rem] font-bold text-[#475569]">
+                    @{user.username}
+                  </p>
+                )}
               </div>
             </div>
 
             {extraPreviews.length > 0 && (
               <div>
                 <p className="font-lato text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[#475569]">
-                  Gallery ({imageFiles.length} photos)
+                  Gallery
                 </p>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   {extraPreviews.map((url, index) => (
@@ -662,11 +694,24 @@ export default function CreateEvent() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-[#f6f8fc] p-3 font-lato text-[0.7rem] leading-5 text-[#475569]">
-          By creating this event your @username
-          {user?.username ? ` (@${user.username})` : ""} and event details
-          will be visible to anyone who can view this event.
-        </div>
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-[#f6f8fc] p-3">
+          <input
+            type="checkbox"
+            checked={confirmedDetails}
+            onChange={(event) => setConfirmedDetails(event.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-secondary"
+          />
+          <span className="font-lato text-[0.7rem] leading-5 text-[#475569]">
+            I confirm the details above are correct. My real name
+            {user?.full_name ? ` (${user.full_name})` : ""}, @username
+            {user?.username ? ` (@${user.username})` : ""}
+            {locationLine && locationLine !== "Location not set"
+              ? `, location (${locationLine})`
+              : ""}
+            , and event details will be visible to anyone who can view this
+            event.
+          </span>
+        </label>
       </div>
     );
   }
@@ -717,7 +762,7 @@ export default function CreateEvent() {
                 type="button"
                 onClick={goBack}
                 disabled={submitting}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-secondary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#edf3ff] disabled:opacity-60 sm:w-1/3"
+                className="order-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-secondary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#edf3ff] disabled:opacity-60 sm:order-1 sm:w-1/3"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
                 Back
@@ -728,7 +773,7 @@ export default function CreateEvent() {
                 type="button"
                 onClick={goNext}
                 disabled={!canAdvanceFromCurrent()}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#f3b91d] disabled:bg-[#b7c8df] disabled:text-white"
+                className="order-1 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#f3b91d] disabled:bg-[#b7c8df] disabled:text-white sm:order-2"
               >
                 Continue
                 <ArrowRightIcon className="h-4 w-4" />
@@ -738,8 +783,8 @@ export default function CreateEvent() {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={submitting || !step3Valid}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#f3b91d] disabled:bg-[#b7c8df] disabled:text-white"
+                disabled={submitting || !step3Valid || !confirmedDetails}
+                className="order-1 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary transition-colors hover:bg-[#f3b91d] disabled:bg-[#b7c8df] disabled:text-white sm:order-2"
               >
                 {submitting ? "Creating event..." : "Create event"}
               </button>
