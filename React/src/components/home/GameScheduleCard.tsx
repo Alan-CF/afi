@@ -111,7 +111,7 @@ export default function GameScheduleCard({ event, className = "" }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-5 md:px-6 pb-5 md:pb-6 gap-3 mt-auto">
+      <div className="flex items-center px-5 md:px-6 pb-5 md:pb-6 gap-3 mt-auto">
         <div className="min-w-0 flex-1">
           {event.venue && (
             <p className="font-lato text-xs font-bold text-[#1f3668] truncate">{event.venue}</p>
@@ -122,9 +122,6 @@ export default function GameScheduleCard({ event, className = "" }: Props) {
             </p>
           )}
         </div>
-        <span className="font-lato text-xs font-bold text-secondary group-hover:text-[#5780AE] transition-colors shrink-0">
-          See details →
-        </span>
       </div>
     </button>
   );

@@ -26,7 +26,6 @@ type RawRow = {
   city: string | null;
   country: string;
   capacity: number | null;
-  tags: string[] | null;
 };
 
 function mapRow(row: RawRow, goingCount = 0): FanEvent {
@@ -42,14 +41,14 @@ function mapRow(row: RawRow, goingCount = 0): FanEvent {
     country: row.country,
     capacity: row.capacity,
     goingCount,
-    tags: row.tags ?? [],
+    tags: [],
   };
 }
 
 export async function fetchUpcomingFanEvents(limit = 10): Promise<FanEvent[]> {
   const { data, error } = await supabase
     .from("fan_events")
-    .select("id, title, description, image_url, start_at, end_at, venue, city, country, capacity, tags")
+    .select("id, title, description, image_url, start_at, end_at, venue, city, country, capacity")
     .eq("is_public", true)
     .gte("start_at", new Date().toISOString())
     .order("start_at", { ascending: true })

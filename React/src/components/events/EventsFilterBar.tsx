@@ -3,7 +3,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/solid";
 
-export type FanEventsSortMode = "upcoming" | "popular" | "recent";
+export type FanEventsSortMode = "upcoming" | "newest" | "popular" | "alpha";
 
 export interface SortOption {
   value: FanEventsSortMode;
@@ -12,8 +12,9 @@ export interface SortOption {
 
 export const SORT_OPTIONS: SortOption[] = [
   { value: "upcoming", label: "Upcoming" },
-  { value: "popular", label: "Most going" },
-  { value: "recent", label: "Recent" },
+  { value: "newest", label: "Newest" },
+  { value: "popular", label: "Most attended" },
+  { value: "alpha", label: "A-Z" },
 ];
 
 interface Props {

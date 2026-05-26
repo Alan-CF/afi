@@ -138,19 +138,11 @@ type EventRow = {
   start_at: string;
   end_at: string | null;
   venue: string | null;
-  address: string | null;
   city: string | null;
-  state: string | null;
   country: string;
-  country_code: string | null;
-  lat: number | null;
-  lng: number | null;
   capacity: number | null;
   is_public: boolean;
   organizer_profile_id: string;
-  host_bio: string | null;
-  tags: string[] | null;
-  highlights: string[] | null;
 };
 
 type AttendeeRow = {
@@ -213,7 +205,7 @@ export async function fetchFanEventDetail(
   const { data: event, error: eventError } = await supabase
     .from("fan_events")
     .select(
-      "id, title, description, image_url, main_image_path, start_at, end_at, venue, address, city, state, country, country_code, lat, lng, capacity, is_public, organizer_profile_id, host_bio, tags, highlights"
+      "id, title, description, image_url, main_image_path, start_at, end_at, venue, city, country, capacity, is_public, organizer_profile_id"
     )
     .eq("id", eventId)
     .maybeSingle();
@@ -300,21 +292,21 @@ export async function fetchFanEventDetail(
     startAt: eventRow.start_at,
     endAt: eventRow.end_at,
     venue: eventRow.venue,
-    address: eventRow.address,
+    address: null,
     city: eventRow.city,
-    state: eventRow.state,
+    state: null,
     country: eventRow.country,
-    countryCode: eventRow.country_code,
-    lat: eventRow.lat,
-    lng: eventRow.lng,
+    countryCode: null,
+    lat: null,
+    lng: null,
     category: null,
-    highlights: eventRow.highlights ?? [],
-    tags: eventRow.tags ?? [],
+    highlights: [],
+    tags: [],
     capacity: eventRow.capacity,
     isPublic: eventRow.is_public,
     organizerProfileId: eventRow.organizer_profile_id,
     organizer,
-    organizerBio: eventRow.host_bio,
+    organizerBio: null,
     images,
     attendees,
     goingCount,
@@ -440,21 +432,18 @@ export async function createFanEvent(
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
+  void hostBio;
+  void tags;
+  void highlights;
+
   const { data: inserted, error: insertError } = await supabase
     .from("fan_events")
     .insert({
       title: input.title.trim(),
       description: input.description.trim(),
       venue: input.venue.trim(),
-      address: input.address?.trim() ? input.address.trim() : null,
       city: input.city?.trim() ? input.city.trim() : null,
-      state: input.state?.trim() ? input.state.trim() : null,
       country,
-      country_code: input.countryCode?.trim()
-        ? input.countryCode.trim().toUpperCase()
-        : null,
-      lat: input.lat != null && Number.isFinite(input.lat) ? input.lat : null,
-      lng: input.lng != null && Number.isFinite(input.lng) ? input.lng : null,
       start_at: startDate.toISOString(),
       end_at: endIso,
       capacity:
@@ -463,9 +452,6 @@ export async function createFanEvent(
           : null,
       organizer_profile_id: userId,
       is_public: isPublic,
-      host_bio: hostBio,
-      tags,
-      highlights,
     })
     .select("id")
     .single();
@@ -527,30 +513,11 @@ export async function updateFanEvent(
     if (!trimmed) throw new Error("Location is required.");
     patch.venue = trimmed;
   }
-  if (input.address !== undefined) {
-    patch.address = input.address?.trim() ? input.address.trim() : null;
-  }
   if (input.city !== undefined) {
     patch.city = input.city?.trim() ? input.city.trim() : null;
   }
-  if (input.state !== undefined) {
-    patch.state = input.state?.trim() ? input.state.trim() : null;
-  }
   if (input.country !== undefined) {
     patch.country = input.country?.trim() ? input.country.trim() : "US";
-  }
-  if (input.countryCode !== undefined) {
-    patch.country_code = input.countryCode?.trim()
-      ? input.countryCode.trim().toUpperCase()
-      : null;
-  }
-  if (input.lat !== undefined) {
-    patch.lat =
-      input.lat != null && Number.isFinite(input.lat) ? input.lat : null;
-  }
-  if (input.lng !== undefined) {
-    patch.lng =
-      input.lng != null && Number.isFinite(input.lng) ? input.lng : null;
   }
   if (input.startAt !== undefined) {
     if (!input.startAt) throw new Error("Start date is required.");
@@ -579,19 +546,6 @@ export async function updateFanEvent(
   }
   if (input.isPublic !== undefined) {
     patch.is_public = input.isPublic;
-  }
-  if (input.hostBio !== undefined) {
-    patch.host_bio = input.hostBio?.trim() ? input.hostBio.trim() : null;
-  }
-  if (input.tags !== undefined) {
-    patch.tags = input.tags
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
-  }
-  if (input.highlights !== undefined) {
-    patch.highlights = input.highlights
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
   }
 
   if (Object.keys(patch).length === 0) return;

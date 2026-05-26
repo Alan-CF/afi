@@ -58,7 +58,7 @@ function formatTimeRange(startIso: string, endIso: string | null) {
         hour: "numeric",
         minute: "2-digit",
       });
-  return `${startTime} → ${endLabel}`;
+  return `${startTime} - ${endLabel}`;
 }
 
 function formatDurationLabel(startIso: string, endIso: string | null) {

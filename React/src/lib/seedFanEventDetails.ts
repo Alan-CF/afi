@@ -43,6 +43,10 @@ function daysFromNow(days: number, hour = 19, minute = 30): string {
   return d.toISOString();
 }
 
+function daysAgo(days: number, hour = 19, minute = 30): string {
+  return daysFromNow(-days, hour, minute);
+}
+
 const HANDLE_POOL: string[] = [
   "splashmode30",
   "dubnation23",
@@ -121,9 +125,9 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     coverImageUrl: "/watchparty.png",
     galleryImageUrls: [
       "/watchparty.png",
-      "/court_warriors.png",
-      "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?auto=format&fit=crop&w=1600&q=80",
+      "/watchoartymissionbay2.png",
+      "/watchpartymissionbay3.png",
+      "/chasecenter.png",
     ],
     startAt: daysFromNow(2, 18, 30),
     endAt: daysFromNow(2, 23, 0),
@@ -161,13 +165,11 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
       "Wristbands at noon, signing starts at 2 PM",
     ],
     tags: ["Meetup", "Family Friendly"],
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?auto=format&fit=crop&w=1600&q=80",
+    coverImageUrl: "/jerseysign2.png",
     galleryImageUrls: [
-      "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?auto=format&fit=crop&w=1600&q=80",
-      "/warriors_icon.png",
-      "/watchparty.png",
-      "https://images.unsplash.com/photo-1518614368389-c0ce372a37b7?auto=format&fit=crop&w=1600&q=80",
+      "/jerseysign2.png",
+      "/jerseysign3.png",
+      "/jerseysign4.png",
     ],
     startAt: daysFromNow(7, 14, 0),
     endAt: daysFromNow(7, 17, 0),
@@ -207,10 +209,9 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     coverImageUrl: "/baybridgefanrun.png",
     galleryImageUrls: [
       "/baybridgefanrun.png",
-      "/warriors_icon.png",
-      "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1502904550040-7534597429ae?auto=format&fit=crop&w=1600&q=80",
+      "/baybridgefanrun2.png",
+      "/baybridgefanrun3.png",
+      "/baybridgefanrun4.png",
     ],
     startAt: daysFromNow(11, 8, 0),
     endAt: daysFromNow(11, 12, 0),
@@ -251,10 +252,9 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
     coverImageUrl: "/trivianight.png",
     galleryImageUrls: [
       "/trivianight.png",
-      "/warriors_icon.png",
-      "/court_warriors.png",
-      "https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1600&q=80",
+      "/trivianight2.png",
+      "/trivianight3.png",
+      "/trivianight4.png",
     ],
     startAt: daysFromNow(15, 20, 0),
     endAt: daysFromNow(15, 23, 30),
@@ -291,13 +291,12 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
       "Court B for all ages, Court A for serious hoopers",
     ],
     tags: ["Pickup", "Outdoor", "Free"],
-    coverImageUrl: "/court_warriors.png",
+    coverImageUrl: "/pickuppier.png",
     galleryImageUrls: [
-      "/court_warriors.png",
-      "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1518060797335-c5e7c8fa0ed5?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?auto=format&fit=crop&w=1600&q=80",
+      "/pickuppier.png",
+      "/pickuppier2.png",
+      "/pickuppier3.png",
+      "/pickuppier4.png",
     ],
     startAt: daysFromNow(20, 17, 0),
     endAt: daysFromNow(20, 20, 30),
@@ -335,13 +334,12 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
       "Spanish + English commentary",
     ],
     tags: ["Watch Party", "Game Day", "21+", "Food"],
-    coverImageUrl: "/playoffnight.png",
+    coverImageUrl: "/playoffnightcdmx.png",
     galleryImageUrls: [
-      "/playoffnight.png",
-      "/warriors_icon.png",
-      "/watchparty.png",
-      "https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1518614368389-c0ce372a37b7?auto=format&fit=crop&w=1600&q=80",
+      "/playoffnightcdmx.png",
+      "/playoffnightcdmx2.png",
+      "/playoffnightcdmx3.png",
+      "/playoffnight3.png",
     ],
     startAt: daysFromNow(28, 19, 0),
     endAt: daysFromNow(28, 23, 30),
@@ -369,12 +367,183 @@ const SEED_DETAILS: SeedFanEventDetail[] = [
   },
 ];
 
+const PAST_SEED_DETAILS: SeedFanEventDetail[] = [
+  {
+    id: "seed-fan-past-dub-watch-night",
+    title: "Dub Nation Watch Night",
+    description:
+      "Sold-out watch night that filled The Yard for the Warriors road sweep. Big screens, gold towels handed out at the door, and a halftime free-throw contest. Thanks for showing up.",
+    highlights: [
+      "Sold-out watch night",
+      "Halftime free-throw contest",
+      "Gold towels at the door",
+    ],
+    tags: ["Watch Party", "Past", "Dub Nation"],
+    coverImageUrl: "/watchparty.png",
+    galleryImageUrls: [
+      "/watchparty.png",
+      "/watchoartymissionbay2.png",
+      "/watchpartymissionbay3.png",
+      "/chasecenter.png",
+    ],
+    startAt: daysAgo(12, 18, 30),
+    endAt: daysAgo(12, 23, 0),
+    venue: "The Yard at Mission Rock",
+    address: "100 Channel St",
+    city: "San Francisco",
+    state: "California",
+    country: "United States",
+    countryCode: "US",
+    lat: 37.7706,
+    lng: -122.3893,
+    capacity: 220,
+    goingCount: 0,
+    isPublic: true,
+    organizer: {
+      id: "seed-org-the-yard",
+      username: "theyard.sf",
+      avatarUrl: null,
+      bio: "",
+    },
+    attendees: pickAttendees([
+      0, 2, 5, 7, 11, 13, 14, 16, 19, 20, 22, 24, 28, 30, 33, 38, 42, 46,
+    ]),
+  },
+  {
+    id: "seed-fan-past-jersey-throwback",
+    title: "Jersey Signing Throwback",
+    description:
+      "A throwback in-store signing with two Warriors legends. The line wrapped around the block. Fans walked away with autographed retro jerseys and Polaroids by the backdrop.",
+    highlights: [
+      "Two legends, wrap-around line",
+      "Throwback backdrop Polaroids",
+      "Retro gear discounts",
+    ],
+    tags: ["Meetup", "Past"],
+    coverImageUrl: "/jerseysign2.png",
+    galleryImageUrls: [
+      "/jerseysign2.png",
+      "/jerseysign3.png",
+      "/jerseysign4.png",
+    ],
+    startAt: daysAgo(26, 14, 0),
+    endAt: daysAgo(26, 17, 0),
+    venue: "Warriors Pop-up Store",
+    address: "601 1st St",
+    city: "Oakland",
+    state: "California",
+    country: "United States",
+    countryCode: "US",
+    lat: 37.7505,
+    lng: -122.2034,
+    capacity: 300,
+    goingCount: 0,
+    isPublic: true,
+    organizer: {
+      id: "seed-org-warriors-popup",
+      username: "warriors.popup",
+      avatarUrl: null,
+      bio: "",
+    },
+    attendees: pickAttendees([
+      0, 4, 6, 9, 10, 12, 15, 21, 23, 25, 27, 29, 32, 49,
+    ]),
+  },
+  {
+    id: "seed-fan-past-bay-run-community",
+    title: "Bay Run Community Day",
+    description:
+      "Two thousand runners along the Crissy Field loop for the spring charity run. Every finisher got a tech tee and a high-five from Warriors alumni at the finish line.",
+    highlights: [
+      "Two thousand finishers",
+      "Alumni high-fives at the finish",
+      "Tech tees for every runner",
+    ],
+    tags: ["Charity", "Past", "Outdoor"],
+    coverImageUrl: "/baybridgefanrun.png",
+    galleryImageUrls: [
+      "/baybridgefanrun.png",
+      "/baybridgefanrun2.png",
+      "/baybridgefanrun3.png",
+      "/baybridgefanrun4.png",
+    ],
+    startAt: daysAgo(45, 8, 0),
+    endAt: daysAgo(45, 12, 0),
+    venue: "Crissy Field East Lawn",
+    address: "199 Mason St",
+    city: "San Francisco",
+    state: "California",
+    country: "United States",
+    countryCode: "US",
+    lat: 37.8027,
+    lng: -122.4664,
+    capacity: 2200,
+    goingCount: 0,
+    isPublic: true,
+    organizer: {
+      id: "seed-org-warriors-foundation",
+      username: "warriors.foundation",
+      avatarUrl: null,
+      bio: "",
+    },
+    attendees: pickAttendees([
+      0, 1, 3, 5, 7, 11, 13, 16, 19, 22, 24, 28, 30, 33, 38, 42, 46, 8, 12,
+      32, 40, 44,
+    ]),
+  },
+  {
+    id: "seed-fan-past-trivia-finals",
+    title: "Warriors Trivia Finals Night",
+    description:
+      "End-of-season trivia finals at Bartlett Hall. Six rounds, four teams in the final, a $400 bar tab to the winners. Standing room only.",
+    highlights: [
+      "End-of-season trivia finals",
+      "Four-team final round",
+      "$400 bar tab to winners",
+    ],
+    tags: ["Meetup", "Past", "21+"],
+    coverImageUrl: "/trivianight.png",
+    galleryImageUrls: [
+      "/trivianight.png",
+      "/trivianight2.png",
+      "/trivianight3.png",
+      "/trivianight4.png",
+    ],
+    startAt: daysAgo(60, 20, 0),
+    endAt: daysAgo(60, 23, 30),
+    venue: "Bartlett Hall",
+    address: "242 O'Farrell St",
+    city: "San Francisco",
+    state: "California",
+    country: "United States",
+    countryCode: "US",
+    lat: 37.7866,
+    lng: -122.4099,
+    capacity: 110,
+    goingCount: 0,
+    isPublic: true,
+    organizer: {
+      id: "seed-org-bartlett-hall",
+      username: "bartletthall",
+      avatarUrl: null,
+      bio: "",
+    },
+    attendees: pickAttendees([
+      0, 5, 8, 11, 14, 18, 22, 26, 31, 35, 39, 44, 7, 16, 30,
+    ]),
+  },
+];
+
 for (const detail of SEED_DETAILS) {
   detail.goingCount = detail.attendees.length;
 }
 
+for (const detail of PAST_SEED_DETAILS) {
+  detail.goingCount = detail.attendees.length;
+}
+
 const DETAILS_BY_ID = new Map<string, SeedFanEventDetail>(
-  SEED_DETAILS.map((detail) => [detail.id, detail])
+  [...SEED_DETAILS, ...PAST_SEED_DETAILS].map((detail) => [detail.id, detail])
 );
 
 export function isSeedFanEventId(rawId: string): boolean {
@@ -389,6 +558,10 @@ export function getSeedFanEventDetail(
 
 export function listSeedFanEventDetails(): SeedFanEventDetail[] {
   return SEED_DETAILS;
+}
+
+export function listSeedFanEventDetailsPast(): SeedFanEventDetail[] {
+  return PAST_SEED_DETAILS;
 }
 
 export function listSeedHandlePool(): string[] {

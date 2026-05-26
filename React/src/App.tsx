@@ -16,6 +16,8 @@ import CreateEvent from './pages/CreateEvent';
 import EventDetail from './pages/EventDetail';
 import EditEvent from './pages/EditEvent';
 import GameDetail from './pages/GameDetail';
+import PreviousGames from './pages/PreviousGames';
+import PreviousFanEvents from './pages/PreviousFanEvents';
 import Legacy from './pages/Legacy';
 import Statistics from './pages/Statistics';
 import News from './pages/News';
@@ -62,6 +64,8 @@ function App() {
 
           <Route path="/events" element={<Events />} />
           <Route path="/events/create" element={<CreateEvent />} />
+          <Route path="/events/games/previous" element={<PreviousGames />} />
+          <Route path="/events/fan/previous" element={<PreviousFanEvents />} />
           <Route path="/events/game/:gameId" element={<GameDetail />} />
           <Route path="/events/:eventId/edit" element={<EditEvent />} />
           <Route path="/events/:eventId" element={<EventDetail />} />
