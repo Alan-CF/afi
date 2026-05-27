@@ -35,6 +35,25 @@ type LatestPointLogRow = {
   point_events: PointEventMeta | PointEventMeta[] | null;
 };
 
+function isDuplicateProfileError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const maybeCode =
+    'code' in error && typeof error.code === 'string' ? error.code : '';
+  const maybeMessage =
+    'message' in error && typeof error.message === 'string'
+      ? error.message.toLowerCase()
+      : '';
+
+  return (
+    maybeCode === '23505' ||
+    maybeMessage.includes('duplicate key') ||
+    maybeMessage.includes('profiles_pkey')
+  );
+}
+
 async function resolveAuthenticatedUserId(): Promise<{
   userId: string | null;
   error: Error | null;
@@ -73,6 +92,19 @@ async function createProfile(userId: string): Promise<ProfileRow> {
   });
 
   if (error) {
+    if (isDuplicateProfileError(error)) {
+      const { data: existingProfile, error: existingProfileError } =
+        await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle<ProfileRow>();
+
+      if (!existingProfileError && existingProfile) {
+        return existingProfile;
+      }
+    }
+
     throw error;
   }
 
@@ -165,54 +197,66 @@ export function useProfile() {
     error: null,
   });
   const inFlightRef = useRef<Promise<void> | null>(null);
+  const queuedReloadRef = useRef(false);
 
   const loadProfile = useCallback(async (showLoader = false) => {
     if (inFlightRef.current) {
+      queuedReloadRef.current = true;
       return inFlightRef.current;
     }
 
-    if (showLoader) {
-      setState((prev) => ({ ...prev, loading: true }));
-    }
-
     const request = (async () => {
-      try {
-        const { userId, error: authError } = await resolveAuthenticatedUserId();
+      let shouldShowLoader = showLoader;
 
-        if (authError || !userId) {
+      while (true) {
+        queuedReloadRef.current = false;
+
+        if (shouldShowLoader) {
+          setState((prev) => ({ ...prev, loading: true }));
+          shouldShowLoader = false;
+        }
+
+        try {
+          const { userId, error: authError } = await resolveAuthenticatedUserId();
+
+          if (authError || !userId) {
+            setState({
+              user: null,
+              loading: false,
+              hasLoadedOnce: true,
+              error: authError,
+            });
+          } else {
+            await updateLoginStreak(userId);
+            const profile = await fetchProfile(userId);
+
+            setState({
+              user: profile,
+              loading: false,
+              hasLoadedOnce: true,
+              error: null,
+            });
+
+            void emitRecentPointsToast(userId);
+          }
+        } catch (error) {
           setState({
             user: null,
             loading: false,
             hasLoadedOnce: true,
-            error: authError,
+            error:
+              error instanceof Error
+                ? error
+                : new Error('Failed to load profile'),
           });
-          return;
         }
 
-        await updateLoginStreak(userId);
-        const profile = await fetchProfile(userId);
-
-        setState({
-          user: profile,
-          loading: false,
-          hasLoadedOnce: true,
-          error: null,
-        });
-
-        void emitRecentPointsToast(userId);
-      } catch (error) {
-        setState({
-          user: null,
-          loading: false,
-          hasLoadedOnce: true,
-          error:
-            error instanceof Error
-              ? error
-              : new Error('Failed to load profile'),
-        });
-      } finally {
-        inFlightRef.current = null;
+        if (!queuedReloadRef.current) {
+          break;
+        }
       }
+
+      inFlightRef.current = null;
     })();
 
     inFlightRef.current = request;
