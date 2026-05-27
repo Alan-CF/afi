@@ -59,27 +59,56 @@ async function resolveAuthenticatedUserId(): Promise<{
 }
 
 async function updateLoginStreak(userId: string) {
-  const { error } = await supabase.rpc('update_login_streak', { user_id: userId });
+  const { error } = await supabase.rpc('update_login_streak', {
+    user_id: userId,
+  });
   if (error) {
     console.warn('Failed to update login streak:', error.message);
   }
 }
 
+async function createProfile(userId: string): Promise<ProfileRow> {
+  const { data, error } = await supabase.rpc('create_profile', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const createdProfile = Array.isArray(data) ? data[0] : data;
+  if (!createdProfile) {
+    throw new Error('create_profile did not return a profile');
+  }
+
+  return createdProfile as ProfileRow;
+}
+
 async function fetchProfile(userId: string): Promise<UserProfileData> {
+  const toUserProfile = (data: ProfileRow): UserProfileData => ({
+    ...data,
+    full_name: data.name ?? data.username,
+  });
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single<ProfileRow>();
+    .maybeSingle<ProfileRow>();
 
-  if (error || !data) {
-    throw error ?? new Error('Profile not found');
+  console.log('Fetched profile data:', { data, error });
+
+  if (error) {
+    throw error;
   }
 
-  return {
-    ...data,
-    full_name: data.name ?? data.username,
-  };
+  if (data) {
+    return toUserProfile(data);
+  }
+
+  const createdProfile = await createProfile(userId);
+  console.log('Created new profile:', createdProfile);
+  return toUserProfile(createdProfile);
 }
 
 async function emitRecentPointsToast(userId: string) {
@@ -176,7 +205,10 @@ export function useProfile() {
           user: null,
           loading: false,
           hasLoadedOnce: true,
-          error: error instanceof Error ? error : new Error('Failed to load profile'),
+          error:
+            error instanceof Error
+              ? error
+              : new Error('Failed to load profile'),
         });
       } finally {
         inFlightRef.current = null;
