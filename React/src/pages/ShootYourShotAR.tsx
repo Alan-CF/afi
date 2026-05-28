@@ -24,9 +24,29 @@ type ShootRankingPlayer = {
   games_played: number;
 };
 
-function Hoop({ position }: { position: Position3D }) {
+function Hoop({ position, onMoveX, }: { position: Position3D;
+  onMoveX: (x: number) => void; }) {
+  const hoopRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (!hoopRef.current) return;
+
+    const isDesktop =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 768px)').matches;
+
+    const movementRange = isDesktop ? 1.25 : 0.65;
+    const speed = isDesktop ? 0.65 : 0.75;
+
+    const nextX =
+      position[0] + Math.sin(clock.getElapsedTime() * speed) * movementRange;
+
+    hoopRef.current.position.x = nextX;
+    onMoveX(nextX);
+  });
+
   return (
-    <group position={position}>
+    <group ref={hoopRef} position={position}>
       <mesh position={[0, 0.34, 0]}>
         <boxGeometry args={[1.4, 0.85, 0.08]} />
         <meshStandardMaterial color="#ffffff" />
@@ -40,11 +60,6 @@ function Hoop({ position }: { position: Position3D }) {
       <mesh position={[0, -0.11, 0.38]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.28, 0.025, 16, 64]} />
         <meshStandardMaterial color="#f97316" />
-      </mesh>
-
-      <mesh position={[0, -0.81, -0.05]}>
-        <cylinderGeometry args={[0.04, 0.04, 1.4, 24]} />
-        <meshStandardMaterial color="#1D428A" />
       </mesh>
     </group>
   );
@@ -186,16 +201,14 @@ function Ball({
 }
 
 function ShootYourShotAR() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [cameraReady, setCameraReady] = useState(false);
 
   const isMobileDevice =
     typeof window !== 'undefined' &&
     window.matchMedia('(max-width: 768px)').matches;
 
   const [hoopPlaced] = useState(true);
-  const [hoopPosition] = useState<Position3D>([0, 0.75, -4]);
+  const [hoopPosition] = useState<Position3D>([0, 0.64, -4]);
+  const [currentHoopX, setCurrentHoopX] = useState(0);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
   const [totalShots, setTotalShots] = useState(0);
@@ -225,31 +238,6 @@ function ShootYourShotAR() {
       setTotalShots((current) => current + 1);
     },
   });
-
-  const handleEnterAR = async () => {
-    try {
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-        },
-        audio: false,
-        });
-
-        streamRef.current = stream;
-
-        if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        }
-
-        setCameraReady(true);
-    } catch {
-        setCameraReady(false);
-    }
-    };
 
   const handleRestart = () => {
     resetGame();
@@ -306,12 +294,6 @@ function ShootYourShotAR() {
     saveGame();
   }, [status, gameSaved, score, totalShots]);
 
-  useEffect(() => {
-    return () => {
-        streamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-    }, []);
-
   const successRate =
     totalShots > 0 ? Math.round((score / totalShots) * 100) : 0;
 
@@ -337,25 +319,11 @@ function ShootYourShotAR() {
         </section>
 
         <section className="relative h-[72vh] min-h-[480px] max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none">
-          {!isMobileDevice && (
-            <img
-              src="/court_warriors.png"
-              alt="Warriors court"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
-
-          {isMobileDevice && (
-            <video
-              ref={videoRef}
-              className={`absolute inset-0 h-full w-full object-cover ${
-                cameraReady ? 'block' : 'hidden'
-              }`}
-              autoPlay
-              muted
-              playsInline
-            />
-          )}
+          <img
+            src="/court_warriors.png"
+            alt="Warriors court"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
 
           <div className="absolute inset-0 bg-black/20" />
 
@@ -387,12 +355,12 @@ function ShootYourShotAR() {
                 <PlacementReticle position={[0, -0.4, -2.2]} />
               )}
 
-              {hoopPlaced && <Hoop position={hoopPosition} />}
+              {hoopPlaced && <Hoop position={hoopPosition} onMoveX={setCurrentHoopX} />}
 
               {hoopPlaced && (
                 <Ball
                   canThrow={canThrow}
-                  hoopPosition={hoopPosition}
+                  hoopPosition={[currentHoopX, hoopPosition[1], hoopPosition[2]]}
                   throwRequest={throwRequest}
                   onThrowConsumed={() => setThrowRequest(null)}
                   onScore={addPoint}
@@ -424,18 +392,6 @@ function ShootYourShotAR() {
               </div>
             </div>
 
-            {isMobileDevice && !cameraReady && (
-              <div className="absolute top-28 left-4 right-4 rounded-2xl bg-white/90 border border-white/40 px-4 py-3 text-center shadow-md">
-                <p className="text-secondary font-extrabold">
-                  Start your camera to enter AR mode.
-                </p>
-
-                <p className="text-secondary/70 text-sm font-semibold mt-1">
-                  The hoop and basketball will appear over your real environment.
-                </p>
-              </div>
-            )}
-
             {countdown !== null && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="rounded-full bg-primary text-secondary h-28 w-28 flex items-center justify-center shadow-2xl">
@@ -466,18 +422,9 @@ function ShootYourShotAR() {
             )}
 
             <div className="pointer-events-auto absolute bottom-5 left-4 right-4 flex flex-col gap-3">
-              {isMobileDevice && !cameraReady && (
-                <button
-                  type="button"
-                  onClick={handleEnterAR}
-                  className="rounded-2xl bg-secondary text-white py-4 px-5 font-extrabold uppercase tracking-wide shadow-lg hover:bg-secondary/90 transition border border-white/20"
-                >
-                  Start Camera
-                </button>
-              )}
             </div>
 
-            {hoopPlaced && status === 'idle' && (!isMobileDevice || cameraReady) && (
+            {hoopPlaced && status === 'idle' && (
               <button
                 type="button"
                 onClick={startGame}
@@ -510,8 +457,8 @@ function ShootYourShotAR() {
           </div>
 
           {status === 'finished' && (
-            <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm px-5">
-              <section className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl border border-[var(--color-container-border)]">
+            <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm px-5 py-8 overflow-y-auto">
+              <section className="mx-auto my-6 w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl border border-[var(--color-container-border)]">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary/60 font-bold">
                   Game Over
                 </p>
@@ -602,17 +549,17 @@ function ShootYourShotAR() {
                             </p>
 
                             <p className="text-xs font-semibold text-secondary/50">
-                              {player.games_played} games
+                              {player.games_played} game(s)
                             </p>
                           </div>
 
                           <div className="text-right">
                             <p className="text-sm font-extrabold text-primary">
-                              {player.avg_score}
+                              {player.avg_score} 🏀
                             </p>
 
                             <p className="text-xs font-bold text-secondary/50">
-                              {player.avg_success_rate}%
+                              {player.avg_success_rate}% 
                             </p>
                           </div>
                         </div>
