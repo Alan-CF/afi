@@ -346,51 +346,22 @@ function ShootYourShotAR() {
       return;
     }
 
-    const { data: challenge, error: challengeError } = await supabase
-      .from('shoot_challenges')
-      .select('id, code, status')
-      .eq('code', cleanCode)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc('join_shoot_challenge', {
+      p_code: cleanCode,
+    });
 
-    if (challengeError || !challenge) {
-      setJoinError('Challenge not found.');
+    if (error || !data || data.length === 0) {
+      setJoinError(error?.message ?? 'Challenge not found.');
       return;
     }
 
-    if (challenge.status !== 'waiting') {
-      setJoinError('This challenge already started.');
-      return;
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setJoinError('You need to be logged in.');
-      return;
-    }
-
-    const { error: joinError } = await supabase
-      .from('shoot_challenge_players')
-      .insert({
-        challenge_id: challenge.id,
-        profile_id: user.id,
-        status: 'joined',
-      });
-
-    if (joinError && joinError.code !== '23505') {
-      setJoinError('Could not join challenge.');
-      return;
-    }
-
-    setChallengeId(challenge.id);
-    setChallengeCode(challenge.code);
+    setChallengeId(data[0].challenge_id);
+    setChallengeCode(data[0].challenge_code);
     setIsHost(false);
     setGameMode('lobby');
     setJoinError(null);
 
-    await loadChallengePlayers(challenge.id);
+    await loadChallengePlayers(data[0].challenge_id);
   };
 
   const loadChallengePlayers = async (currentChallengeId: string) => {
@@ -477,6 +448,8 @@ function ShootYourShotAR() {
     setRankingLoading(false);
   };
 
+  const [challengeError, setChallengeError] = useState<string | null>(null);
+
   const handleCreateChallenge = async () => {
     const { data, error } = await supabase.rpc(
       'create_shoot_challenge'
@@ -484,6 +457,7 @@ function ShootYourShotAR() {
 
     if (error || !data || data.length === 0) {
       console.error(error);
+      setChallengeError(error?.message ?? 'Could not create challenge.');
       return;
     }
 
@@ -708,6 +682,13 @@ function ShootYourShotAR() {
               >
                 Join Challenge
               </button>
+
+
+              {challengeError && (
+                <p className="mt-3 text-sm font-bold text-red-500">
+                  {challengeError}
+                </p>
+              )}
             </div>
           </section>
         )}
