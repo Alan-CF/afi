@@ -4,10 +4,13 @@ import {
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
+import { BellIcon } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
+import { useNotifications } from '../../hooks/useNotifications';
 import { useCart } from '../../hooks/useCart';
 import Cart from './Cart';
+import Notifications from './Notifications';
 import ProfileIcon from '../ui/ProfileIcon';
 
 const PRIMARY_LINKS = [
@@ -32,8 +35,10 @@ export default function NavBar() {
   } = useProfile();
 
   const { cartItems, loading: cartLoading, error: cartError } = useCart();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isLoggedIn = hasLoadedOnce && user !== null;
@@ -109,27 +114,52 @@ export default function NavBar() {
                 const cartCount = cartItems.length;
                 const showCartCount =
                   cartCount > 0 && !cartLoading && !cartError;
+                const notifDisabled = profileLoading || !isLoggedIn;
+                const showNotifCount = unreadCount > 0;
                 return (
-                  <button
-                    onClick={() => !cartDisabled && setIsCartOpen(true)}
-                    type="button"
-                    className={`group relative ${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                    aria-label={cartDisabled ? 'Cart disabled' : 'Open cart'}
-                    aria-disabled={cartDisabled}
-                    disabled={cartDisabled}
-                  >
-                    <ShoppingBagIcon className="w-6 h-6" />
-                    {cartLoading ? (
-                      <span
-                        className="skeleton-shimmer absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center overflow-hidden rounded-full"
-                        aria-hidden="true"
-                      ></span>
-                    ) : showCartCount ? (
-                      <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold leading-none text-secondary shadow-sm">
-                        {cartCount > 99 ? '99+' : cartCount}
-                      </span>
-                    ) : null}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        !notifDisabled && setIsNotificationsOpen(true)
+                      }
+                      className={`group relative ${notifDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      aria-label={
+                        notifDisabled
+                          ? 'Notifications disabled'
+                          : 'Open notifications'
+                      }
+                      aria-disabled={notifDisabled}
+                      disabled={notifDisabled}
+                    >
+                      <BellIcon className="w-6 h-6" />
+                      {showNotifCount ? (
+                        <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold leading-none text-secondary shadow-sm">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      onClick={() => !cartDisabled && setIsCartOpen(true)}
+                      type="button"
+                      className={`group relative ${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      aria-label={cartDisabled ? 'Cart disabled' : 'Open cart'}
+                      aria-disabled={cartDisabled}
+                      disabled={cartDisabled}
+                    >
+                      <ShoppingBagIcon className="w-6 h-6" />
+                      {cartLoading ? (
+                        <span
+                          className="skeleton-shimmer absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center overflow-hidden rounded-full"
+                          aria-hidden="true"
+                        ></span>
+                      ) : showCartCount ? (
+                        <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold leading-none text-secondary shadow-sm">
+                          {cartCount > 99 ? '99+' : cartCount}
+                        </span>
+                      ) : null}
+                    </button>
+                  </>
                 );
               })()}
             {!isLoggedOut ? (
@@ -169,6 +199,10 @@ export default function NavBar() {
       </nav>
 
       <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <Notifications
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
 
       <div
         className={`fixed inset-0 z-40 bg-black/40 min-[900px]:hidden transition-opacity duration-300 ${
