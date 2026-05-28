@@ -36,6 +36,7 @@ export function useNotifications() {
       const { data, error: qError } = await supabase
         .from('notifications')
         .select('*')
+        .eq('read', false)
         .eq('profile_id', user.id);
 
       if (qError) throw qError;
