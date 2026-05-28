@@ -355,13 +355,16 @@ function ShootYourShotAR() {
       return;
     }
 
-    setChallengeId(data[0].challenge_id);
-    setChallengeCode(data[0].challenge_code);
+    const joinedChallengeId = data[0].challenge_id;
+    const joinedChallengeCode = data[0].challenge_code;
+
+    setChallengeId(joinedChallengeId);
+    setChallengeCode(joinedChallengeCode);
     setIsHost(false);
     setGameMode('lobby');
     setJoinError(null);
 
-    await loadChallengePlayers(data[0].challenge_id);
+    await loadChallengePlayers(joinedChallengeId);
   };
 
   const loadChallengePlayers = async (currentChallengeId: string) => {
