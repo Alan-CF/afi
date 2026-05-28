@@ -264,7 +264,9 @@ function ShootYourShotAR() {
 
     const allFinished =
       mappedPlayers.length > 0 &&
-      mappedPlayers.every((player) => player.status === 'finished');
+      mappedPlayers.every(
+        (player) => player.status === 'finished' || player.status === 'disconnected'
+      );
 
     const sortedPlayers = [...mappedPlayers].sort((a, b) => {
       const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
@@ -357,6 +359,42 @@ function ShootYourShotAR() {
 
     const joinedChallengeId = data[0].out_challenge_id;
     const joinedChallengeCode = data[0].out_challenge_code;
+
+    const loadChallengeStatus = async () => {
+      if (!challengeId) return;
+
+      const { data, error } = await supabase
+        .from('shoot_challenges')
+        .select('status, started_at')
+        .eq('id', challengeId)
+        .maybeSingle();
+
+      if (error || !data) return;
+
+      if (data.status === 'playing' && gameMode === 'lobby') {
+        setGameMode('solo');
+        startGame();
+      }
+
+      if (data.status === 'completed') {
+        setChallengeCompleted(true);
+      }
+    };
+
+    useEffect(() => {
+      if (!challengeId || gameMode !== 'lobby') return;
+
+      loadChallengeStatus();
+
+      const interval = window.setInterval(() => {
+        loadChallengeStatus();
+        loadChallengePlayers(challengeId);
+      }, 1500);
+
+      return () => {
+        window.clearInterval(interval);
+      };
+    }, [challengeId, gameMode]);
 
     setChallengeId(joinedChallengeId);
     setChallengeCode(joinedChallengeCode);
@@ -1042,7 +1080,9 @@ function ShootYourShotAR() {
                                   <p className="text-xs font-semibold text-secondary/50">
                                     {player.status === 'finished'
                                       ? `${player.total_shots ?? 0} shots`
-                                      : 'Playing...'}
+                                      : player.status === 'joined'
+                                        ? 'Did not start'
+                                        : 'Playing...'}
                                   </p>
                                 </div>
 
