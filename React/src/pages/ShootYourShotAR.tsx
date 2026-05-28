@@ -1105,7 +1105,7 @@ function ShootYourShotAR() {
                   <div className="mt-6 text-left">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h3 className="text-sm font-extrabold uppercase tracking-[0.2em] text-secondary/70">
-                        Top 5
+                        Ranking
                       </h3>
                       <div className="grid grid-cols-2 rounded-xl bg-[var(--color-text-light-soft)] p-1">
                         <button
