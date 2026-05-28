@@ -132,14 +132,6 @@ export default function NavBar() {
                   </button>
                 );
               })()}
-            <button
-              type="button"
-              className="min-[900px]:hidden cursor-pointer"
-              aria-label="Open menu"
-              onClick={() => setIsMenuOpen(true)}
-            >
-              <Bars3Icon className="w-6 h-6" />
-            </button>
             {!isLoggedOut ? (
               <button
                 type="button"
@@ -158,12 +150,20 @@ export default function NavBar() {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="hidden min-[900px]:inline-flex items-center justify-center rounded-full bg-primary px-4 py-1.5 font-lato text-sm font-bold uppercase tracking-wider text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex items-center justify-center rounded-full bg-primary px-3 py-1 min-[900px]:px-4 min-[900px]:py-1.5 font-lato text-[0.7rem] min-[900px]:text-sm font-bold uppercase tracking-wider text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 aria-label="Log in"
               >
                 Log in
               </button>
             )}
+            <button
+              type="button"
+              className="min-[900px]:hidden cursor-pointer"
+              aria-label="Open menu"
+              onClick={() => setIsMenuOpen(true)}
+            >
+              <Bars3Icon className="w-6 h-6" />
+            </button>
           </div>
         </div>
       </nav>
