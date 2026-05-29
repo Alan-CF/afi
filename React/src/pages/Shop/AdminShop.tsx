@@ -159,7 +159,7 @@ function ImageInput({
             ) : (
               <>
                 <PhotoIcon className="h-4 w-4" />
-                Choose image from computer
+                Choose image from device
               </>
             )}
           </label>
@@ -281,10 +281,57 @@ function SelectionButtons<T extends { name: string; image_url: string }>({
   );
 }
 
+// ── Player Selection (opcional, permite deseleccionar) ─────────────────────────
+
+function PlayerSelection({
+  players,
+  selectedName,
+  onSelect,
+  onClear,
+}: {
+  players: Player[];
+  selectedName: string;
+  onSelect: (player: Player) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Choose a player (optional)</p>
+      {players.length === 0 ? (
+        <p className="text-sm text-gray-400">Loading players...</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {players.map((item) => {
+            const isSelected = item.name === selectedName;
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => isSelected ? onClear() : onSelect(item)}
+                className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition-all ${
+                  isSelected
+                    ? "border-secondary bg-secondary text-white"
+                    : "border-gray-200 bg-white text-secondary hover:border-secondary hover:bg-secondary/10"
+                }`}
+              >
+                {item.image_url && (
+                  <img src={item.image_url} alt={item.name} className="h-6 w-6 rounded-full object-cover" />
+                )}
+                <span>{item.name}</span>
+                {isSelected && <XMarkIcon className="h-3 w-3 ml-1 opacity-70" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Edit Modal ─────────────────────────────────────────────────────────────────
 
 function EditModal({
-  product, categories, collections, onClose, onSave,
+  product, categories, collections, players, onClose, onSave,
 }: {
   product: AdminProduct;
   categories: Category[];
@@ -306,6 +353,8 @@ function EditModal({
   const [metaCategoryImg, setMetaCategoryImg] = useState(md?.category?.image_url ?? "");
   const [metaCollection, setMetaCollection] = useState(md?.collection?.name ?? "");
   const [metaCollectionImg, setMetaCollectionImg] = useState(md?.collection?.image_url ?? "");
+  const [metaPlayer, setMetaPlayer] = useState(md?.player?.name ?? "");
+  const [metaPlayerImg, setMetaPlayerImg] = useState(md?.player?.image_url ?? "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -320,6 +369,7 @@ function EditModal({
       meta_data: {
         category: metaCategory ? { name: metaCategory, image_url: metaCategoryImg || null } : null,
         collection: metaCollection ? { name: metaCollection, image_url: metaCollectionImg || null } : null,
+        player: metaPlayer ? { name: metaPlayer, image_url: metaPlayerImg || null } : null,
       },
     });
     setSaving(false);
@@ -372,10 +422,24 @@ function EditModal({
 
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2 pt-2">Meta Data</p>
           <div className="grid gap-4">
-            <SelectionButtons label="Choose one category" items={categories} selectedName={metaCategory}
-              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }} />
-            <SelectionButtons label="Choose one collection" items={collections} selectedName={metaCollection}
-              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }} />
+            <SelectionButtons
+              label="Choose a category"
+              items={categories}
+              selectedName={metaCategory}
+              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }}
+            />
+            <SelectionButtons
+              label="Choose a collection"
+              items={collections}
+              selectedName={metaCollection}
+              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }}
+            />
+            <PlayerSelection
+              players={players}
+              selectedName={metaPlayer}
+              onSelect={(item) => { setMetaPlayer(item.name); setMetaPlayerImg(item.image_url ?? ""); }}
+              onClear={() => { setMetaPlayer(""); setMetaPlayerImg(""); }}
+            />
           </div>
         </div>
 
@@ -452,7 +516,7 @@ function ProductCard({ product, onEdit, onToggle, onDelete }: {
 
 // ── New Product Form ───────────────────────────────────────────────────────────
 
-function NewProductForm({ onCreated, categories, collections }: {
+function NewProductForm({ onCreated, categories, collections, players }: {
   onCreated: () => void; categories: Category[]; collections: Collection[]; players: Player[];
 }) {
   const { createProduct } = useAdminShop();
@@ -467,6 +531,8 @@ function NewProductForm({ onCreated, categories, collections }: {
   const [metaCategoryImg, setMetaCategoryImg] = useState("");
   const [metaCollection, setMetaCollection] = useState("");
   const [metaCollectionImg, setMetaCollectionImg] = useState("");
+  const [metaPlayer, setMetaPlayer] = useState("");
+  const [metaPlayerImg, setMetaPlayerImg] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [err, setErr] = useState(false);
@@ -486,13 +552,17 @@ function NewProductForm({ onCreated, categories, collections }: {
       meta_data: {
         category: metaCategory ? { name: metaCategory, image_url: metaCategoryImg || null } : null,
         collection: metaCollection ? { name: metaCollection, image_url: metaCollectionImg || null } : null,
+        player: metaPlayer ? { name: metaPlayer, image_url: metaPlayerImg || null } : null,
       },
     });
 
     if (ok) {
       setSuccess(true);
       setName(""); setDescription(""); setImageUrl(""); setPrice(""); setDiscount("0");
-      setDetailEntries([]); setMetaCategory(""); setMetaCategoryImg(""); setMetaCollection(""); setMetaCollectionImg("");
+      setDetailEntries([]);
+      setMetaCategory(""); setMetaCategoryImg("");
+      setMetaCollection(""); setMetaCollectionImg("");
+      setMetaPlayer(""); setMetaPlayerImg("");
       onCreated();
       setTimeout(() => setSuccess(false), 3000);
     } else {
@@ -539,10 +609,24 @@ function NewProductForm({ onCreated, categories, collections }: {
 
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2 pt-2">Meta Data</p>
           <div className="grid gap-4">
-            <SelectionButtons label="Choose one category *" items={categories} selectedName={metaCategory}
-              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }} />
-            <SelectionButtons label="Choose one collection *" items={collections} selectedName={metaCollection}
-              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }} />
+            <SelectionButtons
+              label="Choose a category *"
+              items={categories}
+              selectedName={metaCategory}
+              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }}
+            />
+            <SelectionButtons
+              label="Choose a collection *"
+              items={collections}
+              selectedName={metaCollection}
+              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }}
+            />
+            <PlayerSelection
+              players={players}
+              selectedName={metaPlayer}
+              onSelect={(item) => { setMetaPlayer(item.name); setMetaPlayerImg(item.image_url ?? ""); }}
+              onClear={() => { setMetaPlayer(""); setMetaPlayerImg(""); }}
+            />
           </div>
 
           {success && (

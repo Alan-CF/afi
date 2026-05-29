@@ -94,12 +94,20 @@ export function useAdminShop() {
   };
 
   const deleteProduct = async (productId: number) => {
+    const { error: pricingError } = await supabase
+      .from("product_pricing")
+      .delete()
+      .eq("product_id", productId);
+
+    if (pricingError) { console.error(pricingError); return; }
+
     const { error } = await supabase
       .from("product_catalog")
       .delete()
       .eq("id", productId);
 
     if (error) { console.error(error); return; }
+
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 
