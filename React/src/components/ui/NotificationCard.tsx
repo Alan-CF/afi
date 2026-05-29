@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/outline';
 import type { Notification } from '../../hooks/useNotifications';
 
 interface NotificationCardProps {
@@ -34,7 +30,7 @@ export default function NotificationCard({
 
   return (
     <article
-      className="flex items-center gap-4 rounded-xl border border-black/10 bg-white p-4"
+      className="overflow-hidden rounded-xl border border-secondary border-2 bg-white"
       role="button"
       tabIndex={0}
       aria-expanded={expanded}
@@ -47,8 +43,8 @@ export default function NotificationCard({
       }}
     >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <h4 className="truncate text-lg font-semibold text-black">
+        <div className="flex items-center justify-between gap-3 bg-secondary px-4 py-3 text-white">
+          <h4 className="truncate text-lg font-semibold">
             {notification.title}
           </h4>
           <div className="flex items-center gap-2">
@@ -61,40 +57,24 @@ export default function NotificationCard({
                   void onMarkAsRead(notification.id);
                 }}
                 disabled={disabled}
-                className="rounded-full p-2 transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full p-2 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <CheckIcon
-                  className="h-5 w-5 text-secondary"
-                  aria-hidden="true"
-                />
+                <CheckIcon className="h-5 w-5 text-white" aria-hidden="true" />
               </button>
             ) : null}
-
-            <span
-              className="flex items-center text-black/45"
-              aria-hidden="true"
-            >
-              {expanded ? (
-                <ChevronUpIcon className="h-5 w-5" />
-              ) : (
-                <ChevronDownIcon className="h-5 w-5" />
-              )}
-            </span>
           </div>
         </div>
 
-        <p
-          className={`mt-1 text-sm text-black/75 ${expanded ? '' : 'truncate'}`}
-        >
-          {notification.body}
-        </p>
+        <div className="px-4 py-4">
+          <p className={`text-sm text-black/75 ${expanded ? '' : 'truncate'}`}>
+            {notification.body}
+          </p>
 
-        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-black/45">
-          {formatNotificationTime(notification.created_at)}
-        </p>
+          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-black/45">
+            {formatNotificationTime(notification.created_at)}
+          </p>
+        </div>
       </div>
-
-      {/* check button moved into header; chevron shows expanded state */}
     </article>
   );
 }
