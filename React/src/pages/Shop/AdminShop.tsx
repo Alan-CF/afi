@@ -51,7 +51,7 @@ async function uploadProductImage(file: File, productId: number): Promise<string
   return data.publicUrl;
 }
 
-// ── Skeleton Card ──────────────────────────────────────────────────────────────
+//  Skeleton Card while loading
 
 function SkeletonCard() {
   return (
@@ -67,7 +67,7 @@ function SkeletonCard() {
   );
 }
 
-// ── Image Input ────────────────────────────────────────────────────────────────
+// Image Input
 
 function ImageInput({
   value,
@@ -187,7 +187,7 @@ function ImageInput({
   );
 }
 
-// ── Dynamic Details ────────────────────────────────────────────────────────────
+// Dynamic Product Details 
 
 function DynamicDetails({
   entries,
@@ -241,7 +241,7 @@ function DynamicDetails({
   );
 }
 
-// ── Selection Buttons ──────────────────────────────────────────────────────────
+//  Selection Buttons
 
 function SelectionButtons<T extends { name: string; image_url: string }>({
   label, items, selectedName, onSelect,
@@ -281,7 +281,7 @@ function SelectionButtons<T extends { name: string; image_url: string }>({
   );
 }
 
-// ── Player Selection (opcional, permite deseleccionar) ─────────────────────────
+//  Player Selection (opcional, permite deseleccionar)
 
 function PlayerSelection({
   players,
@@ -328,7 +328,7 @@ function PlayerSelection({
   );
 }
 
-// ── Edit Modal ─────────────────────────────────────────────────────────────────
+// Edit Modal
 
 function EditModal({
   product, categories, collections, players, onClose, onSave,
@@ -458,7 +458,7 @@ function EditModal({
   );
 }
 
-// ── Product Card ───────────────────────────────────────────────────────────────
+// Product Card
 
 function ProductCard({ product, onEdit, onToggle, onDelete }: {
   product: AdminProduct; onEdit: () => void; onToggle: () => void; onDelete: () => void;
@@ -514,7 +514,7 @@ function ProductCard({ product, onEdit, onToggle, onDelete }: {
   );
 }
 
-// ── New Product Form ───────────────────────────────────────────────────────────
+// New Product Form
 
 function NewProductForm({ onCreated, categories, collections, players }: {
   onCreated: () => void; categories: Category[]; collections: Collection[]; players: Player[];
@@ -650,7 +650,7 @@ function NewProductForm({ onCreated, categories, collections, players }: {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+// Main Page
 
 export default function AdminShop() {
   const { user, loading: profileLoading } = useProfile();
