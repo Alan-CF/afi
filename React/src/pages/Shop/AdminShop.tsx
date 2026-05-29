@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useProfile } from "../../hooks/useProfile";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { useAdminShop, type AdminProduct } from "../../hooks/useAdminShop";
 import { useCategories, useCollections, usePlayers, type Category, type Collection, type Player } from "../../hooks/useShopGroups";
 import { supabase } from "../../lib/supabaseClient";
+import Filters from "../../components/layout/Shop/Filters";
 import {
   PencilIcon,
   EyeIcon,
@@ -17,6 +18,7 @@ import {
   PhotoIcon,
   LinkIcon,
   ArrowUpTrayIcon,
+  AdjustmentsHorizontalIcon,
 } from "@heroicons/react/24/solid";
 
 type Tab = "visible" | "disabled" | "new";
@@ -51,7 +53,7 @@ async function uploadProductImage(file: File, productId: number): Promise<string
   return data.publicUrl;
 }
 
-//  Skeleton Card while loading
+// ── Skeleton Card ──────────────────────────────────────────────────────────────
 
 function SkeletonCard() {
   return (
@@ -67,18 +69,12 @@ function SkeletonCard() {
   );
 }
 
-// Image Input
+// ── Image Input ────────────────────────────────────────────────────────────────
 
 function ImageInput({
-  value,
-  onChange,
-  productId,
-  compact = false,
+  value, onChange, productId, compact = false,
 }: {
-  value: string;
-  onChange: (url: string) => void;
-  productId?: number;
-  compact?: boolean;
+  value: string; onChange: (url: string) => void; productId?: number; compact?: boolean;
 }) {
   const [mode, setMode] = useState<"url" | "upload">("url");
   const [uploading, setUploading] = useState(false);
@@ -93,11 +89,7 @@ function ImageInput({
     setUploadError(null);
     const url = await uploadProductImage(file, tempId);
     setUploading(false);
-    if (url) {
-      onChange(url);
-    } else {
-      setUploadError("Upload failed. Try again.");
-    }
+    if (url) { onChange(url); } else { setUploadError("Upload failed. Try again."); }
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -106,62 +98,26 @@ function ImageInput({
   return (
     <div className="space-y-3">
       <label className="text-xs font-bold uppercase tracking-widest text-gray-400 block">Image</label>
-
       <div className="inline-flex rounded-xl border border-gray-200 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setMode("url")}
-          className={`flex items-center gap-1.5 px-3 ${py} text-xs font-bold transition-colors ${
-            mode === "url" ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary"
-          }`}
-        >
-          <LinkIcon className="h-3.5 w-3.5" />
-          URL
+        <button type="button" onClick={() => setMode("url")}
+          className={`flex items-center gap-1.5 px-3 ${py} text-xs font-bold transition-colors ${mode === "url" ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary"}`}>
+          <LinkIcon className="h-3.5 w-3.5" /> URL
         </button>
-        <button
-          type="button"
-          onClick={() => setMode("upload")}
-          className={`flex items-center gap-1.5 px-3 ${py} text-xs font-bold transition-colors ${
-            mode === "upload" ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary"
-          }`}
-        >
-          <ArrowUpTrayIcon className="h-3.5 w-3.5" />
-          Upload
+        <button type="button" onClick={() => setMode("upload")}
+          className={`flex items-center gap-1.5 px-3 ${py} text-xs font-bold transition-colors ${mode === "upload" ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary"}`}>
+          <ArrowUpTrayIcon className="h-3.5 w-3.5" /> Upload
         </button>
       </div>
 
       {mode === "url" ? (
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://..."
-          className={`w-full rounded-xl border border-gray-200 px-4 ${py} text-sm text-secondary outline-none focus:border-secondary transition-colors`}
-        />
+        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="https://..."
+          className={`w-full rounded-xl border border-gray-200 px-4 ${py} text-sm text-secondary outline-none focus:border-secondary transition-colors`} />
       ) : (
         <div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFile}
-            className="hidden"
-            id="product-image-upload"
-          />
-          <label
-            htmlFor="product-image-upload"
-            className={`flex items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-gray-200 px-4 ${py} text-sm font-semibold text-gray-400 hover:border-secondary hover:text-secondary cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
-          >
-            {uploading ? (
-              <>
-                <div className="h-4 w-4 rounded-full border-2 border-secondary border-t-transparent animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <PhotoIcon className="h-4 w-4" />
-                Choose image from device
-              </>
-            )}
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" id="product-image-upload" />
+          <label htmlFor="product-image-upload"
+            className={`flex items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-gray-200 px-4 ${py} text-sm font-semibold text-gray-400 hover:border-secondary hover:text-secondary cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+            {uploading ? (<><div className="h-4 w-4 rounded-full border-2 border-secondary border-t-transparent animate-spin" />Uploading...</>) : (<><PhotoIcon className="h-4 w-4" />Choose image from computer</>)}
           </label>
           {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
         </div>
@@ -169,16 +125,9 @@ function ImageInput({
 
       {value && (
         <div className="relative inline-block">
-          <img
-            src={value}
-            alt="Preview"
-            className={`object-cover rounded-xl border border-gray-200 ${compact ? "h-24 w-24" : "h-32 w-32"}`}
-          />
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow"
-          >
+          <img src={value} alt="Preview" className={`object-cover rounded-xl border border-gray-200 ${compact ? "h-24 w-24" : "h-32 w-32"}`} />
+          <button type="button" onClick={() => onChange("")}
+            className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow">
             <XMarkIcon className="h-3 w-3" />
           </button>
         </div>
@@ -187,12 +136,9 @@ function ImageInput({
   );
 }
 
-// Dynamic Product Details 
+// ── Dynamic Details ────────────────────────────────────────────────────────────
 
-function DynamicDetails({
-  entries,
-  onChange,
-}: {
+function DynamicDetails({ entries, onChange }: {
   entries: { key: string; value: string }[];
   onChange: (entries: { key: string; value: string }[]) => void;
 }) {
@@ -203,45 +149,28 @@ function DynamicDetails({
 
   return (
     <div className="space-y-3">
-      {entries.length === 0 && (
-        <p className="text-xs text-gray-400 italic">No details added yet. Click below to add one.</p>
-      )}
+      {entries.length === 0 && <p className="text-xs text-gray-400 italic">No details added yet. Click below to add one.</p>}
       {entries.map((entry, i) => (
         <div key={i} className="flex gap-2 items-center">
-          <input
-            value={entry.key}
-            onChange={(e) => updateEntry(i, "key", e.target.value)}
-            placeholder="Field (e.g. brand)"
-            className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm text-secondary outline-none focus:border-secondary transition-colors"
-          />
-          <input
-            value={entry.value}
-            onChange={(e) => updateEntry(i, "value", e.target.value)}
-            placeholder="Value (e.g. Nike)"
-            className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm text-secondary outline-none focus:border-secondary transition-colors"
-          />
-          <button
-            type="button"
-            onClick={() => removeEntry(i)}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500 transition-colors flex-shrink-0"
-          >
+          <input value={entry.key} onChange={(e) => updateEntry(i, "key", e.target.value)} placeholder="Field (e.g. brand)"
+            className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm text-secondary outline-none focus:border-secondary transition-colors" />
+          <input value={entry.value} onChange={(e) => updateEntry(i, "value", e.target.value)} placeholder="Value (e.g. Nike)"
+            className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm text-secondary outline-none focus:border-secondary transition-colors" />
+          <button type="button" onClick={() => removeEntry(i)}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500 transition-colors flex-shrink-0">
             <XMarkIcon className="h-4 w-4" />
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={addEntry}
-        className="flex items-center gap-2 text-sm font-bold text-secondary border border-dashed border-secondary/40 rounded-xl px-4 py-2 hover:bg-secondary/5 transition-colors w-full justify-center"
-      >
-        <PlusIcon className="h-4 w-4" />
-        Add Detail
+      <button type="button" onClick={addEntry}
+        className="flex items-center gap-2 text-sm font-bold text-secondary border border-dashed border-secondary/40 rounded-xl px-4 py-2 hover:bg-secondary/5 transition-colors w-full justify-center">
+        <PlusIcon className="h-4 w-4" /> Add Detail
       </button>
     </div>
   );
 }
 
-//  Selection Buttons
+// ── Selection Buttons ──────────────────────────────────────────────────────────
 
 function SelectionButtons<T extends { name: string; image_url: string }>({
   label, items, selectedName, onSelect,
@@ -251,26 +180,14 @@ function SelectionButtons<T extends { name: string; image_url: string }>({
   return (
     <div className="space-y-3">
       <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
-      {items.length === 0 ? (
-        <p className="text-sm text-gray-400">Loading options...</p>
-      ) : (
+      {items.length === 0 ? <p className="text-sm text-gray-400">Loading options...</p> : (
         <div className="flex flex-wrap gap-2">
           {items.map((item) => {
             const isSelected = item.name === selectedName;
             return (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() => onSelect(item)}
-                className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition-all ${
-                  isSelected
-                    ? "border-secondary bg-secondary text-white"
-                    : "border-gray-200 bg-white text-secondary hover:border-secondary hover:bg-secondary/10"
-                }`}
-              >
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="h-6 w-6 rounded-full object-cover" />
-                )}
+              <button key={item.name} type="button" onClick={() => onSelect(item)}
+                className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition-all ${isSelected ? "border-secondary bg-secondary text-white" : "border-gray-200 bg-white text-secondary hover:border-secondary hover:bg-secondary/10"}`}>
+                {item.image_url && <img src={item.image_url} alt={item.name} className="h-6 w-6 rounded-full object-cover" />}
                 <span>{item.name}</span>
               </button>
             );
@@ -281,42 +198,22 @@ function SelectionButtons<T extends { name: string; image_url: string }>({
   );
 }
 
-//  Player Selection (opcional, permite deseleccionar)
+// ── Player Selection ───────────────────────────────────────────────────────────
 
-function PlayerSelection({
-  players,
-  selectedName,
-  onSelect,
-  onClear,
-}: {
-  players: Player[];
-  selectedName: string;
-  onSelect: (player: Player) => void;
-  onClear: () => void;
+function PlayerSelection({ players, selectedName, onSelect, onClear }: {
+  players: Player[]; selectedName: string; onSelect: (player: Player) => void; onClear: () => void;
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Choose a player (optional)</p>
-      {players.length === 0 ? (
-        <p className="text-sm text-gray-400">Loading players...</p>
-      ) : (
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Choose one player (optional)</p>
+      {players.length === 0 ? <p className="text-sm text-gray-400">Loading players...</p> : (
         <div className="flex flex-wrap gap-2">
           {players.map((item) => {
             const isSelected = item.name === selectedName;
             return (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() => isSelected ? onClear() : onSelect(item)}
-                className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition-all ${
-                  isSelected
-                    ? "border-secondary bg-secondary text-white"
-                    : "border-gray-200 bg-white text-secondary hover:border-secondary hover:bg-secondary/10"
-                }`}
-              >
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="h-6 w-6 rounded-full object-cover" />
-                )}
+              <button key={item.name} type="button" onClick={() => isSelected ? onClear() : onSelect(item)}
+                className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition-all ${isSelected ? "border-secondary bg-secondary text-white" : "border-gray-200 bg-white text-secondary hover:border-secondary hover:bg-secondary/10"}`}>
+                {item.image_url && <img src={item.image_url} alt={item.name} className="h-6 w-6 rounded-full object-cover" />}
                 <span>{item.name}</span>
                 {isSelected && <XMarkIcon className="h-3 w-3 ml-1 opacity-70" />}
               </button>
@@ -328,17 +225,11 @@ function PlayerSelection({
   );
 }
 
-// Edit Modal
+// ── Edit Modal ─────────────────────────────────────────────────────────────────
 
-function EditModal({
-  product, categories, collections, players, onClose, onSave,
-}: {
-  product: AdminProduct;
-  categories: Category[];
-  collections: Collection[];
-  players: Player[];
-  onClose: () => void;
-  onSave: (updates: Partial<AdminProduct>) => Promise<void>;
+function EditModal({ product, categories, collections, players, onClose, onSave }: {
+  product: AdminProduct; categories: Category[]; collections: Collection[]; players: Player[];
+  onClose: () => void; onSave: (updates: Partial<AdminProduct>) => Promise<void>;
 }) {
   const [name, setName] = useState(product.name);
   const [description, setDescription] = useState(product.description);
@@ -360,11 +251,8 @@ function EditModal({
   const handleSave = async () => {
     setSaving(true);
     await onSave({
-      name,
-      description,
-      image_url: imageUrl || null,
-      price: parseFloat(price),
-      discount: parseFloat(discount || "0"),
+      name, description, image_url: imageUrl || null,
+      price: parseFloat(price), discount: parseFloat(discount || "0"),
       product_details: entriesToRecord(detailEntries),
       meta_data: {
         category: metaCategory ? { name: metaCategory, image_url: metaCategoryImg || null } : null,
@@ -391,19 +279,15 @@ function EditModal({
           <h2 className="text-lg font-extrabold text-white">Edit Product</h2>
           <p className="text-white/60 text-xs mt-0.5">{product.name}</p>
         </div>
-
         <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2">Basic Info</p>
           {field("Name", name, setName, "Product name")}
           <div>
             <label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1 block">Description</label>
-            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the product..."
+            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the product..."
               className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-secondary outline-none focus:border-secondary" />
           </div>
-
           <ImageInput value={imageUrl} onChange={setImageUrl} productId={product.id} compact />
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1 block">Price ($)</label>
@@ -416,38 +300,22 @@ function EditModal({
                 className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-secondary outline-none focus:border-secondary" />
             </div>
           </div>
-
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2 pt-2">Product Details</p>
           <DynamicDetails entries={detailEntries} onChange={setDetailEntries} />
-
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2 pt-2">Meta Data</p>
           <div className="grid gap-4">
-            <SelectionButtons
-              label="Choose a category"
-              items={categories}
-              selectedName={metaCategory}
-              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }}
-            />
-            <SelectionButtons
-              label="Choose a collection"
-              items={collections}
-              selectedName={metaCollection}
-              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }}
-            />
-            <PlayerSelection
-              players={players}
-              selectedName={metaPlayer}
+            <SelectionButtons label="Choose one category" items={categories} selectedName={metaCategory}
+              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }} />
+            <SelectionButtons label="Choose one collection" items={collections} selectedName={metaCollection}
+              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }} />
+            <PlayerSelection players={players} selectedName={metaPlayer}
               onSelect={(item) => { setMetaPlayer(item.name); setMetaPlayerImg(item.image_url ?? ""); }}
-              onClear={() => { setMetaPlayer(""); setMetaPlayerImg(""); }}
-            />
+              onClear={() => { setMetaPlayer(""); setMetaPlayerImg(""); }} />
           </div>
         </div>
-
         <div className="h-px bg-gray-100" />
         <div className="flex gap-3 px-6 py-4">
-          <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-400 hover:bg-gray-50">
-            Cancel
-          </button>
+          <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-400 hover:bg-gray-50">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-2 rounded-xl bg-secondary text-sm font-bold text-white hover:bg-secondary/90 disabled:opacity-50">
             {saving ? "Saving..." : "Save Changes"}
@@ -458,7 +326,7 @@ function EditModal({
   );
 }
 
-// Product Card
+// ── Product Card ───────────────────────────────────────────────────────────────
 
 function ProductCard({ product, onEdit, onToggle, onDelete }: {
   product: AdminProduct; onEdit: () => void; onToggle: () => void; onDelete: () => void;
@@ -500,9 +368,7 @@ function ProductCard({ product, onEdit, onToggle, onDelete }: {
         <p className="text-xs text-gray-400 mt-1 line-clamp-2">{product.description}</p>
         <div className="flex items-center gap-2 mt-2">
           <p className="text-sm font-extrabold text-secondary">${discountedPrice.toFixed(2)}</p>
-          {product.discount > 0 && (
-            <p className="text-xs text-gray-400 line-through">${product.price.toFixed(2)}</p>
-          )}
+          {product.discount > 0 && <p className="text-xs text-gray-400 line-through">${product.price.toFixed(2)}</p>}
         </div>
         {(product.product_details as any)?.category && (
           <span className="mt-2 inline-block text-[10px] uppercase tracking-wide font-bold text-white bg-secondary/70 px-2 py-0.5 rounded-full">
@@ -514,13 +380,12 @@ function ProductCard({ product, onEdit, onToggle, onDelete }: {
   );
 }
 
-// New Product Form
+// ── New Product Form ───────────────────────────────────────────────────────────
 
 function NewProductForm({ onCreated, categories, collections, players }: {
   onCreated: () => void; categories: Category[]; collections: Collection[]; players: Player[];
 }) {
   const { createProduct } = useAdminShop();
-
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -541,13 +406,10 @@ function NewProductForm({ onCreated, categories, collections, players }: {
     if (!name.trim() || !price || !metaCategory || !metaCollection) { setErr(true); return; }
     setSaving(true);
     setErr(false);
-
     const ok = await createProduct({
-      name: name.trim(),
-      description: description.trim(),
+      name: name.trim(), description: description.trim(),
       image_url: imageUrl.trim() || null,
-      price: parseFloat(price),
-      discount: parseFloat(discount || "0"),
+      price: parseFloat(price), discount: parseFloat(discount || "0"),
       product_details: entriesToRecord(detailEntries),
       meta_data: {
         category: metaCategory ? { name: metaCategory, image_url: metaCategoryImg || null } : null,
@@ -555,19 +417,14 @@ function NewProductForm({ onCreated, categories, collections, players }: {
         player: metaPlayer ? { name: metaPlayer, image_url: metaPlayerImg || null } : null,
       },
     });
-
     if (ok) {
       setSuccess(true);
       setName(""); setDescription(""); setImageUrl(""); setPrice(""); setDiscount("0");
-      setDetailEntries([]);
-      setMetaCategory(""); setMetaCategoryImg("");
-      setMetaCollection(""); setMetaCollectionImg("");
-      setMetaPlayer(""); setMetaPlayerImg("");
+      setDetailEntries([]); setMetaCategory(""); setMetaCategoryImg("");
+      setMetaCollection(""); setMetaCollectionImg(""); setMetaPlayer(""); setMetaPlayerImg("");
       onCreated();
       setTimeout(() => setSuccess(false), 3000);
-    } else {
-      setErr(true);
-    }
+    } else { setErr(true); }
     setSaving(false);
   };
 
@@ -586,60 +443,33 @@ function NewProductForm({ onCreated, categories, collections, players }: {
           <p className="text-white/60 text-xs uppercase tracking-widest font-semibold">Addition to the shop</p>
           <h2 className="text-2xl font-extrabold text-white pt-1">New Product</h2>
         </div>
-
         <div className="p-6 space-y-5">
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2">Basic Info</p>
           {field("Product Name *", name, setName, "e.g. Warriors City Edition Jersey")}
           <div>
             <label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1 block">Description</label>
-            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the product..."
+            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the product..."
               className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-secondary outline-none focus:border-secondary" />
           </div>
-
           <ImageInput value={imageUrl} onChange={setImageUrl} />
-
           <div className="grid grid-cols-2 gap-4">
             {field("Price (USD) *", price, setPrice, "0.00", "number")}
             {field("Discount (%)", discount, setDiscount, "0", "number")}
           </div>
-
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2 pt-2">Product Details</p>
           <DynamicDetails entries={detailEntries} onChange={setDetailEntries} />
-
           <p className="text-xs font-bold uppercase tracking-widest text-secondary border-b border-gray-100 pb-2 pt-2">Meta Data</p>
           <div className="grid gap-4">
-            <SelectionButtons
-              label="Choose a category *"
-              items={categories}
-              selectedName={metaCategory}
-              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }}
-            />
-            <SelectionButtons
-              label="Choose a collection *"
-              items={collections}
-              selectedName={metaCollection}
-              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }}
-            />
-            <PlayerSelection
-              players={players}
-              selectedName={metaPlayer}
+            <SelectionButtons label="Choose one category *" items={categories} selectedName={metaCategory}
+              onSelect={(item) => { setMetaCategory(item.name); setMetaCategoryImg(item.image_url ?? ""); }} />
+            <SelectionButtons label="Choose one collection *" items={collections} selectedName={metaCollection}
+              onSelect={(item) => { setMetaCollection(item.name); setMetaCollectionImg(item.image_url ?? ""); }} />
+            <PlayerSelection players={players} selectedName={metaPlayer}
               onSelect={(item) => { setMetaPlayer(item.name); setMetaPlayerImg(item.image_url ?? ""); }}
-              onClear={() => { setMetaPlayer(""); setMetaPlayerImg(""); }}
-            />
+              onClear={() => { setMetaPlayer(""); setMetaPlayerImg(""); }} />
           </div>
-
-          {success && (
-            <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm font-semibold text-green-600">
-              Product created successfully!
-            </div>
-          )}
-          {err && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm font-semibold text-red-600">
-              Please fill in all required fields (Name, Price, Category, Collection).
-            </div>
-          )}
-
+          {success && <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm font-semibold text-green-600">Product created successfully!</div>}
+          {err && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm font-semibold text-red-600">Please fill in all required fields (Name, Price, Category, Collection).</div>}
           <button onClick={handleSubmit} disabled={saving || !name.trim() || !price || !metaCategory || !metaCollection}
             className="w-full py-3 rounded-xl bg-secondary text-white font-bold text-sm hover:bg-secondary/90 disabled:opacity-50 transition-colors">
             {saving ? "Creating..." : "Create Product"}
@@ -650,7 +480,133 @@ function NewProductForm({ onCreated, categories, collections, players }: {
   );
 }
 
-// Main Page
+// ── Product Grid with Search + Filters ────────────────────────────────────────
+
+function ProductGrid({ products, loading, onEdit, onToggle, onDelete }: {
+  products: AdminProduct[];
+  loading: boolean;
+  onEdit: (p: AdminProduct) => void;
+  onToggle: (p: AdminProduct) => void;
+  onDelete: (p: AdminProduct) => void;
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [inputValue, setInputValue] = useState(searchParams.get("search") || "");
+  const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
+  const [isDesktopFiltersOpen, setIsDesktopFiltersOpen] = useState(false);
+
+  const SKELETON_COUNT = 8;
+
+  // Build filtered list from search + URL filter params
+  const filtered = useMemo(() => {
+    const search = (searchParams.get("search") || "").toLowerCase().trim();
+
+    return products.filter((p) => {
+      // Search by name
+      if (search && !p.name.toLowerCase().includes(search)) return false;
+
+      // Filter by meta_data keys (category, collection, player)
+      for (const [key, value] of searchParams.entries()) {
+        if (key === "search") continue;
+        const trimmed = value.trim();
+        if (!trimmed) continue;
+        const md = p.meta_data as any;
+        if (md?.[key]?.name !== trimmed) return false;
+      }
+
+      return true;
+    });
+  }, [products, searchParams]);
+
+  const handleClearSearch = () => {
+    setInputValue("");
+    const next = new URLSearchParams(searchParams);
+    next.delete("search");
+    setSearchParams(next);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const value = inputValue.trim();
+      const next = new URLSearchParams(searchParams);
+      if (value) { next.set("search", value); } else { next.delete("search"); }
+      setSearchParams(next);
+    }
+  };
+
+  return (
+    <div className="relative flex min-h-0 flex-1 overflow-visible">
+      {/* Desktop filters panel */}
+      {isDesktopFiltersOpen && (
+        <div className="hidden md:flex shrink-0">
+          <Filters className="h-full" onClose={() => setIsDesktopFiltersOpen(false)} showCloseOnDesktop />
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        {/* Search bar */}
+        <div className="flex w-full items-center gap-2 mb-6">
+          {!isDesktopFiltersOpen && (
+            <button type="button" aria-label="Open filters"
+              onClick={() => setIsDesktopFiltersOpen(true)}
+              className="hidden md:inline-flex items-center justify-center rounded-2xl border-4 border-secondary bg-white p-3 text-black transition-colors hover:border-primary hover:text-primary">
+              <AdjustmentsHorizontalIcon className="h-6 w-6" />
+            </button>
+          )}
+          <div className="relative flex-1">
+            <input type="text" placeholder="Search products..." value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="w-full rounded-2xl border-4 border-secondary bg-white px-4 py-3 pr-12 font-lato transition-colors focus:border-primary focus:outline-none" />
+            {inputValue && (
+              <button type="button" aria-label="Clear search" onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-500 hover:text-primary">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          <button type="button" aria-label="Open filters"
+            onClick={() => setIsFiltersDrawerOpen(true)}
+            className="md:hidden inline-flex items-center justify-center rounded-2xl border-4 border-secondary bg-white p-3 text-black transition-colors hover:border-primary hover:text-primary">
+            <AdjustmentsHorizontalIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Grid */}
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: SKELETON_COUNT }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-gray-400 py-10">No products found.</p>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={product}
+                onEdit={() => onEdit(product)}
+                onToggle={() => onToggle(product)}
+                onDelete={() => onDelete(product)} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile filters drawer */}
+      {isFiltersDrawerOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
+          <button type="button" aria-label="Close filters" className="absolute inset-0 bg-black/40"
+            onClick={() => setIsFiltersDrawerOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-80 max-w-[85%] bg-white shadow-xl">
+            <div className="h-full overflow-y-auto pt-4">
+              <Filters className="max-w-none" onClose={() => setIsFiltersDrawerOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function AdminShop() {
   const { user, loading: profileLoading } = useProfile();
@@ -687,8 +643,6 @@ export default function AdminShop() {
     return null;
   }
 
-  const SKELETON_COUNT = 8;
-
   return (
     <div className="min-h-screen bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
       <main className="w-full px-8 pb-10 pt-5 lg:px-8">
@@ -701,17 +655,13 @@ export default function AdminShop() {
               {loading ? "Loading..." : `${activeProducts.length} visible · ${disabledProducts.length} disabled`}
             </p>
           </div>
-
           <div className="flex border-t border-white/10">
             {TABS.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-[var(--color-primary)] text-secondary"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                  activeTab === tab.id ? "bg-[var(--color-primary)] text-secondary" : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}>
-                {tab.icon}
-                {tab.label}
+                {tab.icon}{tab.label}
               </button>
             ))}
           </div>
@@ -720,44 +670,26 @@ export default function AdminShop() {
         {activeTab === "visible" && (
           <div>
             <h2 className="text-2xl font-extrabold text-secondary pb-6">Products Accessible to Users</h2>
-            {loading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {Array.from({ length: SKELETON_COUNT }).map((_, i) => <SkeletonCard key={i} />)}
-              </div>
-            ) : activeProducts.length === 0 ? (
-              <p className="text-center text-gray-400 py-10">No visible products.</p>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {activeProducts.map((product) => (
-                  <ProductCard key={product.id} product={product}
-                    onEdit={() => setEditingProduct(product)}
-                    onToggle={() => toggleProduct(product)}
-                    onDelete={() => setDeleteTarget(product)} />
-                ))}
-              </div>
-            )}
+            <ProductGrid
+              products={activeProducts}
+              loading={loading}
+              onEdit={setEditingProduct}
+              onToggle={toggleProduct}
+              onDelete={setDeleteTarget}
+            />
           </div>
         )}
 
         {activeTab === "disabled" && (
           <div>
             <h2 className="text-2xl font-extrabold text-secondary pb-6">Products Hidden to Users</h2>
-            {loading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {Array.from({ length: SKELETON_COUNT }).map((_, i) => <SkeletonCard key={i} />)}
-              </div>
-            ) : disabledProducts.length === 0 ? (
-              <p className="text-center text-gray-400 py-10">No disabled products.</p>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {disabledProducts.map((product) => (
-                  <ProductCard key={product.id} product={product}
-                    onEdit={() => setEditingProduct(product)}
-                    onToggle={() => toggleProduct(product)}
-                    onDelete={() => setDeleteTarget(product)} />
-                ))}
-              </div>
-            )}
+            <ProductGrid
+              products={disabledProducts}
+              loading={loading}
+              onEdit={setEditingProduct}
+              onToggle={toggleProduct}
+              onDelete={setDeleteTarget}
+            />
           </div>
         )}
 
