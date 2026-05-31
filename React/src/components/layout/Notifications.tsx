@@ -87,7 +87,7 @@ export default function Notifications({ isOpen, onClose }: NotificationsProps) {
                 type="button"
                 onClick={() => void handleMarkAllAsRead()}
                 disabled={actionDisabled}
-                className="mb-1 self-end rounded-full border border-black/10 px-3 py-2 font-lato text-sm font-semibold text-black transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mb-1 self-end rounded-full border border-black px-3 py-2 font-lato text-sm font-semibold text-black transition-colors hover:bg-secondary hover:text-primary hover:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Mark all read
               </button>

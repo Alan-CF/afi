@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import type { Notification } from '../../hooks/useNotifications';
 
 interface NotificationCardProps {
@@ -30,11 +26,10 @@ export default function NotificationCard({
   disabled = false,
 }: NotificationCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const isUnread = !notification.read;
 
   return (
     <article
-      className="flex items-center gap-4 rounded-xl border border-black/10 bg-white p-4"
+      className="relative flex items-center gap-4 rounded-2xl bg-[var(--color-text-light-soft)] px-3 py-2 transition-colors"
       role="button"
       tabIndex={0}
       aria-expanded={expanded}
@@ -47,54 +42,39 @@ export default function NotificationCard({
       }}
     >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <h4 className="truncate text-lg font-semibold text-black">
-            {notification.title}
-          </h4>
-          <div className="flex items-center gap-2">
-            {isUnread ? (
-              <button
-                type="button"
-                aria-label={`Mark notification ${notification.title} as read`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void onMarkAsRead(notification.id);
-                }}
-                disabled={disabled}
-                className="rounded-full p-2 transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <CheckIcon
-                  className="h-5 w-5 text-secondary"
-                  aria-hidden="true"
-                />
-              </button>
-            ) : null}
-
-            <span
-              className="flex items-center text-black/45"
-              aria-hidden="true"
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-extrabold text-secondary">
+              {notification.title}
+            </p>
+            <p
+              className={`text-sm font-semibold text-secondary/50 ${
+                expanded ? '' : 'truncate'
+              }`}
             >
-              {expanded ? (
-                <ChevronUpIcon className="h-5 w-5" />
-              ) : (
-                <ChevronDownIcon className="h-5 w-5" />
-              )}
-            </span>
+              {notification.body}
+            </p>
+            <p className="text-xs text-secondary/50">
+              {formatNotificationTime(notification.created_at)}
+            </p>
           </div>
+
+          <div className="shrink-0 text-right" />
         </div>
-
-        <p
-          className={`mt-1 text-sm text-black/75 ${expanded ? '' : 'truncate'}`}
-        >
-          {notification.body}
-        </p>
-
-        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-black/45">
-          {formatNotificationTime(notification.created_at)}
-        </p>
       </div>
 
-      {/* check button moved into header; chevron shows expanded state */}
+      <button
+        type="button"
+        aria-label={`Mark notification ${notification.title} as read`}
+        onClick={(e) => {
+          e.stopPropagation();
+          void onMarkAsRead(notification.id);
+        }}
+        disabled={disabled}
+        className="absolute -top-2 -right-2 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-white transition-opacity hover:opacity-90"
+      >
+        <XMarkIcon className="h-3 w-3" aria-hidden="true" />
+      </button>
     </article>
   );
 }
