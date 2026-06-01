@@ -352,58 +352,76 @@ function ShootYourShotAR() {
       p_code: cleanCode,
     });
 
-    if (error || !data || data.length === 0) {
-      setJoinError(error?.message ?? 'Challenge not found.');
+    console.log('join_shoot_challenge response:', { data, error });
+
+    if (error) {
+      setJoinError(error.message);
       return;
     }
 
-    const joinedChallengeId = data[0].out_challenge_id;
-    const joinedChallengeCode = data[0].out_challenge_code;
+    const joinedChallenge = data?.[0];
 
-    const loadChallengeStatus = async () => {
-      if (!challengeId) return;
+    if (!joinedChallenge) {
+      setJoinError('Challenge not found.');
+      return;
+    }
 
-      const { data, error } = await supabase
-        .from('shoot_challenges')
-        .select('status, started_at')
-        .eq('id', challengeId)
-        .maybeSingle();
+    const joinedChallengeId =
+      joinedChallenge.out_challenge_id ?? joinedChallenge.challenge_id;
 
-      if (error || !data) return;
+    const joinedChallengeCode =
+      joinedChallenge.out_challenge_code ?? joinedChallenge.challenge_code;
 
-      if (data.status === 'playing' && gameMode === 'lobby') {
-        setGameMode('solo');
-        startGame();
-      }
-
-      if (data.status === 'completed') {
-        setChallengeCompleted(true);
-      }
-    };
-
-    useEffect(() => {
-      if (!challengeId || gameMode !== 'lobby') return;
-
-      loadChallengeStatus();
-
-      const interval = window.setInterval(() => {
-        loadChallengeStatus();
-        loadChallengePlayers(challengeId);
-      }, 1500);
-
-      return () => {
-        window.clearInterval(interval);
-      };
-    }, [challengeId, gameMode]);
+    if (!joinedChallengeId || !joinedChallengeCode) {
+      setJoinError('Challenge joined, but response was incomplete.');
+      console.log('Unexpected join response:', joinedChallenge);
+      return;
+    }
 
     setChallengeId(joinedChallengeId);
     setChallengeCode(joinedChallengeCode);
     setIsHost(false);
-    setGameMode('lobby');
     setJoinError(null);
+    setGameMode('lobby');
 
     await loadChallengePlayers(joinedChallengeId);
   };
+
+  const loadChallengeStatus = async () => {
+    if (!challengeId) return;
+
+    const { data, error } = await supabase
+      .from('shoot_challenges')
+      .select('status, started_at')
+      .eq('id', challengeId)
+      .maybeSingle();
+
+    if (error || !data) return;
+
+    if (data.status === 'playing' && gameMode === 'lobby') {
+      setGameMode('solo');
+      startGame();
+    }
+
+    if (data.status === 'completed') {
+      setChallengeCompleted(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!challengeId || gameMode !== 'lobby') return;
+
+    loadChallengeStatus();
+
+    const interval = window.setInterval(() => {
+      loadChallengeStatus();
+      loadChallengePlayers(challengeId);
+    }, 1500);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [challengeId, gameMode]);
 
   const loadChallengePlayers = async (currentChallengeId: string) => {
     const { data, error } = await supabase
@@ -614,7 +632,13 @@ function ShootYourShotAR() {
       await loadRankings();
     };
 
-    saveGame();
+    const timeout = window.setTimeout(() => {
+      saveGame();
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
   }, [status, gameSaved, score, totalShots, challengeId, isChallengeMode]);
 
   useEffect(() => {
