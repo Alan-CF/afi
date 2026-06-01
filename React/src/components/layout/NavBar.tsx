@@ -26,6 +26,12 @@ const PRIMARY_LINKS = [
   { to: '/eshop', label: 'eShop' },
 ];
 
+const ADMIN_LINKS = [
+  { to: '/', label: 'Home' },
+  { to: '/shop', label: 'Shop' },
+  { to: '/admin/shop', label: 'Admin Shop' },
+];
+
 export default function NavBar() {
   const {
     user,
@@ -43,6 +49,8 @@ export default function NavBar() {
 
   const isLoggedIn = hasLoadedOnce && user !== null;
   const isLoggedOut = hasLoadedOnce && user === null;
+  const isAdmin = user?.role === 'admin';
+  const navLinks = isAdmin ? ADMIN_LINKS : PRIMARY_LINKS;
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
@@ -72,7 +80,7 @@ export default function NavBar() {
           </button>
 
           <ul className="hidden min-[900px]:flex flex-1 min-w-0 items-center justify-center gap-0 xl:gap-3">
-            {PRIMARY_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
@@ -108,7 +116,9 @@ export default function NavBar() {
                 </span>
               </button>
             )}
-            {(isLoggedIn || profileLoading) &&
+
+            {!isAdmin &&
+              (isLoggedIn || profileLoading) &&
               (() => {
                 const cartDisabled = profileLoading || !isLoggedIn;
                 const cartCount = cartItems.length;
@@ -162,6 +172,7 @@ export default function NavBar() {
                   </>
                 );
               })()}
+
             {!isLoggedOut ? (
               <button
                 type="button"
@@ -233,7 +244,7 @@ export default function NavBar() {
         </div>
 
         <ul className="flex flex-1 flex-col">
-          {PRIMARY_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <li key={link.to}>
               <NavLink
                 to={link.to}

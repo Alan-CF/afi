@@ -413,10 +413,6 @@ function Fanatic() {
                 the whole game.
               </p>
               <p className="font-lato text-base mt-2">
-                Each game is 1 week long. They start on Mondays at 12:00 AM UTC
-                and end the following Sunday at 11:59 PM UTC.
-              </p>
-              <p className="font-lato text-base mt-2">
                 Answers are evaluated by meaning, not only exact wording, so
                 close guesses can still score based on similarity.
               </p>
