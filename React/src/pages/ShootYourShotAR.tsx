@@ -5,6 +5,8 @@ import { useBasketballGame } from '../hooks/useBasketballGame';
 import { useThrowGesture } from '../hooks/useThrowGesture';
 import { useTexture } from '@react-three/drei';
 import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import ArrowLeftIcon from '@heroicons/react/24/solid/ArrowLeftIcon';
 
 type ThrowVelocity = {
   x: number;
@@ -213,7 +215,7 @@ function Ball({
 }
 
 function ShootYourShotAR() {
-  
+  const navigate = useNavigate();
   const [gameMode, setGameMode] = useState<
     'menu' | 'solo' | 'create' | 'join' | 'lobby'
   >('menu');
@@ -709,6 +711,14 @@ function ShootYourShotAR() {
     return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
+        <button
+          type="button"
+          onClick={() => navigate('/games')}
+          aria-label="Go back"
+          className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md transition hover:bg-secondary/90"
+        >
+          <ArrowLeftIcon className="h-5 w-5" />
+        </button>
         {gameMode === 'menu' && (
           <section className="rounded-3xl bg-white border border-[var(--color-container-border)] p-6 text-center shadow-sm">
             <p className="text-secondary/70 text-sm uppercase tracking-widest font-semibold">
