@@ -34,7 +34,6 @@ import ShootYourShotAR from './pages/ShootYourShotAR';
 import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from "./components/ui/PointsToastGlobal";
-import AdminShop from "./pages/Shop/AdminShop";
 
 function App() {
   return (
@@ -76,7 +75,6 @@ function App() {
           <Route path="/news" element={<News />} />
           <Route path="/news/:slug" element={<NewsDetail />} />
           <Route path="/shoot-your-shot" element={<ShootYourShotAR />} />
-          <Route path="/admin/shop" element={<AdminShop />} />
         </Route>
 
           <Route path="/rooms/chat" element={<RoomChat />} />
