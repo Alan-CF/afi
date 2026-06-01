@@ -1,297 +1,130 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useState, useEffect } from 'react';
 
 export interface UserProfileData {
-  id: string;
-  username: string;
-  avatar_url: string;
-  full_name: string;
-  fanatic_coins: number;
-  e_coins: number;
-  selected_frame_id: string | null;
-  caption: string | null;
-  streak: number;
-  name: string | null;
-}
-
-type ProfileState = {
-  user: UserProfileData | null;
-  loading: boolean;
-  hasLoadedOnce: boolean;
-  error: Error | null;
-};
-
-type ProfileRow = Omit<UserProfileData, 'full_name'>;
-
-type PointEventMeta = {
-  label: string | null;
-  description: string | null;
-};
-
-type LatestPointLogRow = {
-  points: number;
-  created_at: string;
-  event_key: string;
-  point_events: PointEventMeta | PointEventMeta[] | null;
-};
-
-function isDuplicateProfileError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-
-  const maybeCode =
-    'code' in error && typeof error.code === 'string' ? error.code : '';
-  const maybeMessage =
-    'message' in error && typeof error.message === 'string'
-      ? error.message.toLowerCase()
-      : '';
-
-  return (
-    maybeCode === '23505' ||
-    maybeMessage.includes('duplicate key') ||
-    maybeMessage.includes('profiles_pkey')
-  );
-}
-
-async function resolveAuthenticatedUserId(): Promise<{
-  userId: string | null;
-  error: Error | null;
-}> {
-  const {
-    data: { user: authUser },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError) {
-    return { userId: null, error: authError };
-  }
-
-  const isAnonymousUser =
-    authUser?.is_anonymous || authUser?.app_metadata?.provider === 'anonymous';
-
-  if (!authUser || isAnonymousUser) {
-    return { userId: null, error: null };
-  }
-
-  return { userId: authUser.id, error: null };
-}
-
-async function updateLoginStreak(userId: string) {
-  const { error } = await supabase.rpc('update_login_streak', {
-    user_id: userId,
-  });
-  if (error) {
-    console.warn('Failed to update login streak:', error.message);
-  }
-}
-
-async function createProfile(userId: string): Promise<ProfileRow> {
-  const { data, error } = await supabase.rpc('create_profile', {
-    p_user_id: userId,
-  });
-
-  if (error) {
-    if (isDuplicateProfileError(error)) {
-      const { data: existingProfile, error: existingProfileError } =
-        await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle<ProfileRow>();
-
-      if (!existingProfileError && existingProfile) {
-        return existingProfile;
-      }
-    }
-
-    throw error;
-  }
-
-  const createdProfile = Array.isArray(data) ? data[0] : data;
-  if (!createdProfile) {
-    throw new Error('create_profile did not return a profile');
-  }
-
-  return createdProfile as ProfileRow;
-}
-
-async function fetchProfile(userId: string): Promise<UserProfileData> {
-  const toUserProfile = (data: ProfileRow): UserProfileData => ({
-    ...data,
-    full_name: data.name ?? data.username,
-  });
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle<ProfileRow>();
-
-  console.log('Fetched profile data:', { data, error });
-
-  if (error) {
-    throw error;
-  }
-
-  if (data) {
-    return toUserProfile(data);
-  }
-
-  const createdProfile = await createProfile(userId);
-  console.log('Created new profile:', createdProfile);
-  return toUserProfile(createdProfile);
-}
-
-async function emitRecentPointsToast(userId: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const { data: latestLog } = await supabase
-    .from('point_logs')
-    .select('points, created_at, event_key, point_events(label, description)')
-    .eq('profile_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle<LatestPointLogRow>();
-
-  if (!latestLog) {
-    return;
-  }
-
-  const logDate = new Date(latestLog.created_at);
-  const isRecent = Date.now() - logDate.getTime() < 30_000;
-
-  if (!isRecent) {
-    return;
-  }
-
-  const toastKey = `points-toast-${latestLog.created_at}`;
-  if (sessionStorage.getItem(toastKey)) {
-    return;
-  }
-  sessionStorage.setItem(toastKey, '1');
-
-  const eventMeta = Array.isArray(latestLog.point_events)
-    ? latestLog.point_events[0]
-    : latestLog.point_events;
-
-  window.dispatchEvent(
-    new CustomEvent('points-earned', {
-      detail: {
-        points: latestLog.points,
-        label: eventMeta?.label ?? latestLog.event_key,
-        description: eventMeta?.description ?? '',
-        eventKey: latestLog.event_key,
-      },
-    })
-  );
+    id: string;
+    username: string;
+    avatar_url: string;
+    full_name: string;
+    fanatic_coins: number;
+    e_coins: number;
+    selected_frame_id: string | null;
+    caption: string | null;
+    streak: number;
+    name: string | null;
+    role: 'user' | 'admin';
 }
 
 export function useProfile() {
-  const [state, setState] = useState<ProfileState>({
-    user: null,
-    loading: true,
-    hasLoadedOnce: false,
-    error: null,
-  });
-  const inFlightRef = useRef<Promise<void> | null>(null);
-  const queuedReloadRef = useRef(false);
+    const [user, setUser] = useState<UserProfileData | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState<boolean>(false);
+    const [error, setError] = useState<Error | null>(null);
 
-  const loadProfile = useCallback(async (showLoader = false) => {
-    if (inFlightRef.current) {
-      queuedReloadRef.current = true;
-      return inFlightRef.current;
-    }
+    const getUser = async (showLoader = false) => {
+        if (showLoader) setLoading(true);
 
-    const request = (async () => {
-      let shouldShowLoader = showLoader;
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-      while (true) {
-        queuedReloadRef.current = false;
+        const isAnonymousUser =
+            authUser?.is_anonymous ||
+            authUser?.app_metadata?.provider === "anonymous";
 
-        if (shouldShowLoader) {
-          setState((prev) => ({ ...prev, loading: true }));
-          shouldShowLoader = false;
+        if (authError || !authUser || isAnonymousUser) {
+            setUser(null);
+            setError(authError ?? null);
+            setLoading(false);
+            setHasLoadedOnce(true);
+            return;
         }
 
-        try {
-          const { userId, error: authError } = await resolveAuthenticatedUserId();
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
 
-          if (authError || !userId) {
-            setState({
-              user: null,
-              loading: false,
-              hasLoadedOnce: true,
-              error: authError,
+        if (profileError) {
+            setUser(null);
+            setError(profileError);
+            setLoading(false);
+            setHasLoadedOnce(true);
+            return;
+        }
+
+        await supabase.rpc("update_login_streak", { user_id: authUser.id });
+
+        const { data: updatedProfile, error: updatedError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", authUser.id)
+            .single();
+
+        if (updatedError) {
+            setUser(null);
+            setError(updatedError);
+        } else {
+            setUser({
+                ...updatedProfile,
+                full_name: updatedProfile.name ?? updatedProfile.username,
+                role: updatedProfile.role ?? 'user'
             });
-          } else {
-            await updateLoginStreak(userId);
-            const profile = await fetchProfile(userId);
+            setError(null);
 
-            setState({
-              user: profile,
-              loading: false,
-              hasLoadedOnce: true,
-              error: null,
-            });
+            const { data: latestLog } = await supabase
+                .from("point_logs")
+                .select("points, created_at, event_key, point_events(label, description)")
+                .eq("profile_id", authUser.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .single();
 
-            void emitRecentPointsToast(userId);
-          }
-        } catch (error) {
-          setState({
-            user: null,
-            loading: false,
-            hasLoadedOnce: true,
-            error:
-              error instanceof Error
-                ? error
-                : new Error('Failed to load profile'),
-          });
+            if (latestLog) {
+                const logDate = new Date(latestLog.created_at);
+                const now = new Date();
+                const isRecent = (now.getTime() - logDate.getTime()) < 30_000;
+
+                if (isRecent) {
+                    const toastKey = `points-toast-${latestLog.created_at}`;
+                    if (!sessionStorage.getItem(toastKey)) {
+                        sessionStorage.setItem(toastKey, "1");
+                        window.dispatchEvent(new CustomEvent("points-earned", {
+                            detail: {
+                                points: latestLog.points,
+                                label: (latestLog as any).point_events?.label ?? latestLog.event_key,
+                                description: (latestLog as any).point_events?.description ?? "",
+                                eventKey: latestLog.event_key,
+                            }
+                        }));
+                    }
+                }
+            }
         }
 
-        if (!queuedReloadRef.current) {
-          break;
-        }
-      }
-
-      inFlightRef.current = null;
-    })();
-
-    inFlightRef.current = request;
-    return request;
-  }, []);
-
-  useEffect(() => {
-    void loadProfile(true);
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void loadProfile(false);
-    });
-
-    const onProfileUpdated = () => {
-      void loadProfile(false);
+        setLoading(false);
+        setHasLoadedOnce(true);
     };
-    window.addEventListener('profile-updated', onProfileUpdated);
 
-    return () => {
-      subscription.unsubscribe();
-      window.removeEventListener('profile-updated', onProfileUpdated);
+    useEffect(() => {
+        getUser(true);
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+            getUser(false);
+        });
+
+        const onProfileUpdated = () => getUser(false);
+        window.addEventListener("profile-updated", onProfileUpdated);
+
+        return () => {
+            subscription.unsubscribe();
+            window.removeEventListener("profile-updated", onProfileUpdated);
+        };
+    }, []);
+
+    const refreshProfile = async () => {
+        await getUser(false);
+        window.dispatchEvent(new CustomEvent("profile-updated"));
     };
-  }, [loadProfile]);
 
-  const refreshProfile = useCallback(async () => {
-    await loadProfile(false);
-  }, [loadProfile]);
-
-  return {
-    user: state.user,
-    loading: state.loading,
-    hasLoadedOnce: state.hasLoadedOnce,
-    error: state.error,
-    refreshProfile,
-  };
+    return { user, loading, hasLoadedOnce, error, refreshProfile };
 }
