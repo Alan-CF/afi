@@ -20,14 +20,21 @@ export async function createMockProduct() {
       },
       meta_data: {
         category: {
-          name: 'Jerseys',
+          name: 'Test Category',
           image_url:
-            'https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/categories/jersay.jpg',
+            'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
         },
         collection: {
-          name: 'Game Day',
+          name: 'Test Collection',
           image_url:
-            'https://upktcnvztyldwzapbuqq.supabase.co/storage/v1/object/public/products/collections/game_day.jpg',
+            'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
+        },
+        player: {
+          name: 'Test Player',
+          number: 99,
+          position: 'Test Position',
+          image_url:
+            'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
         },
       },
     })
