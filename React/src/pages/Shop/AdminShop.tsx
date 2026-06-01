@@ -29,7 +29,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "new", label: "Add Product", icon: <PlusIcon className="h-4 w-4" /> },
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function recordToEntries(obj: Record<string, unknown>): { key: string; value: string }[] {
   return Object.entries(obj).map(([key, value]) => ({ key, value: String(value ?? "") }));
@@ -53,7 +53,7 @@ async function uploadProductImage(file: File, productId: number): Promise<string
   return data.publicUrl;
 }
 
-// ── Skeleton Card ──────────────────────────────────────────────────────────────
+//  Skeleton Card 
 
 function SkeletonCard() {
   return (
@@ -69,7 +69,7 @@ function SkeletonCard() {
   );
 }
 
-// ── Image Input ────────────────────────────────────────────────────────────────
+//  Image Input 
 
 function ImageInput({
   value, onChange, productId, compact = false,
@@ -136,7 +136,7 @@ function ImageInput({
   );
 }
 
-// ── Dynamic Details ────────────────────────────────────────────────────────────
+//  Dynamic Details 
 
 function DynamicDetails({ entries, onChange }: {
   entries: { key: string; value: string }[];
@@ -170,7 +170,7 @@ function DynamicDetails({ entries, onChange }: {
   );
 }
 
-// ── Selection Buttons ──────────────────────────────────────────────────────────
+//  Selection Buttons 
 
 function SelectionButtons<T extends { name: string; image_url: string }>({
   label, items, selectedName, onSelect,
@@ -198,7 +198,7 @@ function SelectionButtons<T extends { name: string; image_url: string }>({
   );
 }
 
-// ── Player Selection ───────────────────────────────────────────────────────────
+//  Player Selection 
 
 function PlayerSelection({ players, selectedName, onSelect, onClear }: {
   players: Player[]; selectedName: string; onSelect: (player: Player) => void; onClear: () => void;
@@ -225,7 +225,7 @@ function PlayerSelection({ players, selectedName, onSelect, onClear }: {
   );
 }
 
-// ── Edit Modal ─────────────────────────────────────────────────────────────────
+//  Edit Modal 
 
 function EditModal({ product, categories, collections, players, onClose, onSave }: {
   product: AdminProduct; categories: Category[]; collections: Collection[]; players: Player[];
@@ -326,7 +326,7 @@ function EditModal({ product, categories, collections, players, onClose, onSave 
   );
 }
 
-// ── Product Card ───────────────────────────────────────────────────────────────
+//  Product Card 
 
 function ProductCard({ product, onEdit, onToggle, onDelete }: {
   product: AdminProduct; onEdit: () => void; onToggle: () => void; onDelete: () => void;
@@ -380,7 +380,7 @@ function ProductCard({ product, onEdit, onToggle, onDelete }: {
   );
 }
 
-// ── New Product Form ───────────────────────────────────────────────────────────
+//  New Product Form 
 
 function NewProductForm({ onCreated, categories, collections, players }: {
   onCreated: () => void; categories: Category[]; collections: Collection[]; players: Player[];
@@ -480,7 +480,7 @@ function NewProductForm({ onCreated, categories, collections, players }: {
   );
 }
 
-// ── Product Grid with Search + Filters ────────────────────────────────────────
+//  Product Grid with Search + Filters 
 
 function ProductGrid({ products, loading, onEdit, onToggle, onDelete }: {
   products: AdminProduct[];
@@ -606,7 +606,7 @@ function ProductGrid({ products, loading, onEdit, onToggle, onDelete }: {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+//  Main Page 
 
 export default function AdminShop() {
   const { user, loading: profileLoading } = useProfile();
