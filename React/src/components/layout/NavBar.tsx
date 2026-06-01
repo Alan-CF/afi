@@ -4,9 +4,11 @@ import {
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
+import { BellIcon } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import Cart from './Cart';
+import Notifications from './Notifications';
 import ProfileIcon from '../ui/ProfileIcon';
 
 const PRIMARY_LINKS = [
@@ -38,6 +40,7 @@ export default function NavBar() {
 
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isLoggedIn = hasLoadedOnce && user !== null;
@@ -159,6 +162,10 @@ export default function NavBar() {
       </nav>
 
       <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <Notifications
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
 
       <div
         className={`fixed inset-0 z-40 bg-black/40 min-[900px]:hidden transition-opacity duration-300 ${
