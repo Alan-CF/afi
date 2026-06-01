@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import Home from './pages/Home';
 import Fanatic from './pages/Fanatic';
 import Login from './pages/Login';
@@ -34,6 +35,10 @@ import ShootYourShotAR from './pages/ShootYourShotAR';
 import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from "./components/ui/PointsToastGlobal";
+import RequireAdmin from './components/admin/RequireAdmin';
+import BasketballLoader from './components/common/BasketballLoader';
+
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
 
 function App() {
   return (
@@ -75,6 +80,22 @@ function App() {
           <Route path="/news" element={<News />} />
           <Route path="/news/:slug" element={<NewsDetail />} />
           <Route path="/shoot-your-shot" element={<ShootYourShotAR />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <Suspense
+                  fallback={
+                    <main className="flex min-h-[60vh] items-center justify-center px-4">
+                      <BasketballLoader size="lg" />
+                    </main>
+                  }
+                >
+                  <AdminDashboard />
+                </Suspense>
+              </RequireAdmin>
+            }
+          />
         </Route>
 
           <Route path="/rooms/chat" element={<RoomChat />} />

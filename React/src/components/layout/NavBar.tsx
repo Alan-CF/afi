@@ -7,6 +7,7 @@ import {
 import { BellIcon } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
+import { useIsAdmin } from '../../hooks/useIsAdmin';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useCart } from '../../hooks/useCart';
 import Cart from './Cart';
@@ -36,6 +37,7 @@ export default function NavBar() {
 
   const { cartItems, loading: cartLoading, error: cartError } = useCart();
   const { unreadCount } = useNotifications();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -43,6 +45,10 @@ export default function NavBar() {
 
   const isLoggedIn = hasLoadedOnce && user !== null;
   const isLoggedOut = hasLoadedOnce && user === null;
+
+  const navLinks = isAdmin
+    ? [...PRIMARY_LINKS, { to: '/admin', label: 'Dashboard' }]
+    : PRIMARY_LINKS;
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
@@ -72,7 +78,7 @@ export default function NavBar() {
           </button>
 
           <ul className="hidden min-[900px]:flex flex-1 min-w-0 items-center justify-center gap-0 xl:gap-3">
-            {PRIMARY_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
@@ -233,7 +239,7 @@ export default function NavBar() {
         </div>
 
         <ul className="flex flex-1 flex-col">
-          {PRIMARY_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <li key={link.to}>
               <NavLink
                 to={link.to}
