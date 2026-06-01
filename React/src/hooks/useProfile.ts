@@ -12,6 +12,7 @@ export interface UserProfileData {
     caption: string | null;
     streak: number;
     name: string | null;
+    role: 'user' | 'admin';
 }
 
 export function useProfile() {
@@ -66,6 +67,7 @@ export function useProfile() {
             setUser({
                 ...updatedProfile,
                 full_name: updatedProfile.name ?? updatedProfile.username,
+                role: updatedProfile.role ?? 'user'
             });
             setError(null);
 

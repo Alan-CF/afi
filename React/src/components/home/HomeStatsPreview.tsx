@@ -93,7 +93,7 @@ export default function HomeStatsPreview() {
         </div>
         <Link
           to="/stats"
-          className="font-lato text-sm font-bold text-text-light hover:text-secondary transition-colors shrink-0"
+          className="font-lato text-sm font-bold text-secondary hover:text-[#5780AE] transition-colors shrink-0"
         >
           See all
         </Link>

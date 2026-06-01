@@ -51,7 +51,7 @@ function GameCard({ game, stagger }: { game: GameCardConfig; stagger: number }) 
       <img
         src={game.imageUrl}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover opacity-55 transition-transform duration-500 group-hover:scale-105"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         style={{ objectPosition: game.objectPosition }}
         loading="lazy"
         onError={(e) => {
@@ -59,7 +59,6 @@ function GameCard({ game, stagger }: { game: GameCardConfig; stagger: number }) 
         }}
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-secondary/30 via-transparent to-transparent" />
       <span
         className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 translate-x-[18%] font-anton text-primary opacity-[0.08] select-none leading-none"
         style={{ fontSize: 'clamp(7rem, 18vw, 14rem)' }}

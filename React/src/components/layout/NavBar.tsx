@@ -4,10 +4,11 @@ import {
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
+import { BellIcon } from '@heroicons/react/24/solid';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
-import { useCart } from '../../hooks/useCart';
 import Cart from './Cart';
+import Notifications from './Notifications';
 import ProfileIcon from '../ui/ProfileIcon';
 
 const PRIMARY_LINKS = [
@@ -23,6 +24,12 @@ const PRIMARY_LINKS = [
   { to: '/eshop', label: 'eShop' },
 ];
 
+const ADMIN_LINKS = [
+  { to: '/', label: 'Home' },
+  { to: '/shop', label: 'Shop' },
+  { to: '/admin/shop', label: 'Admin Shop' },
+];
+
 export default function NavBar() {
   const {
     user,
@@ -31,13 +38,15 @@ export default function NavBar() {
     hasLoadedOnce,
   } = useProfile();
 
-  const { cartItems, loading: cartLoading, error: cartError } = useCart();
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isLoggedIn = hasLoadedOnce && user !== null;
   const isLoggedOut = hasLoadedOnce && user === null;
+  const isAdmin = user?.role === 'admin';
+  const navLinks = isAdmin ? ADMIN_LINKS : PRIMARY_LINKS;
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
@@ -67,7 +76,7 @@ export default function NavBar() {
           </button>
 
           <ul className="hidden min-[900px]:flex flex-1 min-w-0 items-center justify-center gap-0 xl:gap-3">
-            {PRIMARY_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
@@ -103,43 +112,19 @@ export default function NavBar() {
                 </span>
               </button>
             )}
-            {(isLoggedIn || profileLoading) &&
-              (() => {
-                const cartDisabled = profileLoading || !isLoggedIn;
-                const cartCount = cartItems.length;
-                const showCartCount =
-                  cartCount > 0 && !cartLoading && !cartError;
-                return (
-                  <button
-                    onClick={() => !cartDisabled && setIsCartOpen(true)}
-                    type="button"
-                    className={`group relative ${cartDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                    aria-label={cartDisabled ? 'Cart disabled' : 'Open cart'}
-                    aria-disabled={cartDisabled}
-                    disabled={cartDisabled}
-                  >
-                    <ShoppingBagIcon className="w-6 h-6" />
-                    {cartLoading ? (
-                      <span
-                        className="skeleton-shimmer absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center overflow-hidden rounded-full"
-                        aria-hidden="true"
-                      ></span>
-                    ) : showCartCount ? (
-                      <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold leading-none text-secondary shadow-sm">
-                        {cartCount > 99 ? '99+' : cartCount}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })()}
-            <button
-              type="button"
-              className="min-[900px]:hidden cursor-pointer"
-              aria-label="Open menu"
-              onClick={() => setIsMenuOpen(true)}
-            >
-              <Bars3Icon className="w-6 h-6" />
-            </button>
+
+            {!isAdmin && (isLoggedIn || profileLoading) && (
+              <button
+                onClick={() => !profileLoading && isLoggedIn && setIsCartOpen(true)}
+                type="button"
+                disabled={profileLoading || !isLoggedIn}
+                className={`group relative ${profileLoading || !isLoggedIn ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                aria-label={profileLoading || !isLoggedIn ? 'Cart disabled' : 'Open cart'}
+              >
+                <ShoppingBagIcon className="w-6 h-6" />
+              </button>
+            )}
+
             {!isLoggedOut ? (
               <button
                 type="button"
@@ -158,17 +143,29 @@ export default function NavBar() {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="hidden min-[900px]:inline-flex items-center justify-center rounded-full bg-primary px-4 py-1.5 font-lato text-sm font-bold uppercase tracking-wider text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex items-center justify-center rounded-full bg-primary px-3 py-1 min-[900px]:px-4 min-[900px]:py-1.5 font-lato text-[0.7rem] min-[900px]:text-sm font-bold uppercase tracking-wider text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 aria-label="Log in"
               >
                 Log in
               </button>
             )}
+            <button
+              type="button"
+              className="min-[900px]:hidden cursor-pointer"
+              aria-label="Open menu"
+              onClick={() => setIsMenuOpen(true)}
+            >
+              <Bars3Icon className="w-6 h-6" />
+            </button>
           </div>
         </div>
       </nav>
 
       <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <Notifications
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
 
       <div
         className={`fixed inset-0 z-40 bg-black/40 min-[900px]:hidden transition-opacity duration-300 ${
@@ -199,7 +196,7 @@ export default function NavBar() {
         </div>
 
         <ul className="flex flex-1 flex-col">
-          {PRIMARY_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <li key={link.to}>
               <NavLink
                 to={link.to}
