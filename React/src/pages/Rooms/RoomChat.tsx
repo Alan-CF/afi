@@ -15,9 +15,11 @@ import {
   leaveRoom,
   parseRoomPredictionEntry,
   ROOM_SYSTEM_MESSAGE_PREFIX,
+  removeRoomMatch,
   sendRoomMessage,
   sendRoomPrediction,
   shouldHideRoomMessage,
+  subscribeToRoomMatchHidden,
   subscribeToRoomMessages,
   type RoomChatMessageRecord,
   type RoomPredictionEntryRecord,
@@ -56,6 +58,8 @@ const defaultRoom: Room = {
   memberProfileIds: [],
 };
 
+const AUTO_SCROLL_BOTTOM_THRESHOLD = 96;
+
 function formatMessageTime(date: Date) {
   return date.toLocaleTimeString([], {
     hour: "numeric",
@@ -79,6 +83,39 @@ function toDisplayMessage(
         ? "right"
         : "left",
     createdAt: createdAt.getTime(),
+  };
+}
+
+function splitRoomMessageRecords(
+  roomMessages: RoomChatMessageRecord[],
+  currentUserId: string,
+  includePredictionEntries: boolean
+) {
+  const visibleMessages: ChatMessage[] = [];
+  const predictionEntries: RoomPredictionEntryRecord[] = [];
+
+  for (const message of roomMessages) {
+    const predictionEntry = includePredictionEntries
+      ? parseRoomPredictionEntry(message)
+      : null;
+
+    if (predictionEntry) {
+      predictionEntries.push(predictionEntry);
+      continue;
+    }
+
+    if (shouldHideRoomMessage(message.content)) {
+      continue;
+    }
+
+    visibleMessages.push(toDisplayMessage(message, currentUserId));
+  }
+
+  return {
+    messages: visibleMessages.sort((a, b) => a.createdAt - b.createdAt),
+    predictionEntries: predictionEntries.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    ),
   };
 }
 
@@ -245,8 +282,10 @@ function RoomChat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [sendingPrediction, setSendingPrediction] = useState(false);
   const [leavingRoom, setLeavingRoom] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const previousMessageCountRef = useRef(0);
 
   const clockSeconds = parseClockToSeconds(gameState.clock);
   const isFinalState = gameState.statusLabel === "Final";
@@ -302,6 +341,9 @@ function RoomChat() {
   }, [messages, predictionAnnouncements, gameHidden]);
 
   useEffect(() => {
+    shouldStickToBottomRef.current = true;
+    previousMessageCountRef.current = 0;
+
     if (!activeRoomId) {
       setLoadingMessages(false);
       setChatError("Room not found.");
@@ -320,27 +362,14 @@ function RoomChat() {
         setCurrentUserId(data.currentUserId);
         setIsOwner(data.isOwner);
         setGameHidden(data.room.matchHidden ?? false);
-        setMessages([]);
-        setPredictionEntries([]);
+        const parsedMessages = splitRoomMessageRecords(
+          data.messages,
+          data.currentUserId,
+          !(data.room.matchHidden ?? false)
+        );
 
-        for (const message of data.messages) {
-          const predictionEntry = parseRoomPredictionEntry(message);
-
-          if (predictionEntry) {
-            setPredictionEntries((current) =>
-              mergePredictionEntries(current, predictionEntry)
-            );
-            continue;
-          }
-
-          if (shouldHideRoomMessage(message.content)) {
-            continue;
-          }
-
-          setMessages((current) =>
-            mergeMessages(current, toDisplayMessage(message, data.currentUserId))
-          );
-        }
+        setMessages(parsedMessages.messages);
+        setPredictionEntries(parsedMessages.predictionEntries);
       } catch (error) {
         console.error("Error loading room chat:", error);
         setChatError(
@@ -363,8 +392,26 @@ function RoomChat() {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMessages]);
+    if (loadingMessages) return;
+
+    const previousMessageCount = previousMessageCountRef.current;
+    const currentMessageCount = displayMessages.length;
+    const isInitialMessagePaint = previousMessageCount === 0;
+
+    previousMessageCountRef.current = currentMessageCount;
+
+    if (!isInitialMessagePaint && !shouldStickToBottomRef.current) return;
+
+    window.requestAnimationFrame(() => {
+      const scrollElement = messagesScrollRef.current;
+      if (!scrollElement) return;
+
+      scrollElement.scrollTo({
+        top: scrollElement.scrollHeight,
+        behavior: isInitialMessagePaint ? "auto" : "smooth",
+      });
+    });
+  }, [displayMessages.length, loadingMessages]);
 
   useEffect(() => {
     if (typeof window === "undefined" || activeRoomId === null) return;
@@ -397,6 +444,7 @@ function RoomChat() {
       const predictionEntry = parseRoomPredictionEntry(message);
 
       if (predictionEntry) {
+        if (gameHidden) return;
         setPredictionEntries((current) =>
           mergePredictionEntries(current, predictionEntry)
         );
@@ -413,7 +461,19 @@ function RoomChat() {
     });
 
     return unsubscribe;
-  }, [activeRoomId, currentUserId]);
+  }, [activeRoomId, currentUserId, gameHidden]);
+
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    return subscribeToRoomMatchHidden(activeRoomId, (hidden) => {
+      setGameHidden(hidden);
+      setRoom((currentRoom) => ({ ...currentRoom, matchHidden: hidden }));
+      if (hidden) {
+        setPredictionEntries([]);
+      }
+    });
+  }, [activeRoomId]);
 
   useEffect(() => {
     if (!activeRoomId || !currentUserId) return;
@@ -430,25 +490,14 @@ function RoomChat() {
         if (cancelled) return;
 
         setGameHidden(matchHidden);
+        const parsedMessages = splitRoomMessageRecords(
+          latestMessages,
+          currentUserId,
+          !matchHidden
+        );
 
-        for (const message of latestMessages) {
-          const predictionEntry = parseRoomPredictionEntry(message);
-
-          if (predictionEntry) {
-            setPredictionEntries((current) =>
-              mergePredictionEntries(current, predictionEntry)
-            );
-            continue;
-          }
-
-          if (shouldHideRoomMessage(message.content)) {
-            continue;
-          }
-
-          setMessages((current) =>
-            mergeMessages(current, toDisplayMessage(message, currentUserId))
-          );
-        }
+        setMessages(parsedMessages.messages);
+        setPredictionEntries(parsedMessages.predictionEntries);
       } catch (error) {
         if (cancelled) return;
         console.error("Error syncing room messages:", error);
@@ -471,6 +520,7 @@ function RoomChat() {
     if (!trimmedDraft || !activeRoomId || sendingMessage) return;
 
     try {
+      shouldStickToBottomRef.current = true;
       setSendingMessage(true);
       setChatError(null);
       const insertedMessage = await sendRoomMessage(activeRoomId, trimmedDraft);
@@ -499,6 +549,7 @@ function RoomChat() {
     }
 
     try {
+      shouldStickToBottomRef.current = true;
       setSendingPrediction(true);
       setChatError(null);
       const entry = await sendRoomPrediction(
@@ -524,19 +575,41 @@ function RoomChat() {
     setActionsOpen(false);
   }
 
+  function handleMessagesScroll() {
+    const scrollElement = messagesScrollRef.current;
+    if (!scrollElement) return;
+
+    const distanceFromBottom =
+      scrollElement.scrollHeight -
+      scrollElement.scrollTop -
+      scrollElement.clientHeight;
+
+    shouldStickToBottomRef.current =
+      distanceFromBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD;
+  }
+
   async function handleToggleGame() {
     if (!activeRoomId || !isOwner) return;
 
     const next = !gameHidden;
     setGameHidden(next);
+    setRoom((currentRoom) => ({ ...currentRoom, matchHidden: next }));
+    if (next) {
+      setPredictionEntries([]);
+    }
     setInfoOpen(false);
     setActionsOpen(false);
 
     try {
-      await setRoomMatchHidden(activeRoomId, next);
+      if (next) {
+        await removeRoomMatch(activeRoomId);
+      } else {
+        await setRoomMatchHidden(activeRoomId, false);
+      }
     } catch (error) {
       console.error("Error toggling match visibility:", error);
       setGameHidden(!next); // revert on failure
+      setRoom((currentRoom) => ({ ...currentRoom, matchHidden: !next }));
       setChatError(
         error instanceof Error ? error.message : "Could not update match."
       );
@@ -572,9 +645,9 @@ function RoomChat() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="mx-auto flex h-screen w-full max-w-3xl flex-col">
-        <section className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white sm:my-3 sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
+    <div className="min-h-[100dvh] bg-slate-50">
+      <main className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col overflow-hidden sm:p-3">
+        <section className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
           {/* Header */}
           <div className="flex items-center gap-3 bg-secondary px-4 py-3 text-white sm:px-5">
             <button
@@ -780,7 +853,11 @@ function RoomChat() {
           )}
 
           {/* Messages */}
-          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 sm:px-5">
+          <div
+            ref={messagesScrollRef}
+            onScroll={handleMessagesScroll}
+            className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 sm:px-5"
+          >
             {loadingMessages ? (
               <div className="flex h-full items-center justify-center">
                 <p className="font-lato text-sm text-slate-400">
@@ -847,7 +924,6 @@ function RoomChat() {
                     )}
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
             )}
           </div>

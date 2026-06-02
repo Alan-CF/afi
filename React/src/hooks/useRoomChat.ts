@@ -46,6 +46,11 @@ type RoomMessageRow = {
   created_at: string;
 };
 
+type RoomMatchHiddenRow = {
+  id: number;
+  match_hidden: boolean;
+};
+
 type SerializedPredictionPayload = {
   round: number;
   choice: PredictionOption;
@@ -358,13 +363,29 @@ export async function setRoomMatchHidden(
   roomId: number,
   hidden: boolean
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("rooms")
     .update({ match_hidden: hidden })
-    .eq("id", roomId);
+    .eq("id", roomId)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw buildQueryError("room match_hidden update failed", error.message);
+  }
+
+  if (!data) {
+    throw new Error("Room match setting was not updated. Only the room owner can change it.");
+  }
+}
+
+export async function removeRoomMatch(roomId: number): Promise<void> {
+  const { error } = await supabase.rpc("remove_room_match", {
+    target_room_id: roomId,
+  });
+
+  if (error) {
+    throw buildQueryError("remove room match failed", error.message);
   }
 }
 
@@ -394,6 +415,32 @@ export function subscribeToRoomMessages(
           content: insertedMessage.content,
           createdAt: insertedMessage.created_at,
         });
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeToRoomMatchHidden(
+  roomId: number,
+  onChange: (hidden: boolean) => void
+) {
+  const channel = supabase
+    .channel(`room-match-hidden-${roomId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "rooms",
+        filter: `id=eq.${roomId}`,
+      },
+      (payload) => {
+        const updatedRoom = payload.new as RoomMatchHiddenRow;
+        onChange(updatedRoom.match_hidden ?? false);
       }
     )
     .subscribe();
