@@ -185,6 +185,15 @@ function RoomsPage() {
     return unsubscribe;
   }, [myId]);
 
+  // Polling fallback: keeps last message + ordering fresh even when realtime
+  // is not enabled for room_messages.
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      fetchMyRooms().then(setRooms).catch(() => {});
+    }, 4000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   useEffect(() => {
     if (!state?.removedRoomId) return;
 

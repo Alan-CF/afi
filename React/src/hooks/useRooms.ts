@@ -179,8 +179,6 @@ export async function createRoomWithMembers(
 export async function fetchMyRooms(): Promise<RoomCardData[]> {
   const userId = await getAuthenticatedUserId();
 
-  console.log("Authenticated user:", userId);
-
   const { data: myMemberships, error: membershipsError } = await supabase
     .from("room_members")
     .select("room_id")
@@ -193,8 +191,6 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
   }
 
   const roomIds = (myMemberships ?? []).map((item) => item.room_id);
-
-  console.log("My room ids:", roomIds);
 
   if (roomIds.length === 0) return [];
 
