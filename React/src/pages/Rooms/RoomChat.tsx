@@ -366,6 +366,14 @@ function RoomChat() {
   }, [displayMessages]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || activeRoomId === null) return;
+    window.localStorage.setItem(
+      `room-last-read-${activeRoomId}`,
+      String(Date.now())
+    );
+  }, [activeRoomId, displayMessages]);
+
+  useEffect(() => {
     if (!actionsOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
@@ -555,11 +563,11 @@ function RoomChat() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
+    <div className="min-h-screen bg-slate-50">
       <main className="mx-auto flex h-screen w-full max-w-3xl flex-col">
         <section className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white sm:my-3 sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
           {/* Header */}
-          <div className="flex items-center gap-3 bg-[linear-gradient(120deg,#0e2a5e_0%,#1D428A_60%,#22529f_100%)] px-4 py-3 text-white sm:px-5">
+          <div className="flex items-center gap-3 bg-secondary px-4 py-3 text-white sm:px-5">
             <button
               type="button"
               onClick={() => navigate(state?.from ?? "/rooms")}
@@ -636,15 +644,17 @@ function RoomChat() {
                   isFinalState
                     ? "bg-slate-100 text-secondary"
                     : isClutchMoment
-                      ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
-                      : "bg-[linear-gradient(135deg,#13294b_0%,#1D428A_100%)] text-white"
+                      ? "bg-primary text-secondary"
+                      : "bg-secondary text-white"
                 }`}
               >
                 <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2">
                   <div className="text-center">
                     <p
                       className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.14em] sm:text-xs ${
-                        isFinalState ? "text-secondary/65" : "text-white/70"
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/65"
+                          : "text-white/70"
                       }`}
                     >
                       {gameState.leftTeam}
@@ -659,29 +669,27 @@ function RoomChat() {
                       isFinalState
                         ? "bg-white/60"
                         : isClutchMoment
-                          ? "bg-black/15"
+                          ? "bg-secondary/10"
                           : "bg-white/10"
                     }`}
                   >
                     <p
                       className={`font-lato text-[0.62rem] font-bold uppercase tracking-[0.16em] ${
-                        isFinalState ? "text-secondary/65" : "text-primary"
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/65"
+                          : "text-primary"
                       }`}
                     >
                       {gameState.quarterLabel}
                     </p>
-                    <p
-                      className={`font-barlow-condensed text-[1.4rem] font-semibold leading-none ${
-                        isClutchMoment
-                          ? "text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
-                          : ""
-                      }`}
-                    >
+                    <p className="font-barlow-condensed text-[1.4rem] font-semibold leading-none">
                       {gameState.clock}
                     </p>
                     <p
                       className={`font-lato text-[0.6rem] font-bold uppercase tracking-[0.16em] ${
-                        isFinalState ? "text-secondary/70" : "text-white/75"
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/70"
+                          : "text-white/75"
                       }`}
                     >
                       {gameState.statusLabel}
@@ -691,7 +699,9 @@ function RoomChat() {
                   <div className="text-center">
                     <p
                       className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.14em] sm:text-xs ${
-                        isFinalState ? "text-secondary/65" : "text-white/70"
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/65"
+                          : "text-white/70"
                       }`}
                     >
                       {gameState.rightTeam}
@@ -703,7 +713,11 @@ function RoomChat() {
                 </div>
 
                 {gameState.detail && !isFinalState && (
-                  <p className="mt-2 text-center font-lato text-[0.68rem] font-semibold text-white/85 sm:text-xs">
+                  <p
+                    className={`mt-2 text-center font-lato text-[0.68rem] font-semibold sm:text-xs ${
+                      isClutchMoment ? "text-secondary/80" : "text-white/85"
+                    }`}
+                  >
                     {gameState.detail}
                   </p>
                 )}
@@ -849,10 +863,10 @@ function RoomChat() {
             {!gameHidden &&
               predictionState.activeRound !== null &&
               !currentPredictionEntry && (
-                <div className="mb-3 overflow-hidden rounded-xl border border-secondary/20 bg-[linear-gradient(135deg,#13294b_0%,#1D428A_100%)] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
+                <div className="mb-3 overflow-hidden rounded-xl border border-secondary/20 bg-secondary shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
                   <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2 text-white">
                     <p className="flex items-center gap-1.5 font-lato text-[0.74rem] font-bold sm:text-xs">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-live" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       Next play — call it
                     </p>
                     <span className="rounded-full bg-primary px-2 py-0.5 font-lato text-[0.68rem] font-bold text-secondary">

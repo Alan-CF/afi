@@ -87,11 +87,11 @@ function CreateRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
+    <div className="min-h-screen bg-slate-50">
       <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-2xl flex-col px-4 py-5 sm:px-6">
         <section className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
           {/* Header */}
-          <div className="flex items-center gap-3 bg-[linear-gradient(120deg,#0e2a5e_0%,#1D428A_60%,#22529f_100%)] px-5 py-4 text-white sm:px-6">
+          <div className="flex items-center gap-3 bg-secondary px-5 py-4 text-white sm:px-6">
             <button
               type="button"
               onClick={() => navigate('/rooms')}
@@ -272,7 +272,7 @@ function CreateRoom() {
               variant="primary"
               onClick={handleCreateRoom}
               disabled={!canCreateRoom || loadingFriends || creatingRoom}
-              className="w-full rounded-xl border-none bg-primary py-3 font-lato text-sm font-bold text-secondary shadow-[0_8px_20px_rgba(255,199,44,0.3)] hover:bg-primary-dark disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none sm:text-base"
+              className="w-full rounded-xl border-none bg-primary py-3 font-lato text-sm font-bold text-secondary hover:bg-primary-dark disabled:bg-slate-200 disabled:text-slate-400 sm:text-base"
             >
               {creatingRoom
                 ? 'Creating Room...'

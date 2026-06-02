@@ -117,7 +117,8 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
   const { data: members, error: membersError } = await supabase
     .from("room_members")
     .select("profile_id")
-    .eq("room_id", roomId);
+    .eq("room_id", roomId)
+    .eq("status", "accepted");
 
   if (membersError) {
     throw buildQueryError("room_members query failed", membersError.message);

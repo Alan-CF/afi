@@ -8,11 +8,14 @@ export type Room = {
   subtitle: string;
   accent: string;
   memberProfileIds: string[];
+  lastMessageAt?: string | null;
+  lastMessageFromMe?: boolean;
 };
 
 type RoomCardProps = {
   room: Room;
   onActionClick?: (room: Room) => void;
+  hasUnread?: boolean;
 };
 
 function splitSubtitlePreview(subtitle: string) {
@@ -31,7 +34,7 @@ function splitSubtitlePreview(subtitle: string) {
   };
 }
 
-function RoomCard({ room, onActionClick }: RoomCardProps) {
+function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
   const isLive = room.status === "live";
   const actionLabel = isLive ? "Join" : "Summary";
   const subtitlePreview = splitSubtitlePreview(room.subtitle);
@@ -49,7 +52,7 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
       {/* Left accent rail */}
       <span
         className={`absolute inset-y-0 left-0 w-1 ${
-          isLive ? "bg-live" : "bg-slate-300"
+          isLive ? "bg-secondary" : "bg-slate-300"
         }`}
         aria-hidden
       />
@@ -62,11 +65,11 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
         >
           <UserGroupIcon className="h-5 w-5 sm:h-6 sm:w-6" />
         </div>
-        {isLive && (
-          <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center">
-            <span className="absolute h-3.5 w-3.5 rounded-full bg-live animate-pulse-live" />
-            <span className="h-2 w-2 rounded-full bg-live ring-2 ring-white" />
-          </span>
+        {hasUnread && (
+          <span
+            className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-primary ring-2 ring-white"
+            aria-label="Unread messages"
+          />
         )}
       </div>
 
@@ -81,7 +84,7 @@ function RoomCard({ room, onActionClick }: RoomCardProps) {
             {room.title}
           </h3>
           {isLive && (
-            <span className="shrink-0 rounded-md bg-live/10 px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-live">
+            <span className="shrink-0 rounded-md bg-primary px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-secondary">
               Live
             </span>
           )}

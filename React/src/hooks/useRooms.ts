@@ -9,6 +9,8 @@ export type RoomCardData = {
   subtitle: string;
   accent: string;
   memberProfileIds: string[];
+  lastMessageAt: string | null;
+  lastMessageFromMe: boolean;
 };
 
 export type FriendOption = {
@@ -17,6 +19,13 @@ export type FriendOption = {
   accent: string;
   avatar_url: string | null;
   selected_frame_id: string | null;
+};
+
+export type RoomInvite = {
+  roomId: number;
+  title: string;
+  accent: string;
+  invitedBy: string;
 };
 
 function formatMembers(usernames: string[]) {
@@ -135,11 +144,17 @@ export async function createRoomWithMembers(
 
   const roomId = createdRoom.id;
   const memberRows = [
-    { room_id: roomId, profile_id: ownerProfileId, role: "owner" },
+    {
+      room_id: roomId,
+      profile_id: ownerProfileId,
+      role: "owner",
+      status: "accepted",
+    },
     ...uniqueMemberIds.map((profileId) => ({
       room_id: roomId,
       profile_id: profileId,
       role: "member" as const,
+      status: "pending" as const,
     })),
   ];
 
@@ -166,7 +181,8 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
   const { data: myMemberships, error: membershipsError } = await supabase
     .from("room_members")
     .select("room_id")
-    .eq("profile_id", userId);
+    .eq("profile_id", userId)
+    .eq("status", "accepted");
 
   if (membershipsError) {
     console.error("room_members error:", membershipsError);
@@ -192,7 +208,8 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
   const { data: allMembers, error: allMembersError } = await supabase
     .from("room_members")
     .select("room_id, profile_id")
-    .in("room_id", roomIds);
+    .in("room_id", roomIds)
+    .eq("status", "accepted");
 
   if (allMembersError) {
     console.error("allMembers error:", allMembersError);
@@ -262,6 +279,102 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
       members: formatMembers(membersForRoom),
       subtitle,
       memberProfileIds,
+      lastMessageAt: lastMessage ? lastMessage.created_at : null,
+      lastMessageFromMe: lastMessage
+        ? lastMessage.sender_profile_id === userId
+        : false,
     };
   });
+}
+
+export async function fetchMyRoomInvites(): Promise<RoomInvite[]> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: pendingMemberships, error: pendingError } = await supabase
+    .from("room_members")
+    .select("room_id")
+    .eq("profile_id", userId)
+    .eq("status", "pending");
+
+  if (pendingError) {
+    console.error("pending room_members error:", pendingError);
+    throw buildQueryError(
+      "room invites query failed",
+      pendingError.message
+    );
+  }
+
+  const roomIds = Array.from(
+    new Set((pendingMemberships ?? []).map((item) => item.room_id))
+  );
+
+  if (roomIds.length === 0) return [];
+
+  const { data: rooms, error: roomsError } = await supabase
+    .from("rooms")
+    .select("id, title, accent, owner_profile_id")
+    .in("id", roomIds);
+
+  if (roomsError) {
+    console.error("invite rooms error:", roomsError);
+    throw buildQueryError("invite rooms query failed", roomsError.message);
+  }
+
+  const ownerIds = Array.from(
+    new Set((rooms ?? []).map((room) => room.owner_profile_id))
+  );
+
+  const { data: owners, error: ownersError } =
+    ownerIds.length === 0
+      ? { data: [], error: null }
+      : await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", ownerIds);
+
+  if (ownersError) {
+    console.error("invite owners error:", ownersError);
+    throw buildQueryError("invite owners query failed", ownersError.message);
+  }
+
+  const ownerMap = new Map(
+    (owners ?? []).map((owner) => [owner.id, owner.username])
+  );
+
+  return (rooms ?? []).map((room) => ({
+    roomId: room.id,
+    title: room.title,
+    accent: room.accent,
+    invitedBy: ownerMap.get(room.owner_profile_id) ?? "Someone",
+  }));
+}
+
+export async function acceptRoomInvite(roomId: number): Promise<void> {
+  const userId = await getAuthenticatedUserId();
+
+  const { error } = await supabase
+    .from("room_members")
+    .update({ status: "accepted" })
+    .eq("room_id", roomId)
+    .eq("profile_id", userId);
+
+  if (error) {
+    console.error("accept room invite error:", error);
+    throw buildQueryError("accept room invite failed", error.message);
+  }
+}
+
+export async function declineRoomInvite(roomId: number): Promise<void> {
+  const userId = await getAuthenticatedUserId();
+
+  const { error } = await supabase
+    .from("room_members")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("profile_id", userId);
+
+  if (error) {
+    console.error("decline room invite error:", error);
+    throw buildQueryError("decline room invite failed", error.message);
+  }
 }

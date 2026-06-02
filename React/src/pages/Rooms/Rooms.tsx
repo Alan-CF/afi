@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
-import { fetchMyRooms, fetchMyFriends, type FriendOption } from '../../hooks/useRooms';
+import {
+  fetchMyRooms,
+  fetchMyFriends,
+  fetchMyRoomInvites,
+  acceptRoomInvite,
+  declineRoomInvite,
+  type FriendOption,
+  type RoomInvite,
+} from '../../hooks/useRooms';
 import RoomCard, { type Room } from '../../components/ui/RoomCard';
 import {
   jumpToMockGameLastQuarter,
@@ -21,6 +29,9 @@ import {
   UserPlusIcon,
   PlusIcon,
   SignalIcon,
+  CheckIcon,
+  XMarkIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/solid';
 
 type RoomsLocationState = {
@@ -43,6 +54,10 @@ function RoomsPage() {
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(true);
+  const [invites, setInvites] = useState<RoomInvite[]>([]);
+  const [respondingInviteId, setRespondingInviteId] = useState<number | null>(
+    null
+  );
   const onlineIds = usePresence();
 
   useEffect(() => {
@@ -129,12 +144,42 @@ function RoomsPage() {
   }, [location.key]);
 
   useEffect(() => {
+    fetchMyRoomInvites().then(setInvites).catch(console.error);
+  }, [location.key]);
+
+  useEffect(() => {
     if (!state?.removedRoomId) return;
 
     setRooms((current) =>
       current.filter((room) => room.id !== state.removedRoomId)
     );
   }, [state?.removedRoomId]);
+
+  async function handleAcceptInvite(roomId: number) {
+    try {
+      setRespondingInviteId(roomId);
+      await acceptRoomInvite(roomId);
+      setInvites((current) => current.filter((i) => i.roomId !== roomId));
+      const data = await fetchMyRooms();
+      setRooms(data);
+    } catch (err) {
+      console.error('Accept room invite error:', err);
+    } finally {
+      setRespondingInviteId(null);
+    }
+  }
+
+  async function handleDeclineInvite(roomId: number) {
+    try {
+      setRespondingInviteId(roomId);
+      await declineRoomInvite(roomId);
+      setInvites((current) => current.filter((i) => i.roomId !== roomId));
+    } catch (err) {
+      console.error('Decline room invite error:', err);
+    } finally {
+      setRespondingInviteId(null);
+    }
+  }
 
   const orderedRooms = useMemo(() => {
     return [...rooms].sort((a, b) => {
@@ -198,8 +243,73 @@ function RoomsPage() {
     jumpToMockGameLastQuarter();
   }
 
+  function isRoomUnread(room: Room): boolean {
+    if (!room.lastMessageAt || room.lastMessageFromMe) return false;
+    if (typeof window === 'undefined') return false;
+    const lastRead = window.localStorage.getItem(`room-last-read-${room.id}`);
+    if (!lastRead) return true;
+    return new Date(room.lastMessageAt).getTime() > Number(lastRead);
+  }
+
   const roomsPanel = (
     <div className="flex flex-col gap-4">
+      {/* Join requests */}
+      {invites.length > 0 && (
+        <div className="rounded-2xl border border-primary/40 bg-primary/10 p-3 sm:p-4">
+          <p className="mb-2 flex items-center gap-1.5 font-lato text-xs font-bold uppercase tracking-[0.14em] text-secondary">
+            <UserGroupIcon className="h-4 w-4" />
+            Room Requests
+          </p>
+          <div className="space-y-2">
+            {invites.map((invite) => {
+              const responding = respondingInviteId === invite.roomId;
+              return (
+                <div
+                  key={invite.roomId}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+                >
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
+                    style={{ backgroundColor: invite.accent }}
+                  >
+                    <UserGroupIcon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-lato text-sm font-bold text-slate-800">
+                      {invite.title}
+                    </p>
+                    <p className="truncate font-lato text-xs text-slate-500">
+                      Invited by @{invite.invitedBy}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      aria-label="Decline"
+                      onClick={() => handleDeclineInvite(invite.roomId)}
+                      disabled={responding}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-60"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Accept"
+                      onClick={() => handleAcceptInvite(invite.roomId)}
+                      disabled={responding}
+                      className="flex h-8 items-center gap-1 rounded-lg bg-secondary px-3 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                      Join
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         {(
@@ -218,7 +328,7 @@ function RoomsPage() {
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
                 active
                   ? filter.key === 'live'
-                    ? 'bg-live text-white'
+                    ? 'bg-primary text-secondary'
                     : 'bg-secondary text-white'
                   : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-secondary'
               }`}
@@ -226,7 +336,7 @@ function RoomsPage() {
               {filter.key === 'live' && (
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${
-                    active ? 'bg-white' : 'bg-live'
+                    active ? 'bg-secondary' : 'bg-primary'
                   }`}
                 />
               )}
@@ -249,7 +359,7 @@ function RoomsPage() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-[76px] rounded-2xl border border-slate-100 skeleton-shimmer"
+              className="h-[76px] rounded-2xl border border-slate-100 bg-slate-200 animate-pulse"
             />
           ))}
         </div>
@@ -287,7 +397,11 @@ function RoomsPage() {
               key={room.id}
               className={`fade-in-up ${i < 6 ? `stagger-${i + 1}` : ''}`}
             >
-              <RoomCard room={room} onActionClick={handleRoomAction} />
+              <RoomCard
+                room={room}
+                onActionClick={handleRoomAction}
+                hasUnread={isRoomUnread(room)}
+              />
             </div>
           ))}
         </div>
@@ -424,7 +538,7 @@ function RoomsPage() {
       ) : friendsLoading ? (
         <div className="mt-4 space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-14 rounded-xl skeleton-shimmer" />
+            <div key={i} className="h-14 rounded-xl bg-slate-200 animate-pulse" />
           ))}
         </div>
       ) : sortedFriends.length === 0 ? (
@@ -497,10 +611,10 @@ function RoomsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
+    <div className="min-h-screen bg-slate-50">
       <main className="mx-auto w-full max-w-[1200px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-5 overflow-hidden rounded-2xl bg-[linear-gradient(120deg,#0e2a5e_0%,#1D428A_55%,#22529f_100%)] px-5 py-5 shadow-[0_18px_40px_rgba(15,38,87,0.28)] sm:px-7 sm:py-6">
+        <div className="mb-5 overflow-hidden rounded-2xl bg-secondary px-5 py-5 shadow-[0_18px_40px_rgba(15,38,87,0.28)] sm:px-7 sm:py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="flex items-center gap-2 font-lato text-[0.68rem] font-bold uppercase tracking-[0.24em] text-primary">
@@ -512,7 +626,7 @@ function RoomsPage() {
               </h1>
               <div className="mt-2 flex items-center gap-2 font-lato text-sm text-white/80">
                 <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1">
-                  <span className="h-2 w-2 rounded-full bg-live animate-pulse-live" />
+                  <span className="h-2 w-2 rounded-full bg-primary" />
                   <span className="font-bold text-white">{liveCount}</span> live
                 </span>
                 <span className="rounded-full bg-white/10 px-2.5 py-1">
@@ -524,7 +638,7 @@ function RoomsPage() {
             <Button
               variant="primary"
               onClick={handleCreateRoom}
-              className="flex shrink-0 items-center justify-center gap-2 rounded-xl border-none bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary shadow-[0_8px_20px_rgba(255,199,44,0.35)] hover:bg-primary-dark"
+              className="flex shrink-0 items-center justify-center gap-2 rounded-xl border-none bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-primary-dark"
             >
               <PlusIcon className="h-5 w-5" />
               Create Room
