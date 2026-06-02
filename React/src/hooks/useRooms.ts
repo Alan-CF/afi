@@ -16,6 +16,7 @@ export type FriendOption = {
   name: string;
   accent: string;
   avatar_url: string | null;
+  selected_frame_id: string | null;
 };
 
 function formatMembers(usernames: string[]) {
@@ -80,7 +81,7 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, selected_frame_id")
     .in("id", friendIds)
     .order("username", { ascending: true });
 
@@ -94,6 +95,7 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
     name: profile.username,
     accent: friendAccents[index % friendAccents.length],
     avatar_url: profile.avatar_url ?? null,
+    selected_frame_id: profile.selected_frame_id ?? null,
   }));
 }
 

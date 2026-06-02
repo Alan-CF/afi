@@ -7,6 +7,7 @@ export type FriendProfile = {
   username: string;
   avatar_url: string | null;
   name: string | null;
+  selected_frame_id: string | null;
 };
 
 export type Friend = {
@@ -45,6 +46,7 @@ export type PublicFriend = {
   username: string;
   avatar_url: string | null;
   name: string | null;
+  selected_frame_id: string | null;
 };
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ export async function searchProfilesByUsername(
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, name")
+    .select("id, username, avatar_url, name, selected_frame_id")
     .ilike("username", `%${query.trim()}%`)
     .neq("id", myId)
     .limit(20);
@@ -109,6 +111,7 @@ export async function searchProfilesByUsername(
       username: p.username,
       avatar_url: p.avatar_url ?? null,
       name: p.name ?? null,
+      selected_frame_id: p.selected_frame_id ?? null,
       friendshipStatus,
     };
   });
@@ -136,7 +139,7 @@ export async function fetchMyFriends(): Promise<Friend[]> {
 
   const { data: profiles, error: pError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, name")
+    .select("id, username, avatar_url, name, selected_frame_id")
     .in("id", friendIds);
 
   if (pError) throw pError;
@@ -158,6 +161,7 @@ export async function fetchMyFriends(): Promise<Friend[]> {
           username: profile.username,
           avatar_url: profile.avatar_url ?? null,
           name: profile.name ?? null,
+          selected_frame_id: profile.selected_frame_id ?? null,
         },
       };
     })
@@ -221,7 +225,7 @@ export async function fetchPendingFriendInvites(): Promise<PendingInvite[]> {
 
   const { data: profiles, error: pError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, name")
+    .select("id, username, avatar_url, name, selected_frame_id")
     .in("id", requesterIds);
 
   if (pError) throw pError;
@@ -239,6 +243,7 @@ export async function fetchPendingFriendInvites(): Promise<PendingInvite[]> {
           username: profile.username,
           avatar_url: profile.avatar_url ?? null,
           name: profile.name ?? null,
+          selected_frame_id: profile.selected_frame_id ?? null,
         },
       };
     })
@@ -320,7 +325,7 @@ export async function fetchPublicFriendsByProfileId(
 
   const { data: profiles, error: pError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, name")
+    .select("id, username, avatar_url, name, selected_frame_id")
     .in("id", friendIds);
 
   if (pError || !profiles) return [];
@@ -330,5 +335,6 @@ export async function fetchPublicFriendsByProfileId(
     username: p.username,
     avatar_url: p.avatar_url ?? null,
     name: p.name ?? null,
+    selected_frame_id: p.selected_frame_id ?? null,
   }));
 }

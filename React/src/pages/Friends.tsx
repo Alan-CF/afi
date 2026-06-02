@@ -20,6 +20,7 @@ import {
   type PendingInvite,
   type SearchResultProfile,
 } from '../lib/friends';
+import AvatarFrame from '../components/ui/AvatarFrame';
 
 // ─── Shared accent palette ───────────────────────────────────────────────────
 
@@ -39,33 +40,37 @@ const ACCENTS = [
 function Avatar({
   username,
   avatarUrl,
+  frameId,
   index = 0,
   size = 'md',
 }: {
   username: string;
   avatarUrl: string | null;
+  frameId?: string | null;
   index?: number;
   size?: 'sm' | 'md';
 }) {
+  const px = size === 'sm' ? 36 : 44;
   const dim = size === 'sm' ? 'h-9 w-9 text-sm' : 'h-11 w-11 text-base';
-  if (avatarUrl) {
-    return (
-      <div className={`${dim} shrink-0 overflow-hidden rounded-full`}>
-        <img
-          src={avatarUrl}
-          alt={username}
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
   return (
-    <div
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full font-lato font-bold text-secondary`}
-      style={{ backgroundColor: ACCENTS[index % ACCENTS.length] }}
-    >
-      {username[0]?.toUpperCase()}
-    </div>
+    <AvatarFrame frameId={frameId} size={px} scale={1.3}>
+      {avatarUrl ? (
+        <div className={`${dim} shrink-0 overflow-hidden rounded-full`}>
+          <img
+            src={avatarUrl}
+            alt={username}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ) : (
+        <div
+          className={`${dim} flex shrink-0 items-center justify-center rounded-full font-lato font-bold text-secondary`}
+          style={{ backgroundColor: ACCENTS[index % ACCENTS.length] }}
+        >
+          {username[0]?.toUpperCase()}
+        </div>
+      )}
+    </AvatarFrame>
   );
 }
 
@@ -216,6 +221,7 @@ function MyFriendsTab() {
               <Avatar
                 username={friend.profile.username}
                 avatarUrl={friend.profile.avatar_url}
+                frameId={friend.profile.selected_frame_id}
                 index={index}
               />
               <div className="min-w-0">
@@ -402,6 +408,7 @@ function AddFriendsTab() {
                 <Avatar
                   username={profile.username}
                   avatarUrl={profile.avatar_url}
+                  frameId={profile.selected_frame_id}
                   index={index}
                   size="sm"
                 />
@@ -534,6 +541,7 @@ function RequestsTab({
               <Avatar
                 username={invite.from.username}
                 avatarUrl={invite.from.avatar_url}
+                frameId={invite.from.selected_frame_id}
                 index={index}
               />
               <div className="min-w-0">
