@@ -16,7 +16,12 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import { usePresence } from '../../hooks/usePresence';
 import AvatarFrame from '../../components/ui/AvatarFrame';
-import { MagnifyingGlassIcon, UserPlusIcon } from '@heroicons/react/24/solid';
+import {
+  MagnifyingGlassIcon,
+  UserPlusIcon,
+  PlusIcon,
+  SignalIcon,
+} from '@heroicons/react/24/solid';
 
 type RoomsLocationState = {
   removedRoomId?: number;
@@ -193,389 +198,378 @@ function RoomsPage() {
     jumpToMockGameLastQuarter();
   }
 
+  const roomsPanel = (
+    <div className="flex flex-col gap-4">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(
+          [
+            { key: 'all', label: 'All', count: rooms.length },
+            { key: 'live', label: 'Live', count: liveCount },
+            { key: 'offline', label: 'Offline', count: offlineCount },
+            { key: 'friends', label: 'Friends', count: null },
+          ] as const
+        ).map((filter) => {
+          const active = activeFilter === filter.key;
+          return (
+            <button
+              key={filter.key}
+              onClick={() => setActiveFilter(filter.key)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
+                active
+                  ? filter.key === 'live'
+                    ? 'bg-live text-white'
+                    : 'bg-secondary text-white'
+                  : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-secondary'
+              }`}
+            >
+              {filter.key === 'live' && (
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    active ? 'bg-white' : 'bg-live'
+                  }`}
+                />
+              )}
+              {filter.label}
+              {filter.count !== null && (
+                <span
+                  className={`font-bold ${active ? 'text-white/80' : 'text-slate-400'}`}
+                >
+                  {filter.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Rooms list */}
+      {loading && (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-[76px] rounded-2xl border border-slate-100 skeleton-shimmer"
+            />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-center font-lato text-sm font-semibold text-rose-700">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && filteredRooms.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
+          <p className="font-lato text-base font-bold text-slate-700">
+            No rooms here yet
+          </p>
+          <p className="mx-auto mt-1 max-w-xs font-lato text-sm text-slate-500">
+            Start a watch party and bring your friends in for game day.
+          </p>
+          <Button
+            variant="secondary"
+            onClick={handleCreateRoom}
+            className="mx-auto mt-4 inline-flex items-center gap-1.5 rounded-xl border-2 px-4 py-2 font-lato text-sm font-bold"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Create Room
+          </Button>
+        </div>
+      )}
+
+      {!loading && !error && filteredRooms.length > 0 && (
+        <div className="grid grid-cols-1 gap-3">
+          {filteredRooms.map((room, i) => (
+            <div
+              key={room.id}
+              className={`fade-in-up ${i < 6 ? `stagger-${i + 1}` : ''}`}
+            >
+              <RoomCard room={room} onActionClick={handleRoomAction} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mock game controls */}
+      <div className="mt-1 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5">
+        <p className="font-lato text-[0.7rem] font-bold uppercase tracking-[0.16em] text-slate-400">
+          Mock Game
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={handleResetGame}
+            className="rounded-lg px-3 py-1.5 font-lato text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleJumpToLastQuarter}
+            className="rounded-lg bg-primary px-3 py-1.5 font-lato text-xs font-bold text-secondary transition hover:bg-primary-dark"
+          >
+            Last Quarter
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const friendsPanel = (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-lato text-lg font-bold text-slate-800">Friends</h2>
+        <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-lato text-xs font-bold text-emerald-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          {onlineFriendCount} online
+        </span>
+      </div>
+
+      {/* Inline search */}
+      <div className="relative mt-4">
+        <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Find people by username…"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 font-lato text-sm text-slate-700 placeholder:text-slate-400 focus:border-secondary focus:bg-white focus:outline-none"
+        />
+        {searching && (
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-lato text-xs text-slate-400">
+            Searching…
+          </span>
+        )}
+      </div>
+
+      {/* Search results */}
+      {query.trim() ? (
+        <div className="mt-4">
+          {hasSearched && !searching && results.length === 0 ? (
+            <div className="rounded-xl bg-slate-50 px-4 py-6 text-center font-lato text-sm text-slate-500">
+              No profiles found.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {results.map((profile) => (
+                <div
+                  key={profile.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2.5"
+                >
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/profile/${profile.id}`)}
+                    className="flex min-w-0 items-center gap-3 text-left"
+                  >
+                    <AvatarFrame
+                      frameId={profile.selected_frame_id}
+                      size={40}
+                      scale={1.0}
+                    >
+                      {profile.avatar_url ? (
+                        <div className="h-10 w-10 overflow-hidden rounded-full">
+                          <img
+                            src={profile.avatar_url}
+                            alt={profile.username}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-lato text-base font-bold text-secondary">
+                          {profile.username[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </AvatarFrame>
+                    <div className="min-w-0">
+                      <p className="truncate font-lato text-sm font-bold text-slate-800">
+                        @{profile.username}
+                      </p>
+                      {profile.name && (
+                        <p className="truncate font-lato text-xs text-slate-400">
+                          {profile.name}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+
+                  {profile.friendshipStatus === 'accepted' ? (
+                    <span className="shrink-0 rounded-full bg-secondary/10 px-2.5 py-1 font-lato text-xs font-bold text-secondary">
+                      Friends
+                    </span>
+                  ) : profile.friendshipStatus === 'pending_sent' ? (
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 font-lato text-xs font-bold text-emerald-600">
+                      Sent
+                    </span>
+                  ) : profile.friendshipStatus === 'pending_received' ? (
+                    <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 font-lato text-xs font-bold text-amber-600">
+                      Invited you
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSendInvite(profile.id)}
+                      disabled={sendingId === profile.id}
+                      className="flex shrink-0 items-center gap-1 rounded-lg bg-secondary px-2.5 py-1.5 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
+                    >
+                      <UserPlusIcon className="h-3 w-3" />
+                      {sendingId === profile.id ? 'Sending…' : 'Add'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : friendsLoading ? (
+        <div className="mt-4 space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-14 rounded-xl skeleton-shimmer" />
+          ))}
+        </div>
+      ) : sortedFriends.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
+          <p className="font-lato text-sm font-bold text-slate-700">
+            No friends yet
+          </p>
+          <p className="mt-1 font-lato text-xs text-slate-500">
+            Search a username above to add people.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 max-h-[460px] space-y-1.5 overflow-y-auto pr-1 lg:max-h-[calc(100vh-320px)]">
+          {sortedFriends.map((friend) => {
+            const online = onlineIds.has(friend.id);
+            return (
+              <button
+                key={friend.id}
+                type="button"
+                onClick={() => navigate(`/profile/${friend.id}`)}
+                className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition hover:bg-slate-50"
+              >
+                <div className="relative shrink-0">
+                  <AvatarFrame
+                    frameId={friend.selected_frame_id}
+                    size={40}
+                    scale={1.0}
+                  >
+                    {friend.avatar_url ? (
+                      <div className="h-10 w-10 overflow-hidden rounded-full">
+                        <img
+                          src={friend.avatar_url}
+                          alt={friend.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-full font-lato text-base font-bold text-[#172b5b]"
+                        style={{ backgroundColor: friend.accent }}
+                      >
+                        {friend.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </AvatarFrame>
+                  <span
+                    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
+                      online ? 'bg-emerald-500' : 'bg-slate-300'
+                    }`}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-lato text-sm font-bold text-slate-800">
+                    @{friend.name}
+                  </p>
+                  <p
+                    className={`font-lato text-xs font-semibold ${
+                      online ? 'text-emerald-600' : 'text-slate-400'
+                    }`}
+                  >
+                    {online ? 'Online' : 'Offline'}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
-      <main className="mx-auto w-full max-w-[1280px] px-6 pb-10 pt-8 lg:px-10">
-        <div className="mb-6">
-          <p className="font-lato text-[0.72rem] uppercase tracking-[0.28em] text-primary-3">
-            Fan Community
-          </p>
-          <h1 className="font-lato text-4xl font-black tracking-tight text-secondary lg:text-5xl">
-            Private Fan Rooms
-          </h1>
+      <main className="mx-auto w-full max-w-[1200px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-5 overflow-hidden rounded-2xl bg-[linear-gradient(120deg,#0e2a5e_0%,#1D428A_55%,#22529f_100%)] px-5 py-5 shadow-[0_18px_40px_rgba(15,38,87,0.28)] sm:px-7 sm:py-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 font-lato text-[0.68rem] font-bold uppercase tracking-[0.24em] text-primary">
+                <SignalIcon className="h-3.5 w-3.5" />
+                Game Day Hub
+              </p>
+              <h1 className="mt-1.5 font-anton text-3xl uppercase leading-none tracking-tight text-white sm:text-4xl">
+                Fan Rooms
+              </h1>
+              <div className="mt-2 flex items-center gap-2 font-lato text-sm text-white/80">
+                <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1">
+                  <span className="h-2 w-2 rounded-full bg-live animate-pulse-live" />
+                  <span className="font-bold text-white">{liveCount}</span> live
+                </span>
+                <span className="rounded-full bg-white/10 px-2.5 py-1">
+                  {rooms.length} rooms
+                </span>
+              </div>
+            </div>
+
+            <Button
+              variant="primary"
+              onClick={handleCreateRoom}
+              className="flex shrink-0 items-center justify-center gap-2 rounded-xl border-none bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary shadow-[0_8px_20px_rgba(255,199,44,0.35)] hover:bg-primary-dark"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Create Room
+            </Button>
+          </div>
         </div>
 
-        <div className="mb-8 inline-flex gap-1 rounded-full bg-white p-1 shadow-[0_10px_25px_rgba(15,23,42,0.06)]">
+        {/* Mobile tabs */}
+        <div className="mb-4 flex gap-1 rounded-xl bg-white p-1 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:hidden">
           <button
             onClick={() => setMainTab('rooms')}
-            className={`rounded-full px-6 py-2.5 font-lato text-sm font-bold transition ${
+            className={`flex-1 rounded-lg px-4 py-2 font-lato text-sm font-bold transition ${
               mainTab === 'rooms'
                 ? 'bg-secondary text-white'
-                : 'text-on-surface-variant hover:text-secondary'
+                : 'text-slate-500'
             }`}
           >
             Rooms
           </button>
           <button
             onClick={() => setMainTab('friends')}
-            className={`rounded-full px-6 py-2.5 font-lato text-sm font-bold transition ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-lato text-sm font-bold transition ${
               mainTab === 'friends'
                 ? 'bg-secondary text-white'
-                : 'text-on-surface-variant hover:text-secondary'
+                : 'text-slate-500'
             }`}
           >
             Friends
             {onlineFriendCount > 0 && (
-              <span className="ml-2 rounded-full bg-[#34d399] px-2 py-0.5 text-[0.68rem] text-[#04361f]">
+              <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[0.62rem] font-bold text-white">
                 {onlineFriendCount}
               </span>
             )}
           </button>
         </div>
 
-        {mainTab === 'rooms' && (
-        <>
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="rounded-[2rem] bg-secondary p-4 shadow-[0_20px_45px_rgba(29,66,138,0.18)]">
-            <div className="rounded-[1.55rem] border border-white/10 bg-white/10 p-4 text-white sm:p-5">
-              <div className="mb-4">
-                <div>
-                  <p className="font-lato text-[0.68rem] uppercase tracking-[0.24em] text-white/70">
-                    Create Room
-                  </p>
-                  <h2 className="mt-2 font-lato text-[2rem] font-black leading-[1.05]">
-                    Start a new
-                    <br />
-                    watch party
-                  </h2>
-                </div>
-              </div>
-
-              <p className="font-lato text-sm leading-6 text-white/80">
-                Open a new private room for live reactions, predictions, and
-                game-day chat.
-              </p>
-
-              <Button
-                variant="primary"
-                onClick={handleCreateRoom}
-                className="mt-6 w-full rounded-2xl border-none bg-[#f7c62f] px-4 py-3 font-lato text-sm font-bold text-[#172b5b] hover:brightness-95"
-              >
-                Create Room
-              </Button>
-            </div>
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <section className={`${mainTab === 'rooms' ? 'block' : 'hidden'} lg:block`}>
+            {roomsPanel}
+          </section>
+          <aside className={`${mainTab === 'friends' ? 'block' : 'hidden'} lg:block`}>
+            {friendsPanel}
           </aside>
-
-          <div className="rounded-[2rem] bg-white p-6 shadow-[0_20px_40px_rgba(15,23,42,0.06)]">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h2 className="font-lato text-2xl font-bold text-on-surface">
-                  Your Rooms
-                </h2>
-                <p className="mt-1 font-lato text-sm text-on-surface-variant">
-                  {filteredRooms.length} of {rooms.length} conversations visible
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => setActiveFilter('all')}
-                  className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === 'all'
-                      ? 'bg-secondary text-white'
-                      : 'bg-surface-container text-on-surface-variant'
-                  }`}
-                >
-                  All
-                </button>
-
-                <button
-                  onClick={() => setActiveFilter('live')}
-                  className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === 'live'
-                      ? 'bg-[#ffe7ea] text-[#ff4d57]'
-                      : 'bg-surface-container text-on-surface-variant'
-                  }`}
-                >
-                  Live ({liveCount})
-                </button>
-
-                <button
-                  onClick={() => setActiveFilter('offline')}
-                  className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === 'offline'
-                      ? 'bg-[#e9edf5] text-[#667085]'
-                      : 'bg-surface-container text-on-surface-variant'
-                  }`}
-                >
-                  Offline ({offlineCount})
-                </button>
-
-                <button
-                  onClick={() => setActiveFilter('friends')}
-                  className={`rounded-full px-4 py-2 font-lato text-sm font-bold transition ${
-                    activeFilter === 'friends'
-                      ? 'bg-[#edf3ff] text-secondary'
-                      : 'bg-surface-container text-on-surface-variant'
-                  }`}
-                >
-                  Only friends
-                </button>
-              </div>
-            </div>
-
-            {loading && (
-              <div className="mt-8 rounded-2xl bg-surface-container px-4 py-6 text-center font-lato text-on-surface-variant">
-                Loading rooms...
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-8 rounded-2xl bg-[#fff1f2] px-4 py-6 text-center font-lato text-[#be123c]">
-                {error}
-              </div>
-            )}
-
-            {!loading && !error && filteredRooms.length === 0 && (
-              <div className="mt-8 rounded-2xl bg-surface-container px-4 py-8 text-center">
-                <p className="font-lato text-base font-semibold text-on-surface">
-                  No rooms yet
-                </p>
-                <p className="mt-2 font-lato text-sm text-on-surface-variant">
-                  Create your first room to start chatting with friends.
-                </p>
-              </div>
-            )}
-
-            {!loading && !error && filteredRooms.length > 0 && (
-              <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-                {filteredRooms.map((room) => (
-                  <RoomCard
-                    key={room.id}
-                    room={room}
-                    onActionClick={handleRoomAction}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="mt-8 rounded-[2rem] bg-white p-5 shadow-[0_16px_35px_rgba(15,23,42,0.05)] sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-lato text-[0.72rem] uppercase tracking-[0.24em] text-primary-3">
-                Mock Game Controls
-              </p>
-              <h2 className="mt-2 font-lato text-xl font-bold text-secondary">
-                Test the live game feed
-              </h2>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                variant="secondary"
-                onClick={handleResetGame}
-                className="rounded-2xl px-5 py-3 font-lato text-sm font-bold"
-              >
-                Reset Game
-              </Button>
-
-              <Button
-                variant="primary"
-                onClick={handleJumpToLastQuarter}
-                className="rounded-2xl px-5 py-3 font-lato text-sm font-bold"
-              >
-                Last Quarter
-              </Button>
-            </div>
-          </div>
-        </section>
-        </>
-        )}
-
-        {mainTab === 'friends' && (
-          <div className="rounded-[2rem] bg-white p-6 shadow-[0_20px_40px_rgba(15,23,42,0.06)]">
-            <div>
-              <h2 className="font-lato text-2xl font-bold text-on-surface">
-                Friends
-              </h2>
-              <p className="mt-1 font-lato text-sm text-on-surface-variant">
-                {onlineFriendCount} of {friends.length} online
-              </p>
-            </div>
-
-            {/* Inline search */}
-            <div className="relative mt-5">
-              <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by username to add friends…"
-                className="w-full rounded-full border-2 border-[#c9d6ea] bg-white py-3 pl-11 pr-4 font-lato text-sm text-[#24344f] placeholder:text-[#94a3b8] focus:border-secondary focus:outline-none"
-              />
-              {searching && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-lato text-xs text-[#94a3b8]">
-                  Searching…
-                </span>
-              )}
-            </div>
-
-            {/* Search results */}
-            {query.trim() && (
-              <div className="mt-5">
-                {hasSearched && !searching && results.length === 0 ? (
-                  <div className="rounded-2xl bg-surface-container px-4 py-6 text-center font-lato text-sm text-on-surface-variant">
-                    No profiles found.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {results.map((profile) => (
-                      <div
-                        key={profile.id}
-                        className="flex items-center justify-between gap-3 rounded-2xl border border-[#e4ebf6] bg-[#fbfdff] px-4 py-3"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/profile/${profile.id}`)}
-                          className="flex min-w-0 items-center gap-3 text-left"
-                        >
-                          <AvatarFrame
-                            frameId={profile.selected_frame_id}
-                            size={44}
-                            scale={1.0}
-                          >
-                            {profile.avatar_url ? (
-                              <div className="h-11 w-11 overflow-hidden rounded-full">
-                                <img
-                                  src={profile.avatar_url}
-                                  alt={profile.username}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#dbe4f5] font-lato text-base font-bold text-secondary">
-                                {profile.username[0]?.toUpperCase()}
-                              </div>
-                            )}
-                          </AvatarFrame>
-                          <div className="min-w-0">
-                            <p className="truncate font-lato text-sm font-bold text-on-surface">
-                              @{profile.username}
-                            </p>
-                            {profile.name && (
-                              <p className="truncate font-lato text-xs text-on-surface-variant">
-                                {profile.name}
-                              </p>
-                            )}
-                          </div>
-                        </button>
-
-                        {profile.friendshipStatus === 'accepted' ? (
-                          <span className="shrink-0 rounded-full bg-[#edf3ff] px-3 py-1 font-lato text-xs font-bold text-secondary">
-                            Friends
-                          </span>
-                        ) : profile.friendshipStatus === 'pending_sent' ? (
-                          <span className="shrink-0 rounded-full bg-[#f0fdf4] px-3 py-1 font-lato text-xs font-bold text-[#16a34a]">
-                            Sent
-                          </span>
-                        ) : profile.friendshipStatus === 'pending_received' ? (
-                          <span className="shrink-0 rounded-full bg-[#fef9c3] px-3 py-1 font-lato text-xs font-bold text-[#a16207]">
-                            Invited you
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleSendInvite(profile.id)}
-                            disabled={sendingId === profile.id}
-                            className="flex shrink-0 items-center gap-1 rounded-full bg-secondary px-3 py-1.5 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
-                          >
-                            <UserPlusIcon className="h-3 w-3" />
-                            {sendingId === profile.id ? 'Sending…' : 'Add'}
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Friends list (hidden while searching) */}
-            {!query.trim() &&
-            (friendsLoading ? (
-              <div className="mt-8 rounded-2xl bg-surface-container px-4 py-6 text-center font-lato text-on-surface-variant">
-                Loading friends...
-              </div>
-            ) : sortedFriends.length === 0 ? (
-              <div className="mt-8 rounded-2xl bg-surface-container px-4 py-8 text-center">
-                <p className="font-lato text-base font-semibold text-on-surface">
-                  No friends yet
-                </p>
-                <p className="mt-2 font-lato text-sm text-on-surface-variant">
-                  Tap Add Friends to find people.
-                </p>
-              </div>
-            ) : (
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {sortedFriends.map((friend) => {
-                  const online = onlineIds.has(friend.id);
-                  return (
-                    <button
-                      key={friend.id}
-                      type="button"
-                      onClick={() => navigate(`/profile/${friend.id}`)}
-                      className="flex items-center gap-3 rounded-2xl border border-[#e4ebf6] bg-[#fbfdff] px-4 py-3 text-left transition hover:border-secondary/40 hover:bg-[#f3f7ff]"
-                    >
-                      <div className="relative shrink-0">
-                        <AvatarFrame
-                          frameId={friend.selected_frame_id}
-                          size={44}
-                          scale={1.0}
-                        >
-                          {friend.avatar_url ? (
-                            <div className="h-11 w-11 overflow-hidden rounded-full">
-                              <img
-                                src={friend.avatar_url}
-                                alt={friend.name}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              className="flex h-11 w-11 items-center justify-center rounded-full font-lato text-base font-bold text-[#172b5b]"
-                              style={{ backgroundColor: friend.accent }}
-                            >
-                              {friend.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </AvatarFrame>
-                        <span
-                          className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white ${
-                            online ? 'bg-[#34d399]' : 'bg-[#cbd5e1]'
-                          }`}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-lato text-sm font-bold text-on-surface">
-                          @{friend.name}
-                        </p>
-                        <p
-                          className={`font-lato text-[0.78rem] font-semibold ${
-                            online ? 'text-[#16a34a]' : 'text-on-surface-variant'
-                          }`}
-                        >
-                          {online ? 'Online' : 'Offline'}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
       </main>
     </div>
   );

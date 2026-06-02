@@ -1,7 +1,8 @@
 import {
   ArrowLeftIcon,
-  InformationCircleIcon,
+  EllipsisVerticalIcon,
   PaperAirplaneIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -555,235 +556,226 @@ function RoomChat() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
-      <main className="flex h-screen w-full flex-col">
-        <section className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white">
-          <div className="bg-secondary px-4 py-3 text-white sm:px-5">
-            <div className="flex items-center justify-between gap-3">
+      <main className="mx-auto flex h-screen w-full max-w-3xl flex-col">
+        <section className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white sm:my-3 sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
+          {/* Header */}
+          <div className="flex items-center gap-3 bg-[linear-gradient(120deg,#0e2a5e_0%,#1D428A_60%,#22529f_100%)] px-4 py-3 text-white sm:px-5">
+            <button
+              type="button"
+              onClick={() => navigate(state?.from ?? "/rooms")}
+              aria-label="Go back"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 transition-colors hover:bg-white/20"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+            </button>
+
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
+              style={{ backgroundColor: room.accent }}
+            >
+              <UserGroupIcon className="h-5 w-5" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-lato text-sm font-bold sm:text-base">
+                {room.title}
+              </p>
+              <p className="truncate font-lato text-[0.72rem] text-white/70 sm:text-xs">
+                {room.members}
+              </p>
+            </div>
+
+            <div className="relative shrink-0" ref={actionsMenuRef}>
               <button
                 type="button"
-                onClick={() => navigate(state?.from ?? "/rooms")}
-                aria-label="Go back"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/18"
+                aria-label="Room actions"
+                onClick={() => setActionsOpen((current) => !current)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/20"
               >
-                <ArrowLeftIcon className="h-4 w-4" />
+                <EllipsisVerticalIcon className="h-5 w-5" />
               </button>
 
-              <div className="min-w-0 flex-1 text-center">
-                <p className="truncate font-lato text-sm font-bold sm:text-base">
-                  {room.title}
-                </p>
-                <p className="font-lato text-[0.72rem] text-white/70 [overflow-wrap:anywhere] sm:text-xs">
-                  {room.members}
-                </p>
-              </div>
-
-              <div className="relative" ref={actionsMenuRef}>
-                <button
-                  type="button"
-                  aria-label="Room actions"
-                  onClick={() => setActionsOpen((current) => !current)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/18"
-                >
-                  <InformationCircleIcon className="h-5 w-5" />
-                </button>
-
-                {actionsOpen && (
-                  <div className="absolute right-0 top-11 z-20 w-48 rounded-2xl border border-[#d6e0f0] bg-white p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]">
-                    {!gameHidden && (
-                      <button
-                        type="button"
-                        onClick={handleToggleInfo}
-                        className="flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#29477b] transition-colors hover:bg-[#eef4ff]"
-                      >
-                        {infoOpen ? "Hide Match Info" : "Show Match Info"}
-                      </button>
-                    )}
-
+              {actionsOpen && (
+                <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_36px_rgba(15,23,42,0.18)]">
+                  {!gameHidden && (
                     <button
                       type="button"
-                      onClick={handleToggleGame}
-                      className="mt-1 flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#29477b] transition-colors hover:bg-[#eef4ff]"
+                      onClick={handleToggleInfo}
+                      className="flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                     >
-                      {gameHidden ? "Show Match" : "Remove Match"}
+                      {infoOpen ? "Hide Match Info" : "Show Match Info"}
                     </button>
+                  )}
 
-                    <button
-                      type="button"
-                      onClick={handleLeaveRoom}
-                      disabled={leavingRoom}
-                      className="mt-1 flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#c1124a] transition-colors hover:bg-[#fff1f4] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {leavingRoom ? "Leaving..." : "Leave Group"}
-                    </button>
-                  </div>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleGame}
+                    className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                  >
+                    {gameHidden ? "Show Match" : "Remove Match"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLeaveRoom}
+                    disabled={leavingRoom}
+                    className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {leavingRoom ? "Leaving..." : "Leave Group"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {!gameHidden && (
-          <>
-          <div
-            className={`px-4 py-3 sm:px-5 sm:py-3.5 ${
-              isFinalState
-                ? "bg-[#d2d7e1] text-secondary"
-                : isClutchMoment
-                  ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
-                  : "bg-primary text-secondary"
-            }`}
-          >
-            <div className="grid grid-cols-3 items-center">
-              <div className="text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/70"
-                      : isClutchMoment
-                        ? "text-white/80"
-                        : "text-secondary/65"
-                  }`}
-                >
-                  {gameState.leftTeam}
-                </p>
-                <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
-                  {gameState.leftScore}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/70"
-                      : isClutchMoment
-                        ? "text-white/80"
-                        : "text-secondary/65"
-                  }`}
-                >
-                  {gameState.quarterLabel}
-                </p>
-                <p
-                  className={`mt-0.5 font-barlow-condensed font-semibold leading-none sm:text-[1.8rem] ${
-                    isFinalState
-                      ? "text-[1.5rem] text-secondary"
-                      : isClutchMoment
-                        ? "text-[1.6rem] text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
-                        : "text-[1.35rem]"
-                  }`}
-                >
-                  {gameState.clock}
-                </p>
-                <p
-                  className={`mt-0.5 font-lato text-[0.64rem] font-bold uppercase tracking-[0.18em] sm:text-[0.7rem] ${
-                    isFinalState
-                      ? "text-secondary/75"
-                      : isClutchMoment
-                        ? "text-white/85"
-                        : "text-secondary/70"
-                  }`}
-                >
-                  {gameState.statusLabel}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/70"
-                      : isClutchMoment
-                        ? "text-white/80"
-                        : "text-secondary/65"
-                  }`}
-                >
-                  {gameState.rightTeam}
-                </p>
-                <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
-                  {gameState.rightScore}
-                </p>
-              </div>
-            </div>
-
-            {gameState.detail && !isFinalState && (
-              <div className="mt-2 text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-semibold sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/80"
-                      : isClutchMoment
-                        ? "text-white/88"
-                        : "text-secondary/75"
-                  }`}
-                >
-                  {gameState.detail}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {isFinalState && finalPredictionLeaderText && (
-            <div className="border-b border-[#d7dfec] bg-[#edf4ff] px-4 py-2.5 sm:px-5">
-              <p className="font-lato text-[0.72rem] font-bold uppercase tracking-[0.16em] text-secondary/55">
-                Winner:
-              </p>
-              <p className="mt-1 font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
-                {finalPredictionLeaderText.replace(/^Top predictor:\s*/i, "").replace(/^Top predictors:\s*/i, "").replace(/^Prediction leader:\s*/i, "")}
-              </p>
-            </div>
-          )}
-
-          {infoOpen && (
-            <div className="border-b border-[#d8e2f1] bg-[#2a4e8e] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:px-5">
-              <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
-                {gameState.highlights.length > 0 ? (
-                  gameState.highlights.map((highlight) => (
-                    <div
-                      key={`${highlight.time}-${highlight.text}`}
-                      className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2 rounded-xl bg-[#244887] px-3 py-2"
+            <>
+              {/* Score strip */}
+              <div
+                className={`px-4 py-3 sm:px-5 ${
+                  isFinalState
+                    ? "bg-slate-100 text-secondary"
+                    : isClutchMoment
+                      ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
+                      : "bg-[linear-gradient(135deg,#13294b_0%,#1D428A_100%)] text-white"
+                }`}
+              >
+                <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <div className="text-center">
+                    <p
+                      className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.14em] sm:text-xs ${
+                        isFinalState ? "text-secondary/65" : "text-white/70"
+                      }`}
                     >
-                      <span className="font-lato text-xs font-bold text-white/88">
-                        {highlight.time}
-                      </span>
-                      <span className="font-lato text-xs text-white sm:text-sm">
-                        {highlight.text}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-xl bg-[#244887] px-3 py-3">
-                    <p className="font-lato text-xs text-white sm:text-sm">
-                      Tip-off is live. Score updates will start rolling in from the
-                      mock game feed.
+                      {gameState.leftTeam}
+                    </p>
+                    <p className="font-anton text-[1.85rem] leading-none sm:text-[2.3rem]">
+                      {gameState.leftScore}
                     </p>
                   </div>
+
+                  <div
+                    className={`min-w-[70px] rounded-lg px-2.5 py-1 text-center ${
+                      isFinalState
+                        ? "bg-white/60"
+                        : isClutchMoment
+                          ? "bg-black/15"
+                          : "bg-white/10"
+                    }`}
+                  >
+                    <p
+                      className={`font-lato text-[0.62rem] font-bold uppercase tracking-[0.16em] ${
+                        isFinalState ? "text-secondary/65" : "text-primary"
+                      }`}
+                    >
+                      {gameState.quarterLabel}
+                    </p>
+                    <p
+                      className={`font-barlow-condensed text-[1.4rem] font-semibold leading-none ${
+                        isClutchMoment
+                          ? "text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
+                          : ""
+                      }`}
+                    >
+                      {gameState.clock}
+                    </p>
+                    <p
+                      className={`font-lato text-[0.6rem] font-bold uppercase tracking-[0.16em] ${
+                        isFinalState ? "text-secondary/70" : "text-white/75"
+                      }`}
+                    >
+                      {gameState.statusLabel}
+                    </p>
+                  </div>
+
+                  <div className="text-center">
+                    <p
+                      className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.14em] sm:text-xs ${
+                        isFinalState ? "text-secondary/65" : "text-white/70"
+                      }`}
+                    >
+                      {gameState.rightTeam}
+                    </p>
+                    <p className="font-anton text-[1.85rem] leading-none sm:text-[2.3rem]">
+                      {gameState.rightScore}
+                    </p>
+                  </div>
+                </div>
+
+                {gameState.detail && !isFinalState && (
+                  <p className="mt-2 text-center font-lato text-[0.68rem] font-semibold text-white/85 sm:text-xs">
+                    {gameState.detail}
+                  </p>
                 )}
               </div>
-            </div>
-          )}
-          </>
+
+              {isFinalState && finalPredictionLeaderText && (
+                <div className="flex items-center gap-2 border-b border-slate-200 bg-primary/15 px-4 py-2.5 sm:px-5">
+                  <span className="rounded-md bg-primary px-2 py-0.5 font-lato text-[0.62rem] font-bold uppercase tracking-[0.14em] text-secondary">
+                    Winner
+                  </span>
+                  <p className="min-w-0 flex-1 truncate font-lato text-sm font-bold text-secondary">
+                    {finalPredictionLeaderText
+                      .replace(/^Top predictor:\s*/i, "")
+                      .replace(/^Top predictors:\s*/i, "")
+                      .replace(/^Prediction leader:\s*/i, "")}
+                  </p>
+                </div>
+              )}
+
+              {infoOpen && (
+                <div className="border-b border-slate-200 bg-[#1a3a72] px-3 py-2.5 sm:px-5">
+                  <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
+                    {gameState.highlights.length > 0 ? (
+                      gameState.highlights.map((highlight) => (
+                        <div
+                          key={`${highlight.time}-${highlight.text}`}
+                          className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-2 rounded-lg bg-white/10 px-3 py-2"
+                        >
+                          <span className="font-lato text-xs font-bold text-primary">
+                            {highlight.time}
+                          </span>
+                          <span className="font-lato text-xs text-white sm:text-sm">
+                            {highlight.text}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg bg-white/10 px-3 py-3">
+                        <p className="font-lato text-xs text-white sm:text-sm">
+                          Tip-off is live. Score updates will start rolling in
+                          from the mock game feed.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
+          {/* Messages */}
+          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 sm:px-5">
             {loadingMessages ? (
               <div className="flex h-full items-center justify-center">
-                <p className="font-lato text-sm text-[#8b99ae]">
+                <p className="font-lato text-sm text-slate-400">
                   Loading messages...
                 </p>
               </div>
             ) : chatError && displayMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
-                <p className="max-w-[28rem] rounded-2xl bg-[#fff1f2] px-4 py-3 text-center font-lato text-sm text-[#be123c]">
+                <p className="max-w-[28rem] rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center font-lato text-sm text-rose-700">
                   {chatError}
                 </p>
               </div>
             ) : displayMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
-                <p className="rounded-2xl bg-[#f6f8fc] px-4 py-3 text-center font-lato text-sm text-[#7b8aa2]">
+                <p className="rounded-xl bg-white px-4 py-3 text-center font-lato text-sm text-slate-500 shadow-sm">
                   No messages yet. Start the conversation.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {displayMessages.map((message) => (
                   <div
                     key={message.id}
@@ -796,23 +788,23 @@ function RoomChat() {
                     }`}
                   >
                     {message.align === "center" ? (
-                      <div className="rounded-full bg-[#eef3fb] px-4 py-2 shadow-[0_8px_18px_rgba(27,52,95,0.06)]">
-                        <p className="font-lato text-[0.76rem] font-bold text-[#5b6a80] sm:text-sm">
+                      <div className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5">
+                        <p className="font-lato text-[0.74rem] font-bold text-slate-500 sm:text-sm">
                           {message.text}
                         </p>
                       </div>
                     ) : (
                       <div className="max-w-[82%]">
                         {message.align === "left" && (
-                          <p className="mb-1 px-1 font-lato text-[0.7rem] text-[#9aa6b8] [overflow-wrap:anywhere]">
+                          <p className="mb-1 px-1 font-lato text-[0.7rem] font-semibold text-slate-400 [overflow-wrap:anywhere]">
                             {message.sender}
                           </p>
                         )}
                         <div
-                          className={`rounded-[1.2rem] px-3 py-2 shadow-[0_10px_24px_rgba(15,23,42,0.06)] ${
+                          className={`px-3.5 py-2 shadow-sm ${
                             message.align === "right"
-                              ? "rounded-tr-md bg-secondary text-white"
-                              : "rounded-tl-md border border-[#d5dfef] bg-[#fbfdff] text-[#31435f]"
+                              ? "rounded-2xl rounded-br-md bg-secondary text-white"
+                              : "rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-700"
                           }`}
                         >
                           <p className="font-lato text-sm leading-6 [overflow-wrap:anywhere] sm:text-[0.95rem]">
@@ -820,7 +812,7 @@ function RoomChat() {
                           </p>
                         </div>
                         <p
-                          className={`mt-1 px-1 font-lato text-[0.68rem] text-[#b0bac8] ${
+                          className={`mt-0.5 px-1 font-lato text-[0.66rem] text-slate-400 ${
                             message.align === "right" ? "text-right" : "text-left"
                           }`}
                         >
@@ -835,49 +827,56 @@ function RoomChat() {
             )}
           </div>
 
-          <div className="sticky bottom-0 border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
+          {/* Composer */}
+          <div className="sticky bottom-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
             {chatError && displayMessages.length > 0 && (
-              <div className="mb-3 rounded-[1rem] border border-[#ffd7dc] bg-[#fff1f2] px-4 py-3">
-                <p className="font-lato text-sm text-[#be123c]">{chatError}</p>
+              <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5">
+                <p className="font-lato text-sm text-rose-700">{chatError}</p>
               </div>
             )}
 
             {!gameHidden && currentPredictionEntry && (
-              <div className="mb-3 rounded-[1rem] border border-[#d5e2f6] bg-[#edf4ff] px-4 py-3 shadow-[0_8px_20px_rgba(30,64,140,0.08)]">
-                <p className="font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
-                  Prediction: {currentPredictionEntry.choice}
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-secondary/20 bg-secondary/5 px-4 py-2.5">
+                <span className="rounded-md bg-secondary px-2 py-0.5 font-lato text-[0.62rem] font-bold uppercase tracking-[0.12em] text-white">
+                  Locked
+                </span>
+                <p className="font-lato text-sm font-bold text-secondary">
+                  {currentPredictionEntry.choice}
                 </p>
               </div>
             )}
 
-            {!gameHidden && predictionState.activeRound !== null && !currentPredictionEntry && (
-              <div className="mb-3 overflow-hidden rounded-[1.15rem] border border-[#c7d8f2] bg-[#2d4f8d] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
-                <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 text-white">
-                  <p className="font-lato text-[0.72rem] font-bold tracking-[0.02em] sm:text-xs">
-                    Next Play: What will it be?
-                  </p>
-                  <span className="rounded-full bg-white/12 px-2 py-1 font-lato text-[0.68rem] font-bold">
-                    {predictionState.closesInSeconds ?? 0}s
-                  </span>
-                </div>
+            {!gameHidden &&
+              predictionState.activeRound !== null &&
+              !currentPredictionEntry && (
+                <div className="mb-3 overflow-hidden rounded-xl border border-secondary/20 bg-[linear-gradient(135deg,#13294b_0%,#1D428A_100%)] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2 text-white">
+                    <p className="flex items-center gap-1.5 font-lato text-[0.74rem] font-bold sm:text-xs">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-live" />
+                      Next play — call it
+                    </p>
+                    <span className="rounded-full bg-primary px-2 py-0.5 font-lato text-[0.68rem] font-bold text-secondary">
+                      {predictionState.closesInSeconds ?? 0}s
+                    </span>
+                  </div>
 
-                <div className="grid grid-cols-3 gap-2 p-2">
-                  {predictionOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => void handlePredictionSelect(option)}
-                      disabled={sendingPrediction}
-                      className="rounded-[0.9rem] bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-[#eef4ff] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
-                    >
-                      {option}
-                    </button>
-                  ))}
+                  <div className="grid grid-cols-3 gap-2 p-2">
+                    {predictionOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => void handlePredictionSelect(option)}
+                        disabled={sendingPrediction}
+                        className="rounded-lg bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="flex items-center gap-3 rounded-full bg-[#f6f8fc] px-4 py-2.5">
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 focus-within:border-secondary focus-within:bg-white">
               <input
                 type="text"
                 value={draft}
@@ -890,14 +889,14 @@ function RoomChat() {
                 }}
                 placeholder="Type a message..."
                 disabled={!activeRoomId || sendingMessage}
-                className="w-full bg-transparent font-lato text-sm text-[#334155] placeholder:text-[#9aa6b8] focus:outline-none"
+                className="w-full bg-transparent font-lato text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
               />
               <button
                 type="button"
                 aria-label="Send message"
                 onClick={() => void handleSendMessage()}
-                disabled={!activeRoomId || sendingMessage}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d7e5fb] text-secondary transition-colors hover:bg-[#c6daf8] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!activeRoomId || sendingMessage || !draft.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-white transition-colors hover:bg-[#16327a] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 <PaperAirplaneIcon className="h-4 w-4" />
               </button>
