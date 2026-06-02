@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import AvatarFrame from '../../components/ui/AvatarFrame';
 import {
   createRoomWithMembers,
   fetchMyFriends,
@@ -144,12 +145,28 @@ function CreateRoom() {
                         } ${isSelected ? 'bg-[#f5f9ff]' : 'bg-white hover:bg-[#f9fbff]'}`}
                       >
                         <div className="flex min-w-0 items-center gap-3">
-                          <div
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-lato text-sm font-bold text-secondary"
-                            style={{ backgroundColor: friend.accent }}
+                          <AvatarFrame
+                            frameId={friend.selected_frame_id}
+                            size={40}
+                            scale={1.0}
                           >
-                            {friend.name[0]}
-                          </div>
+                            {friend.avatar_url ? (
+                              <div className="h-9 w-9 overflow-hidden rounded-full">
+                                <img
+                                  src={friend.avatar_url}
+                                  alt={friend.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-lato text-sm font-bold text-secondary"
+                                style={{ backgroundColor: friend.accent }}
+                              >
+                                {friend.name[0]}
+                              </div>
+                            )}
+                          </AvatarFrame>
                           <span className="truncate font-lato text-sm font-bold text-[#304564] sm:text-base">
                             {friend.name}
                           </span>
