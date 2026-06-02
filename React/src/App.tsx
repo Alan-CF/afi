@@ -35,10 +35,11 @@ import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from "./components/ui/PointsToastGlobal";
 import AdminShop from "./pages/Shop/AdminShop";
+import { PresenceProvider } from "./hooks/usePresence";
 
 function App() {
   return (
-    <>
+    <PresenceProvider>
       <PointsToastGlobal />
         <ScrollToTop />
         <FriendInviteProvider />
@@ -83,7 +84,7 @@ function App() {
           <Route path="/rooms/:roomId" element={<RoomChat />} />
           <Route path="/pointshistory" element={<PointsHistory />} />
         </Routes>
-      </>
+    </PresenceProvider>
   );
 }
 

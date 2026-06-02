@@ -228,6 +228,12 @@ function RoomChat() {
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [gameHidden, setGameHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined" || activeRoomId === null) return false;
+    return (
+      window.localStorage.getItem(`room-game-hidden-${activeRoomId}`) === "1"
+    );
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [predictionEntries, setPredictionEntries] = useState<
     RoomPredictionEntryRecord[]
@@ -375,6 +381,16 @@ function RoomChat() {
   }, [actionsOpen]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || activeRoomId === null) return;
+    const key = `room-game-hidden-${activeRoomId}`;
+    if (gameHidden) {
+      window.localStorage.setItem(key, "1");
+    } else {
+      window.localStorage.removeItem(key);
+    }
+  }, [gameHidden, activeRoomId]);
+
+  useEffect(() => {
     if (!activeRoomId || !currentUserId) return;
 
     const unsubscribe = subscribeToRoomMessages(activeRoomId, (message) => {
@@ -503,6 +519,12 @@ function RoomChat() {
     setActionsOpen(false);
   }
 
+  function handleToggleGame() {
+    setGameHidden((current) => !current);
+    setInfoOpen(false);
+    setActionsOpen(false);
+  }
+
   async function handleLeaveRoom() {
     if (!activeRoomId || leavingRoom) return;
 
@@ -567,12 +589,22 @@ function RoomChat() {
 
                 {actionsOpen && (
                   <div className="absolute right-0 top-11 z-20 w-48 rounded-2xl border border-[#d6e0f0] bg-white p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]">
+                    {!gameHidden && (
+                      <button
+                        type="button"
+                        onClick={handleToggleInfo}
+                        className="flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#29477b] transition-colors hover:bg-[#eef4ff]"
+                      >
+                        {infoOpen ? "Hide Match Info" : "Show Match Info"}
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      onClick={handleToggleInfo}
-                      className="flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#29477b] transition-colors hover:bg-[#eef4ff]"
+                      onClick={handleToggleGame}
+                      className="mt-1 flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#29477b] transition-colors hover:bg-[#eef4ff]"
                     >
-                      {infoOpen ? "Hide Match Info" : "Show Match Info"}
+                      {gameHidden ? "Show Match" : "Remove Match"}
                     </button>
 
                     <button
@@ -589,6 +621,8 @@ function RoomChat() {
             </div>
           </div>
 
+          {!gameHidden && (
+          <>
           <div
             className={`px-4 py-3 sm:px-5 sm:py-3.5 ${
               isFinalState
@@ -726,6 +760,8 @@ function RoomChat() {
               </div>
             </div>
           )}
+          </>
+          )}
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
             {loadingMessages ? (
@@ -806,7 +842,7 @@ function RoomChat() {
               </div>
             )}
 
-            {currentPredictionEntry && (
+            {!gameHidden && currentPredictionEntry && (
               <div className="mb-3 rounded-[1rem] border border-[#d5e2f6] bg-[#edf4ff] px-4 py-3 shadow-[0_8px_20px_rgba(30,64,140,0.08)]">
                 <p className="font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
                   Prediction: {currentPredictionEntry.choice}
@@ -814,7 +850,7 @@ function RoomChat() {
               </div>
             )}
 
-            {predictionState.activeRound !== null && !currentPredictionEntry && (
+            {!gameHidden && predictionState.activeRound !== null && !currentPredictionEntry && (
               <div className="mb-3 overflow-hidden rounded-[1.15rem] border border-[#c7d8f2] bg-[#2d4f8d] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
                 <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 text-white">
                   <p className="font-lato text-[0.72rem] font-bold tracking-[0.02em] sm:text-xs">
