@@ -1,4 +1,4 @@
-import { ChevronRightIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 export type Room = {
   id: number;
@@ -57,25 +57,15 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
         aria-hidden
       />
 
-      {/* Avatar */}
-      <div className="relative shrink-0">
-        <div
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-white sm:h-12 sm:w-12"
-          style={{ backgroundColor: isLive ? room.accent : "#94A3B8" }}
-        >
-          <UserGroupIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-        </div>
-        {hasUnread && (
-          <span
-            className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-primary ring-2 ring-white"
-            aria-label="Unread messages"
-          />
-        )}
-      </div>
-
       {/* Body */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
+          {hasUnread && (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-primary"
+              aria-label="Unread messages"
+            />
+          )}
           <h3
             className={`truncate font-lato text-[0.95rem] font-bold sm:text-base ${
               isLive ? "text-[#16213d]" : "text-slate-600"

@@ -370,3 +370,41 @@ export function subscribeToRoomMessages(
     void supabase.removeChannel(channel);
   };
 }
+
+export type RoomMessageBroadcast = RoomChatMessageRecord & { roomId: number };
+
+// Subscribes to new messages across every room the user belongs to. RLS makes
+// realtime only deliver rows from rooms where the user is an accepted member,
+// so no client-side room filtering is required.
+export function subscribeToAllRoomMessages(
+  onMessage: (message: RoomMessageBroadcast) => void
+) {
+  const channel = supabase
+    .channel("room-messages-all")
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "room_messages",
+      },
+      async (payload) => {
+        const inserted = payload.new as RoomMessageRow & { room_id: number };
+        const profileMap = await fetchProfileMap([inserted.sender_profile_id]);
+
+        onMessage({
+          id: inserted.id,
+          roomId: inserted.room_id,
+          senderProfileId: inserted.sender_profile_id,
+          senderName: profileMap.get(inserted.sender_profile_id) ?? "User",
+          content: inserted.content,
+          createdAt: inserted.created_at,
+        });
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}

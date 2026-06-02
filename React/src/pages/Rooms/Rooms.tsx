@@ -16,6 +16,10 @@ import {
   resetMockGame,
 } from '../../hooks/useMockRoomGameFeed';
 import {
+  subscribeToAllRoomMessages,
+  shouldHideRoomMessage,
+} from '../../hooks/useRoomChat';
+import {
   fetchMyFriendIds,
   searchProfilesByUsername,
   sendFriendInvite,
@@ -161,6 +165,26 @@ function RoomsPage() {
       window.removeEventListener('room-invite-changed', refreshInvitesAndRooms);
   }, []);
 
+  // Live last-message updates for the whole room list (no need to be inside).
+  useEffect(() => {
+    const unsubscribe = subscribeToAllRoomMessages((message) => {
+      if (shouldHideRoomMessage(message.content)) return;
+      setRooms((current) =>
+        current.map((room) =>
+          room.id === message.roomId
+            ? {
+                ...room,
+                subtitle: `${message.senderName}: ${message.content}`,
+                lastMessageAt: message.createdAt,
+                lastMessageFromMe: message.senderProfileId === myId,
+              }
+            : room
+        )
+      );
+    });
+    return unsubscribe;
+  }, [myId]);
+
   useEffect(() => {
     if (!state?.removedRoomId) return;
 
@@ -197,8 +221,9 @@ function RoomsPage() {
 
   const orderedRooms = useMemo(() => {
     return [...rooms].sort((a, b) => {
-      if (a.status === 'live' && b.status !== 'live') return -1;
-      if (a.status !== 'live' && b.status === 'live') return 1;
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
       return a.title.localeCompare(b.title);
     });
   }, [rooms]);
