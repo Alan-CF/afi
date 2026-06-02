@@ -16,6 +16,7 @@ export type RoomChatMessageRecord = {
 export type RoomChatBootstrap = {
   room: Room;
   currentUserId: string;
+  isOwner: boolean;
   messages: RoomChatMessageRecord[];
 };
 
@@ -106,7 +107,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id, title, status, accent")
+    .select("id, title, status, accent, match_hidden, owner_profile_id")
     .eq("id", roomId)
     .single();
 
@@ -152,11 +153,13 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
         .filter(Boolean) as string[]
     ),
     subtitle: "Live chat is on",
+    matchHidden: room.match_hidden ?? false,
   };
 
   return {
     room: roomCard,
     currentUserId,
+    isOwner: room.owner_profile_id === currentUserId,
     messages: ((messages ?? []) as RoomMessageRow[]).map((message) => ({
       id: message.id,
       senderProfileId: message.sender_profile_id,
@@ -333,6 +336,35 @@ export async function leaveRoom(roomId: number): Promise<void> {
     throw new Error(
       "Could not leave room. Your membership was not removed. Check the room_members delete policy."
     );
+  }
+}
+
+export async function fetchRoomMatchHidden(roomId: number): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("match_hidden")
+    .eq("id", roomId)
+    .single();
+
+  if (error) {
+    throw buildQueryError("room match_hidden query failed", error.message);
+  }
+
+  return data?.match_hidden ?? false;
+}
+
+// Owner-only (enforced by the "rooms_update" RLS policy).
+export async function setRoomMatchHidden(
+  roomId: number,
+  hidden: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from("rooms")
+    .update({ match_hidden: hidden })
+    .eq("id", roomId);
+
+  if (error) {
+    throw buildQueryError("room match_hidden update failed", error.message);
   }
 }
 

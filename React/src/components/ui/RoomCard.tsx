@@ -10,6 +10,7 @@ export type Room = {
   memberProfileIds: string[];
   lastMessageAt?: string | null;
   lastMessageFromMe?: boolean;
+  matchHidden?: boolean;
 };
 
 type RoomCardProps = {

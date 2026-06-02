@@ -10,6 +10,8 @@ import type { Room } from "../../components/ui/RoomCard";
 import {
   fetchRoomChat,
   fetchRoomMessages,
+  fetchRoomMatchHidden,
+  setRoomMatchHidden,
   leaveRoom,
   parseRoomPredictionEntry,
   ROOM_SYSTEM_MESSAGE_PREFIX,
@@ -229,12 +231,10 @@ function RoomChat() {
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [gameHidden, setGameHidden] = useState<boolean>(() => {
-    if (typeof window === "undefined" || activeRoomId === null) return false;
-    return (
-      window.localStorage.getItem(`room-game-hidden-${activeRoomId}`) === "1"
-    );
-  });
+  const [gameHidden, setGameHidden] = useState<boolean>(
+    state?.room?.matchHidden ?? false
+  );
+  const [isOwner, setIsOwner] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [predictionEntries, setPredictionEntries] = useState<
     RoomPredictionEntryRecord[]
@@ -294,13 +294,12 @@ function RoomChat() {
     [gameState.cycleStartMs, predictionEntries, predictionState]
   );
 
-  const displayMessages = useMemo(
-    () =>
-      [...messages, ...predictionAnnouncements].sort(
-        (a, b) => a.createdAt - b.createdAt
-      ),
-    [messages, predictionAnnouncements]
-  );
+  const displayMessages = useMemo(() => {
+    const base = gameHidden
+      ? messages
+      : [...messages, ...predictionAnnouncements];
+    return [...base].sort((a, b) => a.createdAt - b.createdAt);
+  }, [messages, predictionAnnouncements, gameHidden]);
 
   useEffect(() => {
     if (!activeRoomId) {
@@ -319,6 +318,8 @@ function RoomChat() {
 
         setRoom(data.room);
         setCurrentUserId(data.currentUserId);
+        setIsOwner(data.isOwner);
+        setGameHidden(data.room.matchHidden ?? false);
         setMessages([]);
         setPredictionEntries([]);
 
@@ -390,16 +391,6 @@ function RoomChat() {
   }, [actionsOpen]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || activeRoomId === null) return;
-    const key = `room-game-hidden-${activeRoomId}`;
-    if (gameHidden) {
-      window.localStorage.setItem(key, "1");
-    } else {
-      window.localStorage.removeItem(key);
-    }
-  }, [gameHidden, activeRoomId]);
-
-  useEffect(() => {
     if (!activeRoomId || !currentUserId) return;
 
     const unsubscribe = subscribeToRoomMessages(activeRoomId, (message) => {
@@ -432,8 +423,13 @@ function RoomChat() {
 
     async function syncMessages() {
       try {
-        const latestMessages = await fetchRoomMessages(roomIdToSync);
+        const [latestMessages, matchHidden] = await Promise.all([
+          fetchRoomMessages(roomIdToSync),
+          fetchRoomMatchHidden(roomIdToSync),
+        ]);
         if (cancelled) return;
+
+        setGameHidden(matchHidden);
 
         for (const message of latestMessages) {
           const predictionEntry = parseRoomPredictionEntry(message);
@@ -528,10 +524,23 @@ function RoomChat() {
     setActionsOpen(false);
   }
 
-  function handleToggleGame() {
-    setGameHidden((current) => !current);
+  async function handleToggleGame() {
+    if (!activeRoomId || !isOwner) return;
+
+    const next = !gameHidden;
+    setGameHidden(next);
     setInfoOpen(false);
     setActionsOpen(false);
+
+    try {
+      await setRoomMatchHidden(activeRoomId, next);
+    } catch (error) {
+      console.error("Error toggling match visibility:", error);
+      setGameHidden(!next); // revert on failure
+      setChatError(
+        error instanceof Error ? error.message : "Could not update match."
+      );
+    }
   }
 
   async function handleLeaveRoom() {
@@ -615,13 +624,15 @@ function RoomChat() {
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={handleToggleGame}
-                    className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                  >
-                    {gameHidden ? "Show Match" : "Remove Match"}
-                  </button>
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={handleToggleGame}
+                      className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      {gameHidden ? "Show Match" : "Remove Match"}
+                    </button>
+                  )}
 
                   <button
                     type="button"
