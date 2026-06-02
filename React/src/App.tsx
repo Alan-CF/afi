@@ -26,6 +26,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
+import RoomInviteProvider from './components/ui/RoomInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
 import ProductDetail from './pages/Shop/ProductDetail';
 import ShoppingCartItem from './pages/Shop/ShopingCartItem';
@@ -43,6 +44,7 @@ function App() {
       <PointsToastGlobal />
         <ScrollToTop />
         <FriendInviteProvider />
+        <RoomInviteProvider />
         <Routes>
           <Route path="/login" element={<Login />} />
 

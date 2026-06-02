@@ -32,11 +32,15 @@ import {
   CheckIcon,
   XMarkIcon,
   UserGroupIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/solid';
 
 type RoomsLocationState = {
   removedRoomId?: number;
 };
+
+const FRIEND_AVATAR_SIZE = 40;
+const FRIEND_AVATAR_FRAME_SCALE = 1.3;
 
 function RoomsPage() {
   const navigate = useNavigate();
@@ -148,6 +152,16 @@ function RoomsPage() {
   }, [location.key]);
 
   useEffect(() => {
+    function refreshInvitesAndRooms() {
+      fetchMyRoomInvites().then(setInvites).catch(console.error);
+      fetchMyRooms().then(setRooms).catch(console.error);
+    }
+    window.addEventListener('room-invite-changed', refreshInvitesAndRooms);
+    return () =>
+      window.removeEventListener('room-invite-changed', refreshInvitesAndRooms);
+  }, []);
+
+  useEffect(() => {
     if (!state?.removedRoomId) return;
 
     setRooms((current) =>
@@ -253,12 +267,15 @@ function RoomsPage() {
 
   const roomsPanel = (
     <div className="flex flex-col gap-4">
-      {/* Join requests */}
+      {/* Group invites */}
       {invites.length > 0 && (
         <div className="rounded-2xl border border-primary/40 bg-primary/10 p-3 sm:p-4">
           <p className="mb-2 flex items-center gap-1.5 font-lato text-xs font-bold uppercase tracking-[0.14em] text-secondary">
             <UserGroupIcon className="h-4 w-4" />
-            Room Requests
+            Group Invites
+            <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[0.62rem] font-bold text-white">
+              {invites.length}
+            </span>
           </p>
           <div className="space-y-2">
             {invites.map((invite) => {
@@ -266,43 +283,57 @@ function RoomsPage() {
               return (
                 <div
                   key={invite.roomId}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"
                 >
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-                    style={{ backgroundColor: invite.accent }}
-                  >
-                    <UserGroupIcon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-lato text-sm font-bold text-slate-800">
-                      {invite.title}
-                    </p>
-                    <p className="truncate font-lato text-xs text-slate-500">
-                      Invited by @{invite.invitedBy}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <button
-                      type="button"
-                      aria-label="Decline"
-                      onClick={() => handleDeclineInvite(invite.roomId)}
-                      disabled={responding}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-60"
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
+                      style={{ backgroundColor: invite.accent }}
                     >
-                      <XMarkIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Accept"
-                      onClick={() => handleAcceptInvite(invite.roomId)}
-                      disabled={responding}
-                      className="flex h-8 items-center gap-1 rounded-lg bg-secondary px-3 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
-                    >
-                      <CheckIcon className="h-4 w-4" />
-                      Join
-                    </button>
+                      <UserGroupIcon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-lato text-sm font-bold text-slate-800">
+                        {invite.title}
+                      </p>
+                      <p className="truncate font-lato text-xs text-slate-500">
+                        Invited by @{invite.invitedBy}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label="Decline"
+                        onClick={() => handleDeclineInvite(invite.roomId)}
+                        disabled={responding}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-60"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Accept"
+                        onClick={() => handleAcceptInvite(invite.roomId)}
+                        disabled={responding}
+                        className="flex h-8 items-center gap-1 rounded-lg bg-secondary px-3 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
+                      >
+                        <CheckIcon className="h-4 w-4" />
+                        Join
+                      </button>
+                    </div>
                   </div>
+
+                  {invite.nonFriendCount > 0 && (
+                    <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-primary/15 px-2.5 py-1.5">
+                      <ExclamationTriangleIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-secondary" />
+                      <p className="font-lato text-[11px] font-semibold leading-snug text-secondary">
+                        This group has {invite.nonFriendCount}{' '}
+                        {invite.nonFriendCount === 1 ? 'person' : 'people'} who{' '}
+                        {invite.nonFriendCount === 1 ? 'is' : 'are'} not your
+                        friend.
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -478,8 +509,9 @@ function RoomsPage() {
                   >
                     <AvatarFrame
                       frameId={profile.selected_frame_id}
-                      size={40}
-                      scale={1.0}
+                      size={FRIEND_AVATAR_SIZE}
+                      scale={FRIEND_AVATAR_FRAME_SCALE}
+                      className="shrink-0"
                     >
                       {profile.avatar_url ? (
                         <div className="h-10 w-10 overflow-hidden rounded-full">
@@ -561,11 +593,12 @@ function RoomsPage() {
                 onClick={() => navigate(`/profile/${friend.id}`)}
                 className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition hover:bg-slate-50"
               >
-                <div className="relative shrink-0">
+                <div className="relative flex shrink-0">
                   <AvatarFrame
                     frameId={friend.selected_frame_id}
-                    size={40}
-                    scale={1.0}
+                    size={FRIEND_AVATAR_SIZE}
+                    scale={FRIEND_AVATAR_FRAME_SCALE}
+                    className="shrink-0"
                   >
                     {friend.avatar_url ? (
                       <div className="h-10 w-10 overflow-hidden rounded-full">
@@ -585,7 +618,7 @@ function RoomsPage() {
                     )}
                   </AvatarFrame>
                   <span
-                    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
+                    className={`absolute bottom-0 right-0 z-10 h-3 w-3 rounded-full border-2 border-white ${
                       online ? 'bg-emerald-500' : 'bg-slate-300'
                     }`}
                   />

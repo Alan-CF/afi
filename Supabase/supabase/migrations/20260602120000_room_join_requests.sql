@@ -65,3 +65,49 @@ with check (profile_id = auth.uid());
 
 comment on column public.room_members.status is
   'pending = invited but not yet joined; accepted = active member';
+
+-- 5. Let an invitee read the member list of the room they were invited to ----
+-- (needed to warn them when the room contains people who are not their
+-- friends). SECURITY DEFINER avoids RLS recursion on room_members.
+create or replace function public.is_invited_to_room(target_room_id bigint)
+ returns boolean
+ language sql
+ stable security definer
+ set search_path to 'public'
+as $function$
+  select exists (
+    select 1
+    from public.room_members rm
+    where rm.room_id = target_room_id
+      and rm.profile_id = auth.uid()
+      and rm.status = 'pending'
+  );
+$function$
+;
+
+drop policy if exists "room_members_select" on public.room_members;
+create policy "room_members_select"
+on public.room_members
+as permissive
+for select
+to authenticated
+using (
+  profile_id = auth.uid()
+  or public.is_member_of_room(room_id)
+  or public.is_invited_to_room(room_id)
+);
+
+-- 6. Realtime: emit room_members changes so invitees get a live toast --------
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'room_members'
+  ) then
+    alter publication supabase_realtime add table public.room_members;
+  end if;
+end
+$$;

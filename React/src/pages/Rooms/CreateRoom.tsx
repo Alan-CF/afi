@@ -14,6 +14,9 @@ import {
   type FriendOption,
 } from '../../hooks/useRooms';
 
+const INVITE_AVATAR_SIZE = 36;
+const INVITE_AVATAR_FRAME_SCALE = 1.3;
+
 function CreateRoom() {
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState('');
@@ -218,8 +221,9 @@ function CreateRoom() {
                         <div className="flex min-w-0 items-center gap-3">
                           <AvatarFrame
                             frameId={friend.selected_frame_id}
-                            size={36}
-                            scale={1.0}
+                            size={INVITE_AVATAR_SIZE}
+                            scale={INVITE_AVATAR_FRAME_SCALE}
+                            className="shrink-0"
                           >
                             {friend.avatar_url ? (
                               <div className="h-9 w-9 overflow-hidden rounded-full">

@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
+import { fetchMyFriendIds } from "../lib/friends";
 import { shouldHideRoomMessage } from "./useRoomChat";
 
 export type RoomCardData = {
@@ -26,6 +27,8 @@ export type RoomInvite = {
   title: string;
   accent: string;
   invitedBy: string;
+  memberCount: number;
+  nonFriendCount: number;
 };
 
 function formatMembers(usernames: string[]) {
@@ -287,27 +290,10 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
   });
 }
 
-export async function fetchMyRoomInvites(): Promise<RoomInvite[]> {
-  const userId = await getAuthenticatedUserId();
-
-  const { data: pendingMemberships, error: pendingError } = await supabase
-    .from("room_members")
-    .select("room_id")
-    .eq("profile_id", userId)
-    .eq("status", "pending");
-
-  if (pendingError) {
-    console.error("pending room_members error:", pendingError);
-    throw buildQueryError(
-      "room invites query failed",
-      pendingError.message
-    );
-  }
-
-  const roomIds = Array.from(
-    new Set((pendingMemberships ?? []).map((item) => item.room_id))
-  );
-
+async function buildInvitesForRoomIds(
+  roomIds: number[],
+  userId: string
+): Promise<RoomInvite[]> {
   if (roomIds.length === 0) return [];
 
   const { data: rooms, error: roomsError } = await supabase
@@ -341,12 +327,84 @@ export async function fetchMyRoomInvites(): Promise<RoomInvite[]> {
     (owners ?? []).map((owner) => [owner.id, owner.username])
   );
 
-  return (rooms ?? []).map((room) => ({
-    roomId: room.id,
-    title: room.title,
-    accent: room.accent,
-    invitedBy: ownerMap.get(room.owner_profile_id) ?? "Someone",
-  }));
+  // All members of the invited rooms, to flag non-friends.
+  const { data: members, error: membersError } = await supabase
+    .from("room_members")
+    .select("room_id, profile_id")
+    .in("room_id", roomIds);
+
+  if (membersError) {
+    console.error("invite members error:", membersError);
+    throw buildQueryError("invite members query failed", membersError.message);
+  }
+
+  const friendIds = new Set(await fetchMyFriendIds());
+
+  return (rooms ?? []).map((room) => {
+    const roomMembers = (members ?? []).filter(
+      (member) => member.room_id === room.id
+    );
+    const otherMembers = roomMembers.filter(
+      (member) => member.profile_id !== userId
+    );
+    const nonFriendCount = otherMembers.filter(
+      (member) => !friendIds.has(member.profile_id)
+    ).length;
+
+    return {
+      roomId: room.id,
+      title: room.title,
+      accent: room.accent,
+      invitedBy: ownerMap.get(room.owner_profile_id) ?? "Someone",
+      memberCount: otherMembers.length,
+      nonFriendCount,
+    };
+  });
+}
+
+export async function fetchMyRoomInvites(): Promise<RoomInvite[]> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: pendingMemberships, error: pendingError } = await supabase
+    .from("room_members")
+    .select("room_id")
+    .eq("profile_id", userId)
+    .eq("status", "pending");
+
+  if (pendingError) {
+    console.error("pending room_members error:", pendingError);
+    throw buildQueryError("room invites query failed", pendingError.message);
+  }
+
+  const roomIds = Array.from(
+    new Set((pendingMemberships ?? []).map((item) => item.room_id))
+  );
+
+  return buildInvitesForRoomIds(roomIds, userId);
+}
+
+export async function fetchRoomInvite(
+  roomId: number
+): Promise<RoomInvite | null> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("room_members")
+    .select("room_id, status")
+    .eq("profile_id", userId)
+    .eq("room_id", roomId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (membershipError) {
+    console.error("room invite lookup error:", membershipError);
+    return null;
+  }
+
+  if (!membership) return null;
+
+  const invites = await buildInvitesForRoomIds([roomId], userId);
+  return invites[0] ?? null;
 }
 
 export async function acceptRoomInvite(roomId: number): Promise<void> {
