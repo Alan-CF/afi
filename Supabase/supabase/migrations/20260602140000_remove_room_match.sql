@@ -5,6 +5,30 @@
 -- hidden.
 -- =========================================================
 
+-- Treat the owner_profile_id and the accepted room_members owner role as owner
+-- signals. Some existing rooms can rely on either source.
+create or replace function public.is_owner_of_room(target_room_id bigint)
+ returns boolean
+ language sql
+ stable security definer
+ set search_path to 'public'
+as $function$
+  select exists (
+    select 1
+    from public.rooms r
+    where r.id = target_room_id
+      and r.owner_profile_id = auth.uid()
+  )
+  or exists (
+    select 1
+    from public.room_members rm
+    where rm.room_id = target_room_id
+      and rm.profile_id = auth.uid()
+      and rm.role = 'owner'
+      and rm.status = 'accepted'
+  );
+$function$;
+
 -- The remote schema dropped the original owner update policy. Recreate an
 -- owner-only update policy so room settings such as match_hidden can persist.
 drop policy if exists "rooms_update" on public.rooms;
@@ -14,8 +38,8 @@ on public.rooms
 as permissive
 for update
 to authenticated
-using (owner_profile_id = auth.uid())
-with check (owner_profile_id = auth.uid());
+using (public.is_owner_of_room(id))
+with check (public.is_owner_of_room(id));
 
 create or replace function public.remove_room_match(target_room_id bigint)
  returns void
@@ -28,12 +52,7 @@ begin
     raise exception 'not_authenticated' using errcode = '42501';
   end if;
 
-  if not exists (
-    select 1
-    from public.rooms r
-    where r.id = target_room_id
-      and r.owner_profile_id = auth.uid()
-  ) then
+  if not public.is_owner_of_room(target_room_id) then
     raise exception 'not_room_owner' using errcode = '42501';
   end if;
 

@@ -32,6 +32,7 @@ export type RoomPredictionEntryRecord = {
 
 type RoomMemberRow = {
   profile_id: string;
+  role: string;
 };
 
 type ProfileRow = {
@@ -122,7 +123,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 
   const { data: members, error: membersError } = await supabase
     .from("room_members")
-    .select("profile_id")
+    .select("profile_id, role")
     .eq("room_id", roomId)
     .eq("status", "accepted");
 
@@ -164,7 +165,12 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
   return {
     room: roomCard,
     currentUserId,
-    isOwner: room.owner_profile_id === currentUserId,
+    isOwner:
+      room.owner_profile_id === currentUserId ||
+      ((members ?? []) as RoomMemberRow[]).some(
+        (member) =>
+          member.profile_id === currentUserId && member.role === "owner"
+      ),
     messages: ((messages ?? []) as RoomMessageRow[]).map((message) => ({
       id: message.id,
       senderProfileId: message.sender_profile_id,
