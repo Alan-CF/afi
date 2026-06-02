@@ -720,7 +720,7 @@ function RoomChat() {
             </div>
           </div>
 
-          {!gameHidden && (
+          {!gameHidden && !loadingMessages && (
             <>
               {/* Score strip */}
               <div
@@ -936,7 +936,7 @@ function RoomChat() {
               </div>
             )}
 
-            {!gameHidden && currentPredictionEntry && (
+            {!gameHidden && !loadingMessages && currentPredictionEntry && (
               <div className="mb-3 flex items-center gap-2 rounded-xl border border-secondary/20 bg-secondary/5 px-4 py-2.5">
                 <span className="rounded-md bg-secondary px-2 py-0.5 font-lato text-[0.62rem] font-bold uppercase tracking-[0.12em] text-white">
                   Locked
@@ -948,6 +948,7 @@ function RoomChat() {
             )}
 
             {!gameHidden &&
+              !loadingMessages &&
               predictionState.activeRound !== null &&
               !currentPredictionEntry && (
                 <div className="mb-3 overflow-hidden rounded-xl border border-secondary/20 bg-secondary shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
