@@ -12,6 +12,7 @@ export interface UserProfileData {
   caption: string | null;
   streak: number;
   name: string | null;
+  role: 'user' | 'admin';
 }
 
 type ProfileState = {
@@ -120,6 +121,7 @@ async function fetchProfile(userId: string): Promise<UserProfileData> {
   const toUserProfile = (data: ProfileRow): UserProfileData => ({
     ...data,
     full_name: data.name ?? data.username,
+    role: data.role ?? 'user',
   });
 
   const { data, error } = await supabase
@@ -127,8 +129,6 @@ async function fetchProfile(userId: string): Promise<UserProfileData> {
     .select('*')
     .eq('id', userId)
     .maybeSingle<ProfileRow>();
-
-  console.log('Fetched profile data:', { data, error });
 
   if (error) {
     throw error;
@@ -139,7 +139,6 @@ async function fetchProfile(userId: string): Promise<UserProfileData> {
   }
 
   const createdProfile = await createProfile(userId);
-  console.log('Created new profile:', createdProfile);
   return toUserProfile(createdProfile);
 }
 
@@ -217,7 +216,8 @@ export function useProfile() {
         }
 
         try {
-          const { userId, error: authError } = await resolveAuthenticatedUserId();
+          const { userId, error: authError } =
+            await resolveAuthenticatedUserId();
 
           if (authError || !userId) {
             setState({
@@ -285,6 +285,7 @@ export function useProfile() {
 
   const refreshProfile = useCallback(async () => {
     await loadProfile(false);
+    window.dispatchEvent(new CustomEvent('profile-updated'));
   }, [loadProfile]);
 
   return {

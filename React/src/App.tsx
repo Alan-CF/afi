@@ -34,20 +34,21 @@ import MainLayout from './components/layout/MainLayout';
 import ShootYourShotAR from './pages/ShootYourShotAR';
 import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
-import PointsToastGlobal from "./components/ui/PointsToastGlobal";
+import PointsToastGlobal from './components/ui/PointsToastGlobal';
 import RequireAdmin from './components/admin/RequireAdmin';
 import BasketballLoader from './components/common/BasketballLoader';
 
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+import AdminShop from './pages/Shop/AdminShop';
 
 function App() {
   return (
     <>
       <PointsToastGlobal />
-        <ScrollToTop />
-        <FriendInviteProvider />
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <ScrollToTop />
+      <FriendInviteProvider />
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
         <Route element={<MainLayout />}>
           <Route path="/quizzes" element={<Quizzes />} />
@@ -96,13 +97,14 @@ function App() {
               </RequireAdmin>
             }
           />
+          <Route path="/admin/shop" element={<AdminShop />} />
         </Route>
 
-          <Route path="/rooms/chat" element={<RoomChat />} />
-          <Route path="/rooms/:roomId" element={<RoomChat />} />
-          <Route path="/pointshistory" element={<PointsHistory />} />
-        </Routes>
-      </>
+        <Route path="/rooms/chat" element={<RoomChat />} />
+        <Route path="/rooms/:roomId" element={<RoomChat />} />
+        <Route path="/pointshistory" element={<PointsHistory />} />
+      </Routes>
+    </>
   );
 }
 
