@@ -4,6 +4,7 @@ import {
   type DatePreset,
   type DateRange,
 } from '../../lib/adminDashboardApi';
+import AdminSegmentedControl from './AdminSegmentedControl';
 
 type AdminDateRangeFilterProps = {
   startDate: string;
@@ -20,14 +21,15 @@ const PRESETS: { key: DatePreset; label: string }[] = [
   { key: 'all', label: 'All time' },
 ];
 
-const GRANULARITIES: { key: ActiveUsersGranularity; label: string }[] = [
-  { key: 'daily', label: 'Daily' },
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'monthly', label: 'Monthly' },
-];
+const GRANULARITY_OPTIONS: readonly { key: ActiveUsersGranularity; label: string }[] =
+  [
+    { key: 'daily', label: 'Daily' },
+    { key: 'weekly', label: 'Weekly' },
+    { key: 'monthly', label: 'Monthly' },
+  ];
 
 const INPUT_CLASS =
-  'rounded-xl border-2 border-secondary px-3 py-2 font-lato text-sm text-text focus:border-primary focus:outline-none';
+  'w-full rounded-xl border-2 border-container-border bg-white px-3 py-2 font-lato text-sm text-text transition-colors focus:border-secondary focus:outline-none';
 
 export default function AdminDateRangeFilter({
   startDate,
@@ -36,24 +38,37 @@ export default function AdminDateRangeFilter({
   onRangeChange,
   onGranularityChange,
 }: AdminDateRangeFilterProps) {
+  const activePreset =
+    PRESETS.find((preset) => {
+      const range = presetToRange(preset.key);
+      return range.startDate === startDate && range.endDate === endDate;
+    })?.key ?? null;
+
   return (
     <div className="rounded-2xl border border-container-border bg-white p-4 shadow-sm md:p-5">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap gap-2">
-          {PRESETS.map((preset) => (
-            <button
-              key={preset.key}
-              type="button"
-              onClick={() => onRangeChange(presetToRange(preset.key))}
-              className="rounded-full border-2 border-secondary px-3 py-1.5 font-lato text-xs font-bold uppercase tracking-wider text-secondary transition-colors hover:bg-secondary hover:text-white"
-            >
-              {preset.label}
-            </button>
-          ))}
+          {PRESETS.map((preset) => {
+            const isActive = activePreset === preset.key;
+            return (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => onRangeChange(presetToRange(preset.key))}
+                className={`rounded-full border-2 px-3 py-1.5 font-lato text-xs font-bold uppercase tracking-wider transition-colors ${
+                  isActive
+                    ? 'border-secondary bg-secondary text-white'
+                    : 'border-secondary text-secondary hover:bg-secondary hover:text-white'
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
-          <label className="flex flex-col gap-1">
+          <label className="flex w-full flex-col gap-1 sm:w-44">
             <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
               Start date
             </span>
@@ -68,7 +83,7 @@ export default function AdminDateRangeFilter({
             />
           </label>
 
-          <label className="flex flex-col gap-1">
+          <label className="flex w-full flex-col gap-1 sm:w-44">
             <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
               End date
             </span>
@@ -83,26 +98,15 @@ export default function AdminDateRangeFilter({
             />
           </label>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 md:ml-auto">
             <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
-              Time granularity
+              Granularity
             </span>
-            <div className="inline-flex overflow-hidden rounded-xl border-2 border-secondary">
-              {GRANULARITIES.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => onGranularityChange(option.key)}
-                  className={`px-3 py-2 font-lato text-xs font-bold uppercase tracking-wider transition-colors ${
-                    granularity === option.key
-                      ? 'bg-secondary text-white'
-                      : 'bg-white text-secondary hover:bg-secondary/10'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            <AdminSegmentedControl
+              options={GRANULARITY_OPTIONS}
+              value={granularity}
+              onChange={onGranularityChange}
+            />
           </div>
         </div>
       </div>

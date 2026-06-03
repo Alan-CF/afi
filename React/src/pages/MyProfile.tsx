@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useProfile } from "../hooks/useProfile";
+import { useIsAdmin } from "../hooks/useIsAdmin";
 import { supabase } from "../lib/supabaseClient";
 import AvatarUpload from "../components/ui/AvatarUpload";
 import AchievementDetailModal from "../components/ui/achievements/AchievementDetailModal";
@@ -47,6 +48,7 @@ const ABOUT_PLACEHOLDER = "Let us get to know you! Write a short bio about yours
 
 export default function MyProfile() {
   const { user, refreshProfile } = useProfile();
+  const { isAdmin } = useIsAdmin();
   const league = getLeague(user?.fanatic_coins ?? 0);
   const { achievements } = useAchievements();
 
@@ -488,7 +490,16 @@ export default function MyProfile() {
         </section>
 
         {user && (
-          <div className="flex justify-center mt-8">
+          <div className="mt-8 flex flex-col items-center gap-4">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/admin")}
+                className="rounded-2xl bg-secondary px-6 py-3 font-lato text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-primary hover:text-secondary"
+              >
+                Go to admin dashboard
+              </button>
+            )}
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="text-sm font-bold text-red-400 hover:text-red-600 transition-colors"

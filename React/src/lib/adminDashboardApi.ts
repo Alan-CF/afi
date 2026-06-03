@@ -12,6 +12,12 @@ export type AdminDashboardParams = DateRange & {
   granularity: ActiveUsersGranularity;
 };
 
+export type TimePoint = {
+  bucket: string;
+  label: string;
+  value: number;
+};
+
 export type AdminKpis = {
   totalUsers: number;
   admins: number;
@@ -22,16 +28,11 @@ export type AdminKpis = {
   topStreak: number;
 };
 
-export type TimePoint = {
-  bucket: string;
-  label: string;
-  value: number;
-};
-
 export type AdminUserRow = {
   id: string;
   username: string;
   role: 'user' | 'admin';
+  active: boolean;
   fanaticCoins: number;
   eCoins: number;
   streak: number;
@@ -86,7 +87,7 @@ const MONTH_LABELS = [
 
 const MAX_BUCKETS = 5000;
 const ROW_LIMIT = 1000;
-const TOP_USERS_LIMIT = 10;
+const TOP_USERS_LIMIT = 5;
 
 function startOfUtcDay(date: Date): Date {
   return new Date(
@@ -164,8 +165,8 @@ function buildBuckets(
   return buckets;
 }
 
-function inRange(lastLogin: string, startDate: string, endDate: string): boolean {
-  const day = lastLogin.slice(0, 10);
+function inRange(value: string, startDate: string, endDate: string): boolean {
+  const day = value.slice(0, 10);
   return day >= startDate && day <= endDate;
 }
 
@@ -252,7 +253,8 @@ export async function fetchAdminDashboard(
   const buckets = buildBuckets(startIso, endIso, granularity);
 
   const activeProfiles = profiles.filter(
-    (profile) => profile.last_login && inRange(profile.last_login, startDate, endDate)
+    (profile) =>
+      profile.last_login && inRange(profile.last_login, startDate, endDate)
   );
 
   const activityCounts = new Map<string, number>();
@@ -292,9 +294,7 @@ export async function fetchAdminDashboard(
     activeInRange: activeProfiles.length,
     totalFanaticCoins,
     totalECoins,
-    avgCoinsPerUser: profiles.length
-      ? totalFanaticCoins / profiles.length
-      : 0,
+    avgCoinsPerUser: profiles.length ? totalFanaticCoins / profiles.length : 0,
     topStreak,
   };
 
@@ -302,6 +302,9 @@ export async function fetchAdminDashboard(
     id: profile.id,
     username: profile.username,
     role: profile.role ?? 'user',
+    active: profile.last_login
+      ? inRange(profile.last_login, startDate, endDate)
+      : false,
     fanaticCoins: profile.fanatic_coins ?? 0,
     eCoins: profile.e_coins ?? 0,
     streak: profile.streak ?? 0,
