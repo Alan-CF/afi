@@ -72,7 +72,7 @@ export default function NavBar() {
           </button>
 
           <ul className="hidden min-[900px]:flex flex-1 min-w-0 items-center justify-center gap-0 xl:gap-3">
-            {PRIMARY_LINKS.map((link) => (
+            {PRIMARY_LINKS.filter((link) => link.to !== '/').map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
