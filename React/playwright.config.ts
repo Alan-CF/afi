@@ -76,7 +76,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && npm run preview',
     url: 'http://localhost:4173', // La URL que Playwright esperará que esté activa
-    reuseExistingServer: !process.env.CI, // En tu PC local, reutiliza el servidor si ya está abierto
+    reuseExistingServer: true, // En tu PC local, reutiliza el servidor si ya está abierto
     timeout: 120 * 1000,
   },
 });
