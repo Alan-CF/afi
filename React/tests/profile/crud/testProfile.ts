@@ -1,4 +1,4 @@
-import { supabase } from '../../helpers/supabaseClient';
+import { supabase } from '../../shared/helpers/supabaseClient';
 
 export type Profile = {
   id: string;

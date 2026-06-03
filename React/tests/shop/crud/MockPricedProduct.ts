@@ -1,5 +1,5 @@
 import { createMockProduct, deleteMockProduct } from './MockProduct';
-import { supabase } from '../../helpers/supabaseClient';
+import { supabase } from '../../shared/helpers/supabaseClient';
 
 async function createPrice(productId: number) {
   const { data: priceData, error: priceError } = await supabase

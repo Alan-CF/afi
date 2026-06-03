@@ -1,4 +1,4 @@
-import { supabase } from '../../helpers/supabaseClient';
+import { supabase } from '../../shared/helpers/supabaseClient';
 
 export async function setECoins(amount: number) {
   const { error } = await supabase
