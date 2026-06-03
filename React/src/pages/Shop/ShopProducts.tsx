@@ -1,9 +1,14 @@
 import useShopProducts from '../../hooks/useShopProducts';
 import ProductCard from '../../components/ui/shop/ProductCard';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import {
+  useNavigate,
+  useOutletContext,
+  useSearchParams,
+} from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import Filters from '../../components/layout/Shop/Filters';
 import ThunderChat from '../../components/layout/Shop/ThunderChat';
+import type { MainLayoutOutletContext } from '../../components/layout/MainLayout';
 import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
@@ -21,6 +26,8 @@ function ProductsSkeleton() {
 
 export default function ShopProducts() {
   const navigate = useNavigate();
+  const { setIsFooterPushedByChat } =
+    useOutletContext<MainLayoutOutletContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(
     searchParams.get('search') || ''
@@ -74,6 +81,14 @@ export default function ShopProducts() {
     loading: productsLoading,
     error: productsError,
   } = useShopProducts({ searchQuery, filters });
+
+  useEffect(() => {
+    setIsFooterPushedByChat(isChatOpen);
+
+    return () => {
+      setIsFooterPushedByChat(false);
+    };
+  }, [isChatOpen, setIsFooterPushedByChat]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-secondary/15">
