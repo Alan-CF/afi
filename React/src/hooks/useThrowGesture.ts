@@ -37,12 +37,12 @@ export function useThrowGesture({ enabled, onThrow }: Props) {
 
     if (deltaY < 25) return;
 
-    const swipePower = Math.min(Math.max(deltaY / 180, 0.35), 2.4);
-    const sidePower = Math.max(Math.min(deltaX / 450, 1), -1);
+    const swipePower = Math.min(Math.max(deltaY / 250, 0.35), 1.8);
+    const sidePower = Math.max(Math.min(deltaX / 300, 1), -1);
 
     onThrow({
         x: sidePower * 0.095,
-        y: 0.085 + swipePower * 0.045,
+        y: 0.09 + swipePower * 0.045,
         z: -0.035 - swipePower * 0.045,
         });
   };

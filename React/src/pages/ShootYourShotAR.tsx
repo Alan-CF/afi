@@ -114,7 +114,7 @@ function Ball({
     const randomX = THREE.MathUtils.randFloatSpread(0.8); 
     const randomZ = THREE.MathUtils.randFloat(-1.35, -1.05);
 
-    return [randomX, -0.62, randomZ];
+    return [randomX, -0.50, randomZ];
   };
 
   const resetBall = () => {
@@ -203,7 +203,7 @@ function Ball({
   });
 
   return (
-    <mesh ref={ballRef} position={[0, -0.62, -1.2]}>
+    <mesh ref={ballRef} position={[0, -0.50, -1.2]}>
       <sphereGeometry args={[0.1, 48, 48]} />
 
       <meshStandardMaterial
@@ -903,7 +903,7 @@ function ShootYourShotAR() {
         )}
 
         {gameMode === 'solo' && (
-          <section className="relative h-[72vh] min-h-[480px] max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none">
+          <section className="relative h-[80dvh] md:h-[72vh] md:min-h-[480px] md:max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none overscroll-contain">
             <img
               src="/court_warriors.png"
               alt="Warriors court"
@@ -912,6 +912,11 @@ function ShootYourShotAR() {
             <div className="absolute inset-0 bg-black/20" />
             <div
               className="absolute inset-0 z-10 touch-none select-none cursor-grab active:cursor-grabbing"
+              style={{
+                touchAction: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+              }}
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.currentTarget.setPointerCapture(event.pointerId);
@@ -921,6 +926,9 @@ function ShootYourShotAR() {
                 event.preventDefault();
                 event.currentTarget.releasePointerCapture(event.pointerId);
                 gestureHandlers.onPointerUp(event);
+              }}
+              onPointerCancel={(event) => {
+                event.preventDefault();
               }}
               onContextMenu={(event) => event.preventDefault()}
             />
