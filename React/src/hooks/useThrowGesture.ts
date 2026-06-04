@@ -42,7 +42,7 @@ export function useThrowGesture({ enabled, onThrow }: Props) {
 
     onThrow({
         x: sidePower * 0.095,
-        y: 0.085 + swipePower * 0.045,
+        y: 0.09 + swipePower * 0.045,
         z: -0.035 - swipePower * 0.045,
         });
   };
