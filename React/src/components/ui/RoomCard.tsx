@@ -19,6 +19,31 @@ type RoomCardProps = {
   hasUnread?: boolean;
 };
 
+function formatLastMessageTime(iso?: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+  const diffDays = (now.getTime() - date.getTime()) / 86_400_000;
+  if (diffDays < 7) {
+    return date.toLocaleDateString("en-US", { weekday: "short" });
+  }
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function splitSubtitlePreview(subtitle: string) {
   const separatorIndex = subtitle.indexOf(": ");
 
@@ -37,8 +62,10 @@ function splitSubtitlePreview(subtitle: string) {
 
 function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
   const isLive = room.status === "live";
+  const showLive = isLive && !room.matchHidden;
   const actionLabel = isLive ? "Join" : "Summary";
   const subtitlePreview = splitSubtitlePreview(room.subtitle);
+  const lastMessageTime = formatLastMessageTime(room.lastMessageAt);
 
   return (
     <button
@@ -46,7 +73,7 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
       onClick={() => onActionClick?.(room)}
       className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border px-3.5 py-3 text-left transition lift-on-hover sm:gap-4 sm:px-4 ${
         isLive
-          ? "border-secondary/15 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.07)] hover:border-secondary/35"
+          ? "border-secondary/15 bg-white hover:border-secondary/35"
           : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
       }`}
     >
@@ -84,9 +111,14 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
           >
             {room.title}
           </h3>
-          {isLive && (
+          {showLive && (
             <span className="shrink-0 rounded-md bg-primary px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-secondary">
               Live
+            </span>
+          )}
+          {lastMessageTime && (
+            <span className="ml-auto shrink-0 font-lato text-[0.68rem] font-medium text-slate-400">
+              {lastMessageTime}
             </span>
           )}
         </div>

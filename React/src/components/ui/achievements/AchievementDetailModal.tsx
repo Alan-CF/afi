@@ -1,8 +1,13 @@
 import {
-  XMarkIcon,
-  LockClosedIcon,
+  AcademicCapIcon,
   CheckBadgeIcon,
+  FireIcon,
+  HomeIcon,
+  LockClosedIcon,
   TrophyIcon,
+  UserPlusIcon,
+  UsersIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/solid";
 import type { Achievement } from "../../../data/achievements";
 
@@ -11,7 +16,13 @@ import type { ComponentType, SVGProps } from 'react';
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
 const ICONS: Record<string, IconType> = {
-  shooter: TrophyIcon,
+  'first-spark': FireIcon,
+  'ten-day-flame': FireIcon,
+  'century-fan': FireIcon,
+  'new-teammate': UserPlusIcon,
+  'squad-builder': UsersIcon,
+  'room-rookie': HomeIcon,
+  'quiz-debut': AcademicCapIcon,
 };
 
 interface Props {
@@ -33,7 +44,7 @@ export default function AchievementDetailModal({ achievement, onClose }: Props) 
     unlockedAt,
   } = achievement;
 
-  const Icon = ICONS[id];
+  const Icon = ICONS[id] ?? TrophyIcon;
   const progress = progressTarget > 0 ? (progressCurrent / progressTarget) * 100 : 0;
   const remaining = progressTarget - progressCurrent;
 

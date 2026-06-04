@@ -7,6 +7,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   fetchRoomChat,
   fetchRoomMessages,
@@ -282,6 +283,8 @@ function RoomChat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [sendingPrediction, setSendingPrediction] = useState(false);
   const [leavingRoom, setLeavingRoom] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [removeMatchDialogOpen, setRemoveMatchDialogOpen] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
@@ -588,10 +591,23 @@ function RoomChat() {
       distanceFromBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD;
   }
 
-  async function handleToggleGame() {
+  function handleToggleGame() {
     if (!activeRoomId || !isOwner) return;
 
-    const next = !gameHidden;
+    setActionsOpen(false);
+
+    // Removing the match -> ask for confirmation first
+    if (!gameHidden) {
+      setRemoveMatchDialogOpen(true);
+      return;
+    }
+
+    void applyGameVisibility(false);
+  }
+
+  async function applyGameVisibility(next: boolean) {
+    if (!activeRoomId) return;
+
     setGameHidden(next);
     setRoom((currentRoom) => ({ ...currentRoom, matchHidden: next }));
     if (next) {
@@ -619,11 +635,7 @@ function RoomChat() {
   async function handleLeaveRoom() {
     if (!activeRoomId || leavingRoom) return;
 
-    const confirmed = window.confirm(
-      "Leave this group? It will no longer appear in your rooms list."
-    );
-
-    if (!confirmed) return;
+    setLeaveDialogOpen(false);
 
     try {
       setLeavingRoom(true);
@@ -649,12 +661,12 @@ function RoomChat() {
       <main className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col overflow-hidden sm:p-3">
         <section className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
           {/* Header */}
-          <div className="flex items-center gap-3 bg-secondary px-4 py-3 text-white sm:px-5">
+          <div className="flex items-center gap-3 bg-secondary px-4 py-4 text-white sm:px-5">
             <button
               type="button"
               onClick={() => navigate(state?.from ?? "/rooms")}
               aria-label="Go back"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 transition-colors hover:bg-white/20"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/12 transition-colors hover:bg-white/20"
             >
               <ArrowLeftIcon className="h-4 w-4" />
             </button>
@@ -680,7 +692,7 @@ function RoomChat() {
                 type="button"
                 aria-label="Room actions"
                 onClick={() => setActionsOpen((current) => !current)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/20"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/20"
               >
                 <EllipsisVerticalIcon className="h-5 w-5" />
               </button>
@@ -709,7 +721,10 @@ function RoomChat() {
 
                   <button
                     type="button"
-                    onClick={handleLeaveRoom}
+                    onClick={() => {
+                      setActionsOpen(false);
+                      setLeaveDialogOpen(true);
+                    }}
                     disabled={leavingRoom}
                     className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -1006,6 +1021,31 @@ function RoomChat() {
           </div>
         </section>
       </main>
+
+      <ConfirmDialog
+        isOpen={leaveDialogOpen}
+        title="Leave this group?"
+        message="It will no longer appear in your rooms list."
+        confirmLabel={leavingRoom ? "Leaving..." : "Leave Group"}
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleLeaveRoom}
+        onCancel={() => setLeaveDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={removeMatchDialogOpen}
+        title="Remove match?"
+        message="If you remove the match all the people inside of the chat will also have the match removed."
+        confirmLabel="Remove Match"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => {
+          setRemoveMatchDialogOpen(false);
+          void applyGameVisibility(true);
+        }}
+        onCancel={() => setRemoveMatchDialogOpen(false)}
+      />
     </div>
   );
 }
