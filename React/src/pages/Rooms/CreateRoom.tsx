@@ -2,9 +2,11 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
+  UserGroupIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import AvatarFrame from '../../components/ui/AvatarFrame';
@@ -13,6 +15,7 @@ import {
   fetchMyFriends,
   type FriendOption,
 } from '../../hooks/useRooms';
+import { updateRoomImage, uploadRoomImage } from '../../hooks/useRoomChat';
 
 const INVITE_AVATAR_SIZE = 36;
 const INVITE_AVATAR_FRAME_SCALE = 1.3;
@@ -26,6 +29,9 @@ function CreateRoom() {
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [friendQuery, setFriendQuery] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const selectedCount = selectedFriendIds.length;
   const canCreateRoom = roomName.trim().length > 0 && selectedCount > 0;
@@ -66,6 +72,12 @@ function CreateRoom() {
     loadFriends();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
   function toggleFriend(friendId: string) {
     setSelectedFriendIds((current) =>
       current.includes(friendId)
@@ -74,12 +86,45 @@ function CreateRoom() {
     );
   }
 
+  function handlePhotoSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setError('Only JPG and PNG images are allowed.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be under 2MB.');
+      return;
+    }
+
+    setError(null);
+    setPhotoFile(file);
+    setPhotoPreview((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
   async function handleCreateRoom() {
     if (!canCreateRoom) return;
     try {
       setCreatingRoom(true);
       setError(null);
       const roomId = await createRoomWithMembers(roomName, selectedFriendIds);
+
+      // Optional group photo chosen during creation.
+      if (photoFile) {
+        try {
+          const url = await uploadRoomImage(roomId, photoFile);
+          await updateRoomImage(roomId, url);
+        } catch (photoErr) {
+          console.error('Error uploading room photo:', photoErr);
+        }
+      }
+
       navigate(`/rooms/${roomId}`, { state: { from: '/rooms' } });
     } catch (err) {
       console.error('Error creating room:', err);
@@ -114,18 +159,52 @@ function CreateRoom() {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-5 p-5 sm:p-6">
-            {/* Room name */}
-            <div>
-              <label className="mb-2 block font-lato text-sm font-bold text-slate-700">
-                Room Name
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Warriors Game Night"
-                value={roomName}
-                onChange={(event) => setRoomName(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 font-lato text-sm text-slate-800 placeholder:text-slate-400 focus:border-secondary focus:bg-white focus:outline-none sm:text-base"
-              />
+            {/* Room photo + name */}
+            <div className="flex items-end gap-4">
+              <div className="shrink-0">
+                <label className="mb-2 block font-lato text-sm font-bold text-slate-700">
+                  Photo
+                </label>
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  aria-label="Add group photo"
+                  className="group relative flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-slate-50 text-slate-400 transition hover:border-secondary"
+                >
+                  {photoPreview ? (
+                    <img
+                      src={photoPreview}
+                      alt="Group"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <UserGroupIcon className="h-6 w-6" />
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <PencilIcon className="h-4 w-4 text-white" />
+                  </span>
+                </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <label className="mb-2 block font-lato text-sm font-bold text-slate-700">
+                  Room Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Warriors Game Night"
+                  value={roomName}
+                  onChange={(event) => setRoomName(event.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 font-lato text-sm text-slate-800 placeholder:text-slate-400 focus:border-secondary focus:bg-white focus:outline-none sm:text-base"
+                />
+              </div>
             </div>
 
             {/* Selected friends chips */}

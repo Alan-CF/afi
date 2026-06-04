@@ -299,6 +299,7 @@ function RoomChat() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [currentUsername, setCurrentUsername] = useState("Someone");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -737,7 +738,7 @@ function RoomChat() {
 
             <button
               type="button"
-              onClick={() => photoInputRef.current?.click()}
+              onClick={() => setPhotoDialogOpen(true)}
               disabled={uploadingPhoto}
               aria-label="Change group photo"
               className="group relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white transition disabled:cursor-wait"
@@ -1112,6 +1113,19 @@ function RoomChat() {
           </div>
         </section>
       </main>
+
+      <ConfirmDialog
+        isOpen={photoDialogOpen}
+        title="¿Cambiar foto?"
+        message="Selecciona una nueva imagen para el grupo."
+        confirmLabel="Cambiar foto"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          setPhotoDialogOpen(false);
+          photoInputRef.current?.click();
+        }}
+        onCancel={() => setPhotoDialogOpen(false)}
+      />
 
       <ConfirmDialog
         isOpen={leaveDialogOpen}

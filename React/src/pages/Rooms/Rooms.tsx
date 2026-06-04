@@ -548,10 +548,22 @@ function RoomsPage() {
               className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3"
             >
               <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
-                style={{ backgroundColor: requested.accent }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white"
+                style={{
+                  backgroundColor: requested.imageUrl
+                    ? undefined
+                    : requested.accent,
+                }}
               >
-                <UserGroupIcon className="h-5 w-5" />
+                {requested.imageUrl ? (
+                  <img
+                    src={requested.imageUrl}
+                    alt={requested.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <UserGroupIcon className="h-5 w-5" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-lato text-sm font-bold text-slate-800">

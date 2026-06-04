@@ -44,6 +44,7 @@ export type RequestedRoom = {
   roomId: number;
   title: string;
   accent: string;
+  imageUrl: string | null;
   pendingCount: number;
   pendingNames: string[];
 };
@@ -423,7 +424,7 @@ export async function fetchMyRequestedRooms(): Promise<RequestedRoom[]> {
 
   const { data: ownedRooms, error: ownedError } = await supabase
     .from("rooms")
-    .select("id, title, accent")
+    .select("id, title, accent, image_url")
     .eq("owner_profile_id", userId);
 
   if (ownedError) {
@@ -461,6 +462,7 @@ export async function fetchMyRequestedRooms(): Promise<RequestedRoom[]> {
         roomId: room.id,
         title: room.title,
         accent: room.accent,
+        imageUrl: room.image_url ?? null,
         pendingCount: roomPending.length,
         pendingNames: roomPending
           .map((member) => profileMap.get(member.profile_id) ?? "User")
