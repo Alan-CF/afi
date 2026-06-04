@@ -114,7 +114,7 @@ function Ball({
     const randomX = THREE.MathUtils.randFloatSpread(0.8); 
     const randomZ = THREE.MathUtils.randFloat(-1.35, -1.05);
 
-    return [randomX, -0.62, randomZ];
+    return [randomX, -0.50, randomZ];
   };
 
   const resetBall = () => {
@@ -203,7 +203,7 @@ function Ball({
   });
 
   return (
-    <mesh ref={ballRef} position={[0, -0.62, -1.2]}>
+    <mesh ref={ballRef} position={[0, -0.50, -1.2]}>
       <sphereGeometry args={[0.1, 48, 48]} />
 
       <meshStandardMaterial
