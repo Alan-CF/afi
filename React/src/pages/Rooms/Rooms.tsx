@@ -18,6 +18,7 @@ import {
 import {
   subscribeToAllRoomMessages,
   shouldHideRoomMessage,
+  isRoomEventMessage,
 } from '../../hooks/useRoomChat';
 import {
   fetchMyFriendIds,
@@ -46,6 +47,12 @@ type RoomsLocationState = {
 const FRIEND_AVATAR_SIZE = 40;
 const FRIEND_AVATAR_FRAME_SCALE = 1.3;
 
+// A room counts as "live" only when it has an active match still showing
+// (status live AND the match has not been removed/hidden).
+function isRoomLive(room: Room): boolean {
+  return room.status === 'live' && !room.matchHidden;
+}
+
 function RoomsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,9 +60,10 @@ function RoomsPage() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [mainTab, setMainTab] = useState<'rooms' | 'friends'>('rooms');
-  const [activeFilter, setActiveFilter] = useState<
-    'all' | 'live' | 'offline' | 'friends'
-  >('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'offline'>(
+    'all'
+  );
+  const [friendsOnly, setFriendsOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
@@ -129,9 +137,9 @@ function RoomsPage() {
   }
 
   useEffect(() => {
-    if (activeFilter !== 'friends') return;
+    if (!friendsOnly) return;
     fetchMyFriendIds().then(setFriendIds).catch(console.error);
-  }, [activeFilter]);
+  }, [friendsOnly]);
 
   useEffect(() => {
     async function loadRooms() {
@@ -168,7 +176,11 @@ function RoomsPage() {
   // Live last-message updates for the whole room list (no need to be inside).
   useEffect(() => {
     const unsubscribe = subscribeToAllRoomMessages((message) => {
-      if (shouldHideRoomMessage(message.content)) return;
+      if (
+        shouldHideRoomMessage(message.content) ||
+        isRoomEventMessage(message.content)
+      )
+        return;
       setRooms((current) =>
         current.map((room) =>
           room.id === message.roomId
@@ -238,17 +250,21 @@ function RoomsPage() {
   }, [rooms]);
 
   const filteredRooms = useMemo(() => {
-    if (activeFilter === 'all') return orderedRooms;
-    if (activeFilter === 'friends') {
-      const friendSet = new Set(friendIds);
-      return orderedRooms.filter((room) =>
-        room.memberProfileIds
-          .filter((id) => id !== myId)
-          .every((id) => friendSet.has(id))
-      );
-    }
-    return orderedRooms.filter((room) => room.status === activeFilter);
-  }, [orderedRooms, activeFilter, friendIds, myId]);
+    const friendSet = new Set(friendIds);
+    return orderedRooms.filter((room) => {
+      // Status dimension (Live = live game still visible, not removed)
+      if (statusFilter === 'live' && !isRoomLive(room)) return false;
+      if (statusFilter === 'offline' && isRoomLive(room)) return false;
+
+      // Friends dimension (combines with any status)
+      if (friendsOnly) {
+        const others = room.memberProfileIds.filter((id) => id !== myId);
+        if (!others.every((id) => friendSet.has(id))) return false;
+      }
+
+      return true;
+    });
+  }, [orderedRooms, statusFilter, friendsOnly, friendIds, myId]);
 
   const sortedFriends = useMemo(() => {
     return [...friends].sort((a, b) => {
@@ -265,8 +281,8 @@ function RoomsPage() {
     [friends, onlineIds]
   );
 
-  const liveCount = rooms.filter((room) => room.status === 'live').length;
-  const offlineCount = rooms.filter((room) => room.status === 'offline').length;
+  const liveCount = rooms.filter(isRoomLive).length;
+  const offlineCount = rooms.length - liveCount;
 
   function handleCreateRoom() {
     navigate('/rooms/create');
@@ -381,15 +397,14 @@ function RoomsPage() {
           [
             { key: 'all', label: 'All', count: rooms.length },
             { key: 'live', label: 'Live', count: liveCount },
-            { key: 'offline', label: 'Offline', count: offlineCount },
-            { key: 'friends', label: 'Friends', count: null },
+            { key: 'offline', label: 'Normal', count: offlineCount },
           ] as const
         ).map((filter) => {
-          const active = activeFilter === filter.key;
+          const active = statusFilter === filter.key;
           return (
             <button
               key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
+              onClick={() => setStatusFilter(filter.key)}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
                 active
                   ? filter.key === 'live'
@@ -406,16 +421,31 @@ function RoomsPage() {
                 />
               )}
               {filter.label}
-              {filter.count !== null && (
-                <span
-                  className={`font-bold ${active ? 'text-white/80' : 'text-slate-400'}`}
-                >
-                  {filter.count}
-                </span>
-              )}
+              <span
+                className={`font-bold ${active ? 'text-white/80' : 'text-slate-400'}`}
+              >
+                {filter.count}
+              </span>
             </button>
           );
         })}
+
+        {/* Divider */}
+        <span className="mx-1 hidden h-5 w-px bg-slate-200 sm:block" aria-hidden />
+
+        {/* Friends toggle — combines with any status above */}
+        <button
+          onClick={() => setFriendsOnly((current) => !current)}
+          aria-pressed={friendsOnly}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
+            friendsOnly
+              ? 'bg-secondary text-white'
+              : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-secondary'
+          }`}
+        >
+          <UserGroupIcon className="h-3.5 w-3.5" />
+          Friends
+        </button>
       </div>
 
       {/* Rooms list */}

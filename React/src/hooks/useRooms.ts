@@ -1,6 +1,11 @@
 import { supabase } from "../lib/supabaseClient";
 import { fetchMyFriendIds } from "../lib/friends";
-import { shouldHideRoomMessage } from "./useRoomChat";
+import { isRoomEventMessage, shouldHideRoomMessage } from "./useRoomChat";
+
+// Messages that should not appear as the room-list last-message preview.
+function isHiddenFromRoomPreview(content: string) {
+  return shouldHideRoomMessage(content) || isRoomEventMessage(content);
+}
 
 export type RoomCardData = {
   id: number;
@@ -12,6 +17,8 @@ export type RoomCardData = {
   memberProfileIds: string[];
   lastMessageAt: string | null;
   lastMessageFromMe: boolean;
+  matchHidden: boolean;
+  imageUrl: string | null;
 };
 
 export type FriendOption = {
@@ -196,7 +203,7 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
 
   const { data: rooms, error: roomsError } = await supabase
     .from("rooms")
-    .select("id, title, status, accent")
+    .select("id, title, status, accent, match_hidden, image_url")
     .in("id", roomIds);
 
   if (roomsError) {
@@ -263,7 +270,7 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
 
     const lastMessage = (messages ?? []).find(
       (message) =>
-        message.room_id === room.id && !shouldHideRoomMessage(message.content)
+        message.room_id === room.id && !isHiddenFromRoomPreview(message.content)
     );
 
     const subtitle = lastMessage
@@ -275,6 +282,8 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
       title: room.title,
       status: room.status,
       accent: room.accent,
+      matchHidden: room.match_hidden ?? false,
+      imageUrl: room.image_url ?? null,
       members: formatMembers(membersForRoom),
       subtitle,
       memberProfileIds,

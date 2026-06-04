@@ -11,6 +11,7 @@ export type Room = {
   lastMessageAt?: string | null;
   lastMessageFromMe?: boolean;
   matchHidden?: boolean;
+  imageUrl?: string | null;
 };
 
 type RoomCardProps = {
@@ -88,10 +89,24 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
       {/* Avatar */}
       <div className="relative shrink-0">
         <div
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-white sm:h-12 sm:w-12"
-          style={{ backgroundColor: isLive ? room.accent : "#94A3B8" }}
+          className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl text-white sm:h-12 sm:w-12"
+          style={{
+            backgroundColor: room.imageUrl
+              ? undefined
+              : isLive
+                ? room.accent
+                : "#94A3B8",
+          }}
         >
-          <UserGroupIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+          {room.imageUrl ? (
+            <img
+              src={room.imageUrl}
+              alt={room.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <UserGroupIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+          )}
         </div>
         {hasUnread && (
           <span

@@ -1,7 +1,9 @@
 import {
   ArrowLeftIcon,
+  ArrowPathIcon,
   EllipsisVerticalIcon,
   PaperAirplaneIcon,
+  PencilIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,10 +18,15 @@ import {
   leaveRoom,
   parseRoomPredictionEntry,
   ROOM_SYSTEM_MESSAGE_PREFIX,
+  ROOM_EVENT_MESSAGE_PREFIX,
+  isRoomEventMessage,
   removeRoomMatch,
   sendRoomMessage,
+  sendRoomEventMessage,
   sendRoomPrediction,
   shouldHideRoomMessage,
+  updateRoomImage,
+  uploadRoomImage,
   subscribeToRoomMatchHidden,
   subscribeToRoomMessages,
   type RoomChatMessageRecord,
@@ -73,6 +80,18 @@ function toDisplayMessage(
   currentUserId: string
 ): ChatMessage {
   const createdAt = new Date(message.createdAt);
+
+  // Event notices render as a centered pill (no bubble, no sender side).
+  if (isRoomEventMessage(message.content)) {
+    return {
+      id: message.id,
+      sender: "System",
+      text: message.content.replace(ROOM_EVENT_MESSAGE_PREFIX, ""),
+      time: formatMessageTime(createdAt),
+      align: "center",
+      createdAt: createdAt.getTime(),
+    };
+  }
 
   return {
     id: message.id,
@@ -278,6 +297,9 @@ function RoomChat() {
     RoomPredictionEntryRecord[]
   >([]);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUsername, setCurrentUsername] = useState("Someone");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [chatError, setChatError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -363,6 +385,7 @@ function RoomChat() {
 
         setRoom(data.room);
         setCurrentUserId(data.currentUserId);
+        setCurrentUsername(data.currentUsername);
         setIsOwner(data.isOwner);
         setGameHidden(data.room.matchHidden ?? false);
         const parsedMessages = splitRoomMessageRecords(
@@ -591,6 +614,38 @@ function RoomChat() {
       distanceFromBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD;
   }
 
+  async function handleRoomPhotoChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-selecting the same file
+    if (!file || !activeRoomId || uploadingPhoto) return;
+
+    try {
+      setUploadingPhoto(true);
+      setChatError(null);
+
+      const publicUrl = await uploadRoomImage(activeRoomId, file);
+      await updateRoomImage(activeRoomId, publicUrl);
+      setRoom((currentRoom) => ({ ...currentRoom, imageUrl: publicUrl }));
+
+      const eventMessage = await sendRoomEventMessage(
+        activeRoomId,
+        `${currentUsername} changed the group photo`
+      );
+      setMessages((current) =>
+        mergeMessages(current, toDisplayMessage(eventMessage, currentUserId))
+      );
+    } catch (error) {
+      console.error("Error updating room photo:", error);
+      setChatError(
+        error instanceof Error ? error.message : "Could not update the photo."
+      );
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
   function handleToggleGame() {
     if (!activeRoomId || !isOwner) return;
 
@@ -656,6 +711,8 @@ function RoomChat() {
     }
   }
 
+  const hasMatch = !gameHidden && room.status === "live";
+
   return (
     <div className="min-h-[100dvh] bg-slate-50">
       <main className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col overflow-hidden sm:p-3">
@@ -671,12 +728,39 @@ function RoomChat() {
               <ArrowLeftIcon className="h-4 w-4" />
             </button>
 
-            <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-              style={{ backgroundColor: room.accent }}
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              aria-label="Change group photo"
+              className="group relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white transition disabled:cursor-wait"
+              style={{ backgroundColor: room.imageUrl ? undefined : room.accent }}
             >
-              <UserGroupIcon className="h-5 w-5" />
-            </div>
+              {room.imageUrl ? (
+                <img
+                  src={room.imageUrl}
+                  alt={room.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <UserGroupIcon className="h-5 w-5" />
+              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                {uploadingPhoto ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PencilIcon className="h-4 w-4" />
+                )}
+              </span>
+            </button>
+
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png"
+              className="hidden"
+              onChange={handleRoomPhotoChange}
+            />
 
             <div className="min-w-0 flex-1">
               <p className="truncate font-lato text-sm font-bold sm:text-base">
@@ -699,7 +783,7 @@ function RoomChat() {
 
               {actionsOpen && (
                 <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_36px_rgba(15,23,42,0.18)]">
-                  {!gameHidden && (
+                  {hasMatch && (
                     <button
                       type="button"
                       onClick={handleToggleInfo}

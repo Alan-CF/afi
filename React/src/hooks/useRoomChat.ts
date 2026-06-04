@@ -4,6 +4,8 @@ import type { PredictionOption } from "./useMockRoomGameFeed";
 
 export const ROOM_SYSTEM_MESSAGE_PREFIX = "[[system]] ";
 export const ROOM_PREDICTION_MESSAGE_PREFIX = "[[prediction]] ";
+// Visible, centered notice persisted in the chat (e.g. "Roberto changed the group photo").
+export const ROOM_EVENT_MESSAGE_PREFIX = "[[event]] ";
 
 export type RoomChatMessageRecord = {
   id: number;
@@ -16,6 +18,7 @@ export type RoomChatMessageRecord = {
 export type RoomChatBootstrap = {
   room: Room;
   currentUserId: string;
+  currentUsername: string;
   isOwner: boolean;
   messages: RoomChatMessageRecord[];
 };
@@ -75,7 +78,12 @@ export function isRoomPredictionMessage(content: string) {
   return content.startsWith(ROOM_PREDICTION_MESSAGE_PREFIX);
 }
 
+export function isRoomEventMessage(content: string) {
+  return content.startsWith(ROOM_EVENT_MESSAGE_PREFIX);
+}
+
 export function shouldHideRoomMessage(content: string) {
+  // Event messages stay visible (rendered as a centered notice).
   return isRoomSystemMessage(content) || isRoomPredictionMessage(content);
 }
 
@@ -113,7 +121,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id, title, status, accent, match_hidden, owner_profile_id")
+    .select("id, title, status, accent, match_hidden, image_url, owner_profile_id")
     .eq("id", roomId)
     .single();
 
@@ -160,11 +168,13 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
     ),
     subtitle: "Live chat is on",
     matchHidden: room.match_hidden ?? false,
+    imageUrl: room.image_url ?? null,
   };
 
   return {
     room: roomCard,
     currentUserId,
+    currentUsername: profileMap.get(currentUserId) ?? "Someone",
     isOwner:
       room.owner_profile_id === currentUserId ||
       ((members ?? []) as RoomMemberRow[]).some(
@@ -246,6 +256,61 @@ export async function sendRoomMessage(
     content: message.content,
     createdAt: message.created_at,
   };
+}
+
+// Sends a centered, persistent notice to the chat (visible to everyone).
+export async function sendRoomEventMessage(
+  roomId: number,
+  text: string
+): Promise<RoomChatMessageRecord> {
+  return sendRoomMessage(roomId, `${ROOM_EVENT_MESSAGE_PREFIX}${text}`);
+}
+
+const ROOM_AVATAR_BUCKET = "room-avatars";
+
+// Uploads a room photo to storage and returns its public URL.
+export async function uploadRoomImage(
+  roomId: number,
+  file: File
+): Promise<string> {
+  if (!["image/jpeg", "image/png"].includes(file.type)) {
+    throw new Error("Only JPG and PNG images are allowed.");
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error("Image must be under 2MB.");
+  }
+
+  const fileExt = file.name.split(".").pop() ?? "jpg";
+  const filePath = `${roomId}/photo-${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(ROOM_AVATAR_BUCKET)
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    throw buildQueryError("room image upload failed", uploadError.message);
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(ROOM_AVATAR_BUCKET).getPublicUrl(filePath);
+
+  return publicUrl;
+}
+
+// Updates the room's shared photo. Any accepted member is allowed (RLS).
+export async function updateRoomImage(
+  roomId: number,
+  imageUrl: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("rooms")
+    .update({ image_url: imageUrl })
+    .eq("id", roomId);
+
+  if (error) {
+    throw buildQueryError("room image update failed", error.message);
+  }
 }
 
 function serializePredictionPayload(payload: SerializedPredictionPayload) {
