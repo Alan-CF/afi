@@ -4,7 +4,8 @@ import Dialog from '../components/ui/Dialog';
 import { useQuizzes } from '../hooks/useQuizzes';
 import { useQuizQuestions } from '../hooks/useQuizQuestion';
 import { useSubmitQuiz } from '../hooks/useSubmitQuiz';
-import ArrowLeftIcon from '@heroicons/react/24/solid/esm/ArrowLeftIcon';
+import { useNavigate } from 'react-router-dom';
+import ArrowLeftIcon from '@heroicons/react/24/solid/ArrowLeftIcon';
 
 type ScreenState = 'list' | 'detail' | 'active' | 'result';
 
@@ -29,6 +30,7 @@ function formatRemaining(date?: Date | null) {
 }
 
 function Quizzes() {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<ScreenState>('list');
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
   const [selectedAnswers, setSelectedAnswers] = useState<
@@ -170,6 +172,14 @@ function Quizzes() {
       <div className="flex flex-col min-h-screen bg-text-light-soft">
         {screen === 'list' && (
           <div className="flex-1 px-6 py-8 max-w-5xl mx-auto w-full">
+            <button
+                      type="button"
+                      onClick={() => navigate('/games')}
+                      aria-label="Go back"
+                      className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md transition hover:bg-secondary/90"
+                    >
+                      <ArrowLeftIcon className="h-5 w-5" />
+                    </button>
             <div className="text-center mb-8">
               <p className="font-lato text-sm uppercase tracking-[0.2em] text-gray-500">
                 Fan Community
@@ -400,7 +410,7 @@ function Quizzes() {
                         <div className="absolute bottom-4 left-4 w-10 h-10 border-l-2 border-b-2 border-primary/50 rounded-bl-md" />
                         <div className="absolute bottom-4 right-4 w-10 h-10 border-r-2 border-b-2 border-primary/50 rounded-br-md" />
 
-                        <div className="h-full flex items-center justify-center px-8 py-8 lg:px-10">
+                        <div className="absolute inset-0 flex items-center justify-center px-8 lg:px-10">
                           <h3 className="font-lato text-black text-2xl md:text-3xl text-center leading-snug max-w-[26rem]">
                             {currentQuestion.question_text}
                           </h3>

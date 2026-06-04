@@ -22,11 +22,17 @@ const DEFAULT_CLASS = "aspect-[4/5]";
 export default function FanEventCard({ event, className = DEFAULT_CLASS }: Props) {
   const navigate = useNavigate();
   const goingCount = event.meta.goingCount ?? 0;
+  const targetPath =
+    event.meta.fanEventId != null
+      ? `/events/${event.meta.fanEventId}`
+      : event.id.startsWith("seed-")
+        ? `/events/${event.id}`
+        : "/events";
 
   return (
     <button
       type="button"
-      onClick={() => navigate("/events")}
+      onClick={() => navigate(targetPath)}
       className={`group relative block w-full overflow-hidden rounded-3xl bg-secondary text-left lift-on-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
       aria-label={event.title}
     >
@@ -42,7 +48,7 @@ export default function FanEventCard({ event, className = DEFAULT_CLASS }: Props
         <EventFallbackVisual />
       )}
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
 
       <div className="relative h-full flex flex-col justify-end p-5 md:p-6 text-white">
         <p className="font-lato text-[0.625rem] font-bold uppercase tracking-[0.18em] text-primary mb-2">
@@ -51,16 +57,16 @@ export default function FanEventCard({ event, className = DEFAULT_CLASS }: Props
         <h3 className="font-anton text-xl md:text-2xl leading-tight line-clamp-2">
           {event.title}
         </h3>
-        <p className="mt-2 font-lato text-sm text-white/65">
+        <p className="mt-2 font-lato text-sm font-bold text-white/95">
           {formatDate(event.startAt)}
         </p>
         {event.subtitle && (
-          <p className="mt-1 font-lato text-xs text-white/45 line-clamp-1">
+          <p className="mt-1 font-lato text-xs text-white/80 line-clamp-1">
             {event.subtitle}
           </p>
         )}
         {goingCount > 0 && (
-          <p className="mt-2 font-lato text-xs text-white/55 tabular-nums">
+          <p className="mt-2 font-lato text-xs font-bold text-white/90 tabular-nums">
             {goingCount} going
           </p>
         )}

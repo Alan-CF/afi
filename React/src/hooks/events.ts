@@ -12,6 +12,7 @@ export interface UnifiedEvent {
   startAt: string;
   venue: string | null;
   imageUrl: string | null;
+  tags?: string[];
   meta: {
     isHome?: boolean;
     isLive?: boolean;
@@ -75,6 +76,7 @@ function fanEventToUnified(f: FanEvent): UnifiedEvent {
     startAt: f.startAt,
     venue: f.venue,
     imageUrl: f.imageUrl,
+    tags: f.tags ?? [],
     meta: { goingCount: f.goingCount, fanEventId: f.id },
   };
 }

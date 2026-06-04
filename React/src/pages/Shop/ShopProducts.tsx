@@ -1,9 +1,14 @@
 import useShopProducts from '../../hooks/useShopProducts';
 import ProductCard from '../../components/ui/shop/ProductCard';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import {
+  useNavigate,
+  useOutletContext,
+  useSearchParams,
+} from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import Filters from '../../components/layout/Shop/Filters';
 import ThunderChat from '../../components/layout/Shop/ThunderChat';
+import type { MainLayoutOutletContext } from '../../components/layout/MainLayout';
 import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
@@ -21,6 +26,8 @@ function ProductsSkeleton() {
 
 export default function ShopProducts() {
   const navigate = useNavigate();
+  const { setIsFooterPushedByChat } =
+    useOutletContext<MainLayoutOutletContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState(
     searchParams.get('search') || ''
@@ -75,6 +82,14 @@ export default function ShopProducts() {
     error: productsError,
   } = useShopProducts({ searchQuery, filters });
 
+  useEffect(() => {
+    setIsFooterPushedByChat(isChatOpen);
+
+    return () => {
+      setIsFooterPushedByChat(false);
+    };
+  }, [isChatOpen, setIsFooterPushedByChat]);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-secondary/15">
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -88,7 +103,11 @@ export default function ShopProducts() {
           </div>
         ) : null}
 
-        <main className="min-h-0 min-w-0 flex-1">
+        <main
+          className={`min-h-0 min-w-0 flex-1 transition-[padding] duration-300 ${
+            isChatOpen ? 'md:pr-[30rem]' : ''
+          }`}
+        >
           <div className="mt-6 flex w-full items-center gap-2 px-6">
             {!isDesktopFiltersOpen ? (
               <button
@@ -132,7 +151,7 @@ export default function ShopProducts() {
           </div>
 
           {productsLoading ? (
-            <div className="grid content-start grid-cols-[repeat(auto-fit,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
+            <div className="grid content-start grid-cols-[repeat(auto-fill,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
               <ProductsSkeleton />
               <ProductsSkeleton />
               <ProductsSkeleton />
@@ -148,7 +167,7 @@ export default function ShopProducts() {
                 : 'No products available at the moment.'}
             </div>
           ) : (
-            <div className="grid content-start grid-cols-[repeat(auto-fit,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
+            <div className="grid content-start grid-cols-[repeat(auto-fill,minmax(min(100%,theme(spacing.60)),1fr))] gap-6 p-6">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}
