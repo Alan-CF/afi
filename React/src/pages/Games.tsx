@@ -24,9 +24,9 @@ const GAMES: GameCardConfig[] = [
   },
   {
     to: '/shoot-your-shot',
-    kicker: 'AR Game',
+    kicker: 'Arcade Game',
     title: 'Shoot Your Shot',
-    desc: 'Step into the gym and test your jumper with augmented-reality buckets.',
+    desc: 'Sink as many shots as possible before time runs out and compete for the top spot on the leaderboard.',
     cta: 'Take the shot',
     imageUrl: '/court_warriors.png',
     objectPosition: 'center',
