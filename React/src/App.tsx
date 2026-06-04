@@ -26,6 +26,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
+import RoomInviteProvider from './components/ui/RoomInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
 import ProductDetail from './pages/Shop/ProductDetail';
 import ShoppingCartItem from './pages/Shop/ShopingCartItem';
@@ -35,13 +36,15 @@ import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from "./components/ui/PointsToastGlobal";
 import AdminShop from "./pages/Shop/AdminShop";
+import { PresenceProvider } from "./hooks/usePresence";
 
 function App() {
   return (
-    <>
+    <PresenceProvider>
       <PointsToastGlobal />
         <ScrollToTop />
         <FriendInviteProvider />
+        <RoomInviteProvider />
         <Routes>
           <Route path="/login" element={<Login />} />
 
@@ -83,7 +86,7 @@ function App() {
           <Route path="/rooms/:roomId" element={<RoomChat />} />
           <Route path="/pointshistory" element={<PointsHistory />} />
         </Routes>
-      </>
+    </PresenceProvider>
   );
 }
 

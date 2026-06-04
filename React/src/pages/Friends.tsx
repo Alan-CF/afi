@@ -20,6 +20,7 @@ import {
   type PendingInvite,
   type SearchResultProfile,
 } from '../lib/friends';
+import AvatarFrame from '../components/ui/AvatarFrame';
 
 // ─── Shared accent palette ───────────────────────────────────────────────────
 
@@ -39,33 +40,37 @@ const ACCENTS = [
 function Avatar({
   username,
   avatarUrl,
+  frameId,
   index = 0,
   size = 'md',
 }: {
   username: string;
   avatarUrl: string | null;
+  frameId?: string | null;
   index?: number;
   size?: 'sm' | 'md';
 }) {
+  const px = size === 'sm' ? 36 : 44;
   const dim = size === 'sm' ? 'h-9 w-9 text-sm' : 'h-11 w-11 text-base';
-  if (avatarUrl) {
-    return (
-      <div className={`${dim} shrink-0 overflow-hidden rounded-full`}>
-        <img
-          src={avatarUrl}
-          alt={username}
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
   return (
-    <div
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full font-lato font-bold text-secondary`}
-      style={{ backgroundColor: ACCENTS[index % ACCENTS.length] }}
-    >
-      {username[0]?.toUpperCase()}
-    </div>
+    <AvatarFrame frameId={frameId} size={px} scale={1.3}>
+      {avatarUrl ? (
+        <div className={`${dim} shrink-0 overflow-hidden rounded-full`}>
+          <img
+            src={avatarUrl}
+            alt={username}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ) : (
+        <div
+          className={`${dim} flex shrink-0 items-center justify-center rounded-full font-lato font-bold text-secondary`}
+          style={{ backgroundColor: ACCENTS[index % ACCENTS.length] }}
+        >
+          {username[0]?.toUpperCase()}
+        </div>
+      )}
+    </AvatarFrame>
   );
 }
 
@@ -216,6 +221,7 @@ function MyFriendsTab() {
               <Avatar
                 username={friend.profile.username}
                 avatarUrl={friend.profile.avatar_url}
+                frameId={friend.profile.selected_frame_id}
                 index={index}
               />
               <div className="min-w-0">
@@ -402,6 +408,7 @@ function AddFriendsTab() {
                 <Avatar
                   username={profile.username}
                   avatarUrl={profile.avatar_url}
+                  frameId={profile.selected_frame_id}
                   index={index}
                   size="sm"
                 />
@@ -534,6 +541,7 @@ function RequestsTab({
               <Avatar
                 username={invite.from.username}
                 avatarUrl={invite.from.avatar_url}
+                frameId={invite.from.selected_frame_id}
                 index={index}
               />
               <div className="min-w-0">
@@ -595,7 +603,7 @@ export default function Friends() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
       <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1440px] flex-col px-3 py-3 sm:px-5 sm:py-6 xl:px-8">
-        <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col rounded-[1.75rem] bg-white/92 p-4 shadow-[0_24px_70px_rgba(30,41,59,0.12)] backdrop-blur-sm sm:p-5 lg:p-7">
+        <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col rounded-[1.75rem] bg-white/92 p-4 shadow-[0_24px_70px_rgba(30,41,59,0.12)] backdrop-blur-sm sm:p-5 lg:max-w-4xl lg:p-7 xl:max-w-5xl">
           {/* Header */}
           <div className="flex items-center gap-3">
             <button
