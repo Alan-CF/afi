@@ -5,10 +5,12 @@ import {
   fetchMyRooms,
   fetchMyFriends,
   fetchMyRoomInvites,
+  fetchMyRequestedRooms,
   acceptRoomInvite,
   declineRoomInvite,
   type FriendOption,
   type RoomInvite,
+  type RequestedRoom,
 } from '../../hooks/useRooms';
 import RoomCard, { isRoomNew, type Room } from '../../components/ui/RoomCard';
 import {
@@ -38,6 +40,7 @@ import {
   XMarkIcon,
   UserGroupIcon,
   ExclamationTriangleIcon,
+  ClockIcon,
 } from '@heroicons/react/24/solid';
 
 type RoomsLocationState = {
@@ -64,6 +67,10 @@ function RoomsPage() {
     'all'
   );
   const [friendsOnly, setFriendsOnly] = useState(false);
+  const [roomQuery, setRoomQuery] = useState('');
+  const [panelView, setPanelView] = useState<'rooms' | 'invites' | 'requested'>(
+    'rooms'
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
@@ -71,6 +78,16 @@ function RoomsPage() {
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(true);
   const [invites, setInvites] = useState<RoomInvite[]>([]);
+  const [requestedRooms, setRequestedRooms] = useState<RequestedRoom[]>([]);
+
+  useEffect(() => {
+    if (panelView === 'requested' && requestedRooms.length === 0) {
+      setPanelView('rooms');
+    }
+    if (panelView === 'invites' && invites.length === 0) {
+      setPanelView('rooms');
+    }
+  }, [panelView, requestedRooms.length, invites.length]);
   const [respondingInviteId, setRespondingInviteId] = useState<number | null>(
     null
   );
@@ -161,11 +178,13 @@ function RoomsPage() {
 
   useEffect(() => {
     fetchMyRoomInvites().then(setInvites).catch(console.error);
+    fetchMyRequestedRooms().then(setRequestedRooms).catch(console.error);
   }, [location.key]);
 
   useEffect(() => {
     function refreshInvitesAndRooms() {
       fetchMyRoomInvites().then(setInvites).catch(console.error);
+      fetchMyRequestedRooms().then(setRequestedRooms).catch(console.error);
       fetchMyRooms().then(setRooms).catch(console.error);
     }
     window.addEventListener('room-invite-changed', refreshInvitesAndRooms);
@@ -261,7 +280,11 @@ function RoomsPage() {
 
   const filteredRooms = useMemo(() => {
     const friendSet = new Set(friendIds);
+    const query = roomQuery.trim().toLowerCase();
     return orderedRooms.filter((room) => {
+      // Name search
+      if (query && !room.title.toLowerCase().includes(query)) return false;
+
       // Status dimension (Live = live game still visible, not removed)
       if (statusFilter === 'live' && !isRoomLive(room)) return false;
       if (statusFilter === 'offline' && isRoomLive(room)) return false;
@@ -274,7 +297,7 @@ function RoomsPage() {
 
       return true;
     });
-  }, [orderedRooms, statusFilter, friendsOnly, friendIds, myId]);
+  }, [orderedRooms, statusFilter, friendsOnly, friendIds, myId, roomQuery]);
 
   const sortedFriends = useMemo(() => {
     return [...friends].sort((a, b) => {
@@ -327,78 +350,28 @@ function RoomsPage() {
 
   const roomsPanel = (
     <div className="flex flex-col gap-4">
-      {/* Group invites */}
-      {invites.length > 0 && (
-        <div className="rounded-2xl border border-primary/40 bg-primary/10 p-3 sm:p-4">
-          <p className="mb-2 flex items-center gap-1.5 font-lato text-xs font-bold uppercase tracking-[0.14em] text-secondary">
-            <UserGroupIcon className="h-4 w-4" />
-            Group Invites
-            <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[0.62rem] font-bold text-white">
-              {invites.length}
-            </span>
-          </p>
-          <div className="space-y-2">
-            {invites.map((invite) => {
-              const responding = respondingInviteId === invite.roomId;
-              return (
-                <div
-                  key={invite.roomId}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-                      style={{ backgroundColor: invite.accent }}
-                    >
-                      <UserGroupIcon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-lato text-sm font-bold text-slate-800">
-                        {invite.title}
-                      </p>
-                      <p className="truncate font-lato text-xs text-slate-500">
-                        Invited by @{invite.invitedBy}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <button
-                        type="button"
-                        aria-label="Decline"
-                        onClick={() => handleDeclineInvite(invite.roomId)}
-                        disabled={responding}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-60"
-                      >
-                        <XMarkIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Accept"
-                        onClick={() => handleAcceptInvite(invite.roomId)}
-                        disabled={responding}
-                        className="flex h-8 items-center gap-1 rounded-lg bg-secondary px-3 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
-                      >
-                        <CheckIcon className="h-4 w-4" />
-                        Join
-                      </button>
-                    </div>
-                  </div>
-
-                  {invite.nonFriendCount > 0 && (
-                    <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-primary/15 px-2.5 py-1.5">
-                      <ExclamationTriangleIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-secondary" />
-                      <p className="font-lato text-[11px] font-semibold leading-snug text-secondary">
-                        This group has {invite.nonFriendCount}{' '}
-                        {invite.nonFriendCount === 1 ? 'person' : 'people'} who{' '}
-                        {invite.nonFriendCount === 1 ? 'is' : 'are'} not your
-                        friend.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Search by room name */}
+      {panelView === 'rooms' && (
+      <div className="relative">
+        <MagnifyingGlassIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={roomQuery}
+          onChange={(event) => setRoomQuery(event.target.value)}
+          placeholder="Search rooms by name…"
+          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 font-lato text-sm text-slate-800 placeholder:text-slate-400 focus:border-secondary focus:outline-none"
+        />
+        {roomQuery && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => setRoomQuery('')}
+            className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       )}
 
       {/* Filters */}
@@ -410,11 +383,14 @@ function RoomsPage() {
             { key: 'offline', label: 'Normal', count: offlineCount },
           ] as const
         ).map((filter) => {
-          const active = statusFilter === filter.key;
+          const active = statusFilter === filter.key && panelView === 'rooms';
           return (
             <button
               key={filter.key}
-              onClick={() => setStatusFilter(filter.key)}
+              onClick={() => {
+                setStatusFilter(filter.key);
+                setPanelView('rooms');
+              }}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
                 active
                   ? filter.key === 'live'
@@ -456,10 +432,146 @@ function RoomsPage() {
           <UserGroupIcon className="h-3.5 w-3.5" />
           Friends
         </button>
+
+        {invites.length > 0 && (
+          <button
+            onClick={() => setPanelView('invites')}
+            aria-pressed={panelView === 'invites'}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
+              panelView === 'invites'
+                ? 'bg-secondary text-white'
+                : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-secondary'
+            }`}
+          >
+            <UserPlusIcon className="h-3.5 w-3.5" />
+            Invites
+            <span
+              className={`font-bold ${panelView === 'invites' ? 'text-white/80' : 'text-slate-400'}`}
+            >
+              {invites.length}
+            </span>
+          </button>
+        )}
+
+        {requestedRooms.length > 0 && (
+          <button
+            onClick={() => setPanelView('requested')}
+            aria-pressed={panelView === 'requested'}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-lato text-xs font-bold transition sm:text-sm ${
+              panelView === 'requested'
+                ? 'bg-secondary text-white'
+                : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-secondary'
+            }`}
+          >
+            <ClockIcon className="h-3.5 w-3.5" />
+            Requested
+            <span
+              className={`font-bold ${panelView === 'requested' ? 'text-white/80' : 'text-slate-400'}`}
+            >
+              {requestedRooms.length}
+            </span>
+          </button>
+        )}
       </div>
 
+      {/* Invites view */}
+      {panelView === 'invites' && (
+        <div className="space-y-2">
+          {invites.map((invite) => {
+            const responding = respondingInviteId === invite.roomId;
+            return (
+              <div
+                key={invite.roomId}
+                className="rounded-2xl border border-slate-200 bg-white px-3.5 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
+                    style={{ backgroundColor: invite.accent }}
+                  >
+                    <UserGroupIcon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-lato text-sm font-bold text-slate-800">
+                      {invite.title}
+                    </p>
+                    <p className="truncate font-lato text-xs text-slate-500">
+                      Invited by @{invite.invitedBy}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      aria-label="Decline"
+                      onClick={() => handleDeclineInvite(invite.roomId)}
+                      disabled={responding}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-60"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Accept"
+                      onClick={() => handleAcceptInvite(invite.roomId)}
+                      disabled={responding}
+                      className="flex h-8 items-center gap-1 rounded-lg bg-secondary px-3 font-lato text-xs font-bold text-white transition hover:bg-[#16327a] disabled:opacity-60"
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                      Join
+                    </button>
+                  </div>
+                </div>
+
+                {invite.nonFriendCount > 0 && (
+                  <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-primary/15 px-2.5 py-1.5">
+                    <ExclamationTriangleIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-secondary" />
+                    <p className="font-lato text-[11px] font-semibold leading-snug text-secondary">
+                      This group has {invite.nonFriendCount}{' '}
+                      {invite.nonFriendCount === 1 ? 'person' : 'people'} who{' '}
+                      {invite.nonFriendCount === 1 ? 'is' : 'are'} not your
+                      friend.
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Requested view */}
+      {panelView === 'requested' && (
+        <div className="grid grid-cols-1 gap-3">
+          {requestedRooms.map((requested) => (
+            <div
+              key={requested.roomId}
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3"
+            >
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
+                style={{ backgroundColor: requested.accent }}
+              >
+                <UserGroupIcon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-lato text-sm font-bold text-slate-800">
+                  {requested.title}
+                </p>
+                <p className="truncate font-lato text-xs text-slate-500">
+                  Waiting for{' '}
+                  {requested.pendingNames.map((name) => `@${name}`).join(', ')}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 font-lato text-[0.66rem] font-bold uppercase tracking-[0.1em] text-slate-500">
+                {requested.pendingCount} pending
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Rooms list */}
-      {loading && (
+      {panelView === 'rooms' && loading && (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
             <div
@@ -470,13 +582,13 @@ function RoomsPage() {
         </div>
       )}
 
-      {error && (
+      {panelView === 'rooms' && error && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-center font-lato text-sm font-semibold text-rose-700">
           {error}
         </div>
       )}
 
-      {!loading && !error && filteredRooms.length === 0 && (
+      {panelView === 'rooms' && !loading && !error && filteredRooms.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
           <p className="font-lato text-base font-bold text-slate-700">
             No rooms here yet
@@ -495,7 +607,7 @@ function RoomsPage() {
         </div>
       )}
 
-      {!loading && !error && filteredRooms.length > 0 && (
+      {panelView === 'rooms' && !loading && !error && filteredRooms.length > 0 && (
         <div className="grid grid-cols-1 gap-3">
           {filteredRooms.map((room, i) => (
             <div
@@ -775,7 +887,7 @@ function RoomsPage() {
           >
             Friends
             {onlineFriendCount > 0 && (
-              <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[0.62rem] font-bold text-white">
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[0.62rem] font-bold text-secondary">
                 {onlineFriendCount}
               </span>
             )}

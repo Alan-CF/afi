@@ -39,6 +39,33 @@ export type RoomInvite = {
   nonFriendCount: number;
 };
 
+// Rooms I created with invites still waiting for a response.
+export type RequestedRoom = {
+  roomId: number;
+  title: string;
+  accent: string;
+  pendingCount: number;
+  pendingNames: string[];
+};
+
+async function fetchProfileMap(
+  profileIds: string[]
+): Promise<Map<string, string>> {
+  if (profileIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", profileIds);
+
+  if (error) {
+    console.error("profiles error:", error);
+    throw buildQueryError("profiles query failed", error.message);
+  }
+
+  return new Map((data ?? []).map((profile) => [profile.id, profile.username]));
+}
+
 function formatMembers(usernames: string[]) {
   if (usernames.length <= 3) return usernames.join(", ");
   return `${usernames.slice(0, 3).join(", ")} +${usernames.length - 3}`;
@@ -388,6 +415,59 @@ export async function fetchMyRoomInvites(): Promise<RoomInvite[]> {
   );
 
   return buildInvitesForRoomIds(roomIds, userId);
+}
+
+// Outgoing invites: rooms I own that still have members in "pending" status.
+export async function fetchMyRequestedRooms(): Promise<RequestedRoom[]> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: ownedRooms, error: ownedError } = await supabase
+    .from("rooms")
+    .select("id, title, accent")
+    .eq("owner_profile_id", userId);
+
+  if (ownedError) {
+    console.error("owned rooms error:", ownedError);
+    throw buildQueryError("owned rooms query failed", ownedError.message);
+  }
+
+  const ownedRoomIds = (ownedRooms ?? []).map((room) => room.id);
+  if (ownedRoomIds.length === 0) return [];
+
+  const { data: pendingMembers, error: pendingError } = await supabase
+    .from("room_members")
+    .select("room_id, profile_id")
+    .in("room_id", ownedRoomIds)
+    .eq("status", "pending");
+
+  if (pendingError) {
+    console.error("pending members error:", pendingError);
+    throw buildQueryError("pending members query failed", pendingError.message);
+  }
+
+  const pending = pendingMembers ?? [];
+  if (pending.length === 0) return [];
+
+  const profileMap = await fetchProfileMap(
+    Array.from(new Set(pending.map((member) => member.profile_id)))
+  );
+
+  return (ownedRooms ?? [])
+    .map((room) => {
+      const roomPending = pending.filter(
+        (member) => member.room_id === room.id
+      );
+      return {
+        roomId: room.id,
+        title: room.title,
+        accent: room.accent,
+        pendingCount: roomPending.length,
+        pendingNames: roomPending
+          .map((member) => profileMap.get(member.profile_id) ?? "User")
+          .filter(Boolean),
+      };
+    })
+    .filter((room) => room.pendingCount > 0);
 }
 
 export async function fetchRoomInvite(

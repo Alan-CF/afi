@@ -85,9 +85,11 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
       type="button"
       onClick={() => onActionClick?.(room)}
       className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border px-3.5 py-3 text-left transition lift-on-hover sm:gap-4 sm:px-4 ${
-        isLive
-          ? "border-secondary/15 bg-white hover:border-secondary/35"
-          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+        showNew
+          ? "border-secondary bg-white ring-2 ring-secondary/40"
+          : isLive
+            ? "border-secondary/15 bg-white hover:border-secondary/35"
+            : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
       }`}
     >
       {/* Left accent rail */}
@@ -139,7 +141,7 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
             {room.title}
           </h3>
           {showNew && (
-            <span className="shrink-0 rounded-md bg-emerald-500 px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white">
+            <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white">
               New
             </span>
           )}
