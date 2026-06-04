@@ -37,8 +37,3 @@ export async function deleteTestQuiz() {
   const quizId = await findTestQuiz();
   await deleteQuiz(quizId);
 }
-
-deleteTestQuiz().catch((err) => {
-  console.error('Seed failed:', err.message);
-  throw err;
-});

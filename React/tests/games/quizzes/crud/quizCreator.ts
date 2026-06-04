@@ -266,8 +266,3 @@ export async function seedTestQuiz() {
   const options = await insertOptions(questions);
   await insertOptionResultMap(options, results);
 }
-
-seedTestQuiz().catch((err) => {
-  console.error('Seed failed:', err.message);
-  throw err;
-});

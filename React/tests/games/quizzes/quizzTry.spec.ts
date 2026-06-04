@@ -24,6 +24,6 @@ test('answer a quiz and verify result', async ({ page }) => {
   ).toBeVisible();
 });
 
-// test.afterAll(async () => {
-//   await deleteTestQuiz();
-// });
+test.afterAll(async () => {
+  await deleteTestQuiz();
+});
