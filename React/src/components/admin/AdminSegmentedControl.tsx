@@ -8,6 +8,7 @@ type AdminSegmentedControlProps<T extends string> = {
   value: T;
   onChange: (value: T) => void;
   size?: 'sm' | 'md';
+  block?: boolean;
   className?: string;
 };
 
@@ -16,21 +17,26 @@ export default function AdminSegmentedControl<T extends string>({
   value,
   onChange,
   size = 'md',
+  block = false,
   className,
 }: AdminSegmentedControlProps<T>) {
-  const pad =
-    size === 'sm' ? 'px-2.5 py-1.5 text-[0.7rem]' : 'px-3 py-2 text-xs';
+  const pad = size === 'sm' ? 'px-3 text-[0.7rem]' : 'px-4 text-xs';
+  const height = size === 'sm' ? 'h-9' : 'h-10';
 
   return (
     <div
-      className={`inline-flex max-w-full overflow-x-auto rounded-xl border-2 border-secondary scrollbar-hide ${className ?? ''}`}
+      className={`${height} max-w-full overflow-x-auto rounded-xl border-2 border-secondary scrollbar-hide ${
+        block ? 'flex' : 'inline-flex'
+      } ${className ?? ''}`}
     >
       {options.map((option) => (
         <button
           key={option.key}
           type="button"
           onClick={() => onChange(option.key)}
-          className={`${pad} whitespace-nowrap font-lato font-bold uppercase tracking-wider transition-colors ${
+          className={`${pad} flex items-center justify-center whitespace-nowrap font-lato font-bold uppercase tracking-wider transition-colors ${
+            block ? 'flex-1 text-center' : ''
+          } ${
             value === option.key
               ? 'bg-secondary text-white'
               : 'bg-white text-secondary hover:bg-secondary/10'

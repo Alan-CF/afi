@@ -37,11 +37,14 @@ import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from './components/ui/PointsToastGlobal';
 import RequireAdmin from './components/admin/RequireAdmin';
 import BasketballLoader from './components/common/BasketballLoader';
+import { useAppPresence } from './hooks/useAppPresence';
 
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
 import AdminShop from './pages/Shop/AdminShop';
 
 function App() {
+  useAppPresence();
+
   return (
     <>
       <PointsToastGlobal />

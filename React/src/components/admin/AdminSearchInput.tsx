@@ -21,7 +21,7 @@ export default function AdminSearchInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border-2 border-container-border bg-white py-2 pl-9 pr-3 font-lato text-sm text-text transition-colors focus:border-secondary focus:outline-none"
+        className="h-9 w-full rounded-xl border-2 border-container-border bg-white pl-9 pr-3 font-lato text-sm text-text transition-colors focus:border-secondary focus:outline-none"
       />
     </div>
   );

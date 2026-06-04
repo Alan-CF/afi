@@ -20,37 +20,53 @@ export type TimePoint = {
 
 export type AdminKpis = {
   totalUsers: number;
-  admins: number;
-  activeInRange: number;
-  totalFanaticCoins: number;
-  totalECoins: number;
-  avgCoinsPerUser: number;
-  topStreak: number;
+  activeUsers: number;
+  loginCount: number;
+  gamesPlayed: number;
+  uniquePlayers: number;
+  roomMessages: number;
+  fanEvents: number;
+};
+
+export type AdminSeries = {
+  loginActivity: TimePoint[];
+  activeUsers: TimePoint[];
+  gamesPlayed: TimePoint[];
+};
+
+export type GameResultRow = {
+  key: string;
+  label: string;
+  plays: number;
+  uniquePlayers: number;
+  avgPlaysPerUser: number;
+  coinsAwarded: number | null;
+  lastPlayed: string | null;
+};
+
+export type GameSeries = {
+  key: string;
+  label: string;
+  series: TimePoint[];
 };
 
 export type AdminUserRow = {
   id: string;
   username: string;
+  fullName: string | null;
   role: 'user' | 'admin';
-  active: boolean;
+  plays: number;
   fanaticCoins: number;
   eCoins: number;
   streak: number;
   lastLogin: string | null;
 };
 
-export type TopUserRow = {
-  id: string;
-  username: string;
-  fanaticCoins: number;
-  eCoins: number;
-  streak: number;
-};
-
 export type AdminDashboardData = {
   kpis: AdminKpis;
-  activitySeries: TimePoint[];
-  topUsers: TopUserRow[];
+  series: AdminSeries;
+  gameResults: GameResultRow[];
+  gameSeries: GameSeries[];
   users: AdminUserRow[];
   warnings: string[];
 };
@@ -58,6 +74,7 @@ export type AdminDashboardData = {
 type ProfileRow = {
   id: string;
   username: string;
+  name: string | null;
   role: 'user' | 'admin' | null;
   fanatic_coins: number | null;
   e_coins: number | null;
@@ -65,9 +82,36 @@ type ProfileRow = {
   streak: number | null;
 };
 
+type PlayRow = {
+  profile_id: string | null;
+  created_at: string;
+};
+
+type MessageRow = {
+  sender_profile_id: string;
+  created_at: string;
+};
+
 type BucketDef = {
   key: string;
   label: string;
+};
+
+type ActivityEvent = {
+  time: string | null;
+  userId: string | null;
+};
+
+type FanaticRow = PlayRow & {
+  awarded_points: number | null;
+};
+
+type GameSource = {
+  key: string;
+  label: string;
+  rows: PlayRow[];
+  plays: number;
+  coins: number | null;
 };
 
 const MONTH_LABELS = [
@@ -87,7 +131,13 @@ const MONTH_LABELS = [
 
 const MAX_BUCKETS = 5000;
 const ROW_LIMIT = 1000;
-const TOP_USERS_LIMIT = 5;
+
+function rangeToIso(range: DateRange): { startIso: string; endIso: string } {
+  return {
+    startIso: new Date(`${range.startDate}T00:00:00.000Z`).toISOString(),
+    endIso: new Date(`${range.endDate}T23:59:59.999Z`).toISOString(),
+  };
+}
 
 function startOfUtcDay(date: Date): Date {
   return new Date(
@@ -165,9 +215,211 @@ function buildBuckets(
   return buckets;
 }
 
+function countSeries<T>(
+  buckets: BucketDef[],
+  rows: T[],
+  getTime: (row: T) => string | null,
+  granularity: ActiveUsersGranularity
+): TimePoint[] {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const time = getTime(row);
+    if (!time) {
+      continue;
+    }
+    const date = new Date(time);
+    if (Number.isNaN(date.getTime())) {
+      continue;
+    }
+    const key = bucketKey(date, granularity);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return buckets.map((bucket) => ({
+    bucket: bucket.key,
+    label: bucket.label,
+    value: counts.get(bucket.key) ?? 0,
+  }));
+}
+
+function distinctUserSeries(
+  buckets: BucketDef[],
+  events: ActivityEvent[],
+  granularity: ActiveUsersGranularity
+): TimePoint[] {
+  const sets = new Map<string, Set<string>>();
+  for (const event of events) {
+    if (!event.time || !event.userId) {
+      continue;
+    }
+    const date = new Date(event.time);
+    if (Number.isNaN(date.getTime())) {
+      continue;
+    }
+    const key = bucketKey(date, granularity);
+    const existing = sets.get(key);
+    if (existing) {
+      existing.add(event.userId);
+    } else {
+      sets.set(key, new Set([event.userId]));
+    }
+  }
+  return buckets.map((bucket) => ({
+    bucket: bucket.key,
+    label: bucket.label,
+    value: sets.get(bucket.key)?.size ?? 0,
+  }));
+}
+
+function distinctPlayers(rows: PlayRow[]): number {
+  return new Set(
+    rows.map((row) => row.profile_id).filter((id): id is string => Boolean(id))
+  ).size;
+}
+
 function inRange(value: string, startDate: string, endDate: string): boolean {
   const day = value.slice(0, 10);
   return day >= startDate && day <= endDate;
+}
+
+async function safe<T>(
+  label: string,
+  warnings: string[],
+  fallback: T,
+  run: () => Promise<T>
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    void error;
+    if (!warnings.includes(label)) {
+      warnings.push(label);
+    }
+    return fallback;
+  }
+}
+
+async function fetchProfiles(): Promise<ProfileRow[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(
+      'id, username, name, role, fanatic_coins, e_coins, last_login, streak'
+    )
+    .order('fanatic_coins', { ascending: false })
+    .limit(ROW_LIMIT)
+    .returns<ProfileRow[]>();
+  if (error) {
+    throw error;
+  }
+  return data ?? [];
+}
+
+async function countProfiles(): Promise<number> {
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true });
+  if (error) {
+    throw error;
+  }
+  return count ?? 0;
+}
+
+async function fetchPlayRows(
+  table: string,
+  profileColumn: string,
+  startIso: string,
+  endIso: string
+): Promise<PlayRow[]> {
+  const { data, error } = await supabase
+    .from(table)
+    .select(`${profileColumn}, created_at`)
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
+    .order('created_at', { ascending: false })
+    .limit(ROW_LIMIT);
+  if (error) {
+    throw error;
+  }
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({
+    profile_id: (row[profileColumn] as string | null) ?? null,
+    created_at: row.created_at as string,
+  }));
+}
+
+async function fetchFanaticRows(
+  startIso: string,
+  endIso: string
+): Promise<FanaticRow[]> {
+  const { data, error } = await supabase
+    .from('fanatic_answers')
+    .select('profile_id, created_at, awarded_points')
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
+    .order('created_at', { ascending: false })
+    .limit(ROW_LIMIT)
+    .returns<FanaticRow[]>();
+  if (error) {
+    throw error;
+  }
+  return data ?? [];
+}
+
+async function countTable(
+  table: string,
+  startIso: string,
+  endIso: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from(table)
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', startIso)
+    .lte('created_at', endIso);
+  if (error) {
+    throw error;
+  }
+  return count ?? 0;
+}
+
+async function fetchMessages(
+  startIso: string,
+  endIso: string
+): Promise<MessageRow[]> {
+  const { data, error } = await supabase
+    .from('room_messages')
+    .select('sender_profile_id, created_at')
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
+    .order('created_at', { ascending: false })
+    .limit(ROW_LIMIT)
+    .returns<MessageRow[]>();
+  if (error) {
+    throw error;
+  }
+  return data ?? [];
+}
+
+async function countMessages(
+  startIso: string,
+  endIso: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('room_messages')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', startIso)
+    .lte('created_at', endIso);
+  if (error) {
+    throw error;
+  }
+  return count ?? 0;
+}
+
+async function countEvents(): Promise<number> {
+  const { count, error } = await supabase
+    .from('fan_events')
+    .select('*', { count: 'exact', head: true });
+  if (error) {
+    throw error;
+  }
+  return count ?? 0;
 }
 
 export function presetToRange(preset: DatePreset): DateRange {
@@ -192,6 +444,10 @@ export function formatDecimal(value: number, digits = 1): string {
   });
 }
 
+export function formatPercent(ratio: number): string {
+  return `${(ratio * 100).toFixed(1)}%`;
+}
+
 export function formatDate(iso: string | null): string {
   if (!iso) {
     return '—';
@@ -203,128 +459,192 @@ export function formatDate(iso: string | null): string {
   return date.toLocaleDateString();
 }
 
-async function fetchProfiles(): Promise<ProfileRow[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, username, role, fanatic_coins, e_coins, last_login, streak')
-    .order('fanatic_coins', { ascending: false })
-    .limit(ROW_LIMIT)
-    .returns<ProfileRow[]>();
-  if (error) {
-    throw error;
-  }
-  return data ?? [];
-}
-
-async function countAllProfiles(): Promise<number> {
-  const { count, error } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
-  if (error) {
-    throw error;
-  }
-  return count ?? 0;
-}
-
 export async function fetchAdminDashboard(
   params: AdminDashboardParams
 ): Promise<AdminDashboardData> {
   const { startDate, endDate, granularity } = params;
+  const { startIso, endIso } = rangeToIso(params);
   const warnings: string[] = [];
-
-  let profiles: ProfileRow[] = [];
-  try {
-    profiles = await fetchProfiles();
-  } catch (error) {
-    void error;
-    warnings.push('users');
-  }
-
-  let totalUsers = profiles.length;
-  try {
-    totalUsers = await countAllProfiles();
-  } catch (error) {
-    void error;
-    warnings.push('totalUsers');
-  }
-
-  const startIso = new Date(`${startDate}T00:00:00.000Z`).toISOString();
-  const endIso = new Date(`${endDate}T23:59:59.999Z`).toISOString();
   const buckets = buildBuckets(startIso, endIso, granularity);
 
-  const activeProfiles = profiles.filter(
+  const [
+    profiles,
+    totalUsers,
+    fanaticRows,
+    fanaticCount,
+    shootRows,
+    shootCount,
+    quizRows,
+    quizCount,
+    messages,
+    roomMessages,
+    fanEvents,
+  ] = await Promise.all([
+    safe('users', warnings, [] as ProfileRow[], () => fetchProfiles()),
+    safe('totalUsers', warnings, 0, () => countProfiles()),
+    safe('fanatic', warnings, [] as FanaticRow[], () =>
+      fetchFanaticRows(startIso, endIso)
+    ),
+    safe('fanatic', warnings, 0, () =>
+      countTable('fanatic_answers', startIso, endIso)
+    ),
+    safe('shootYourShot', warnings, [] as PlayRow[], () =>
+      fetchPlayRows('shoot_your_shot_games', 'profile_id', startIso, endIso)
+    ),
+    safe('shootYourShot', warnings, 0, () =>
+      countTable('shoot_your_shot_games', startIso, endIso)
+    ),
+    safe('quizzes', warnings, [] as PlayRow[], () =>
+      fetchPlayRows('quiz_attempts', 'profile_id', startIso, endIso)
+    ),
+    safe('quizzes', warnings, 0, () =>
+      countTable('quiz_attempts', startIso, endIso)
+    ),
+    safe('rooms', warnings, [] as MessageRow[], () =>
+      fetchMessages(startIso, endIso)
+    ),
+    safe('rooms', warnings, 0, () => countMessages(startIso, endIso)),
+    safe('events', warnings, 0, () => countEvents()),
+  ]);
+
+  const fanaticCoins = fanaticRows.reduce(
+    (sum, row) => sum + (row.awarded_points ?? 0),
+    0
+  );
+  const gameSources: GameSource[] = [
+    {
+      key: 'fanatic',
+      label: 'Fanatic',
+      rows: fanaticRows,
+      plays: fanaticCount,
+      coins: fanaticCoins,
+    },
+    {
+      key: 'shoot',
+      label: 'Shoot Your Shot',
+      rows: shootRows,
+      plays: shootCount,
+      coins: null,
+    },
+    {
+      key: 'quiz',
+      label: 'Quizzes',
+      rows: quizRows,
+      plays: quizCount,
+      coins: null,
+    },
+  ];
+
+  const allPlayRows: PlayRow[] = [...fanaticRows, ...shootRows, ...quizRows];
+
+  const loginProfiles = profiles.filter(
     (profile) =>
       profile.last_login && inRange(profile.last_login, startDate, endDate)
   );
 
-  const activityCounts = new Map<string, number>();
-  activeProfiles.forEach((profile) => {
-    if (!profile.last_login) {
-      return;
+  const activeIds = new Set<string>();
+  loginProfiles.forEach((profile) => activeIds.add(profile.id));
+  allPlayRows.forEach((row) => {
+    if (row.profile_id) {
+      activeIds.add(row.profile_id);
     }
-    const date = new Date(profile.last_login);
-    if (Number.isNaN(date.getTime())) {
-      return;
-    }
-    const key = bucketKey(date, granularity);
-    activityCounts.set(key, (activityCounts.get(key) ?? 0) + 1);
   });
-  const activitySeries: TimePoint[] = buckets.map((bucket) => ({
-    bucket: bucket.key,
-    label: bucket.label,
-    value: activityCounts.get(bucket.key) ?? 0,
-  }));
+  messages.forEach((row) => activeIds.add(row.sender_profile_id));
 
-  const totalFanaticCoins = profiles.reduce(
-    (sum, profile) => sum + (profile.fanatic_coins ?? 0),
-    0
-  );
-  const totalECoins = profiles.reduce(
-    (sum, profile) => sum + (profile.e_coins ?? 0),
-    0
-  );
-  const topStreak = profiles.reduce(
-    (max, profile) => Math.max(max, profile.streak ?? 0),
-    0
-  );
+  const loginEvents: ActivityEvent[] = loginProfiles.map((profile) => ({
+    time: profile.last_login,
+    userId: profile.id,
+  }));
+  const activityEvents: ActivityEvent[] = [
+    ...loginEvents,
+    ...allPlayRows.map((row) => ({
+      time: row.created_at,
+      userId: row.profile_id,
+    })),
+    ...messages.map((row) => ({
+      time: row.created_at,
+      userId: row.sender_profile_id,
+    })),
+  ];
 
   const kpis: AdminKpis = {
     totalUsers,
-    admins: profiles.filter((profile) => profile.role === 'admin').length,
-    activeInRange: activeProfiles.length,
-    totalFanaticCoins,
-    totalECoins,
-    avgCoinsPerUser: profiles.length ? totalFanaticCoins / profiles.length : 0,
-    topStreak,
+    activeUsers: activeIds.size,
+    loginCount: loginProfiles.length,
+    gamesPlayed: fanaticCount + shootCount + quizCount,
+    uniquePlayers: distinctPlayers(allPlayRows),
+    roomMessages,
+    fanEvents,
   };
+
+  const series: AdminSeries = {
+    loginActivity: distinctUserSeries(buckets, loginEvents, granularity),
+    activeUsers: distinctUserSeries(buckets, activityEvents, granularity),
+    gamesPlayed: countSeries(
+      buckets,
+      allPlayRows,
+      (row) => row.created_at,
+      granularity
+    ),
+  };
+
+  const gameResults: GameResultRow[] = gameSources
+    .map((source) => {
+      const uniquePlayers = distinctPlayers(source.rows);
+      const lastPlayed = source.rows.reduce<string | null>((latest, row) => {
+        if (!row.created_at) {
+          return latest;
+        }
+        return !latest || row.created_at > latest ? row.created_at : latest;
+      }, null);
+      return {
+        key: source.key,
+        label: source.label,
+        plays: source.plays,
+        uniquePlayers,
+        avgPlaysPerUser: uniquePlayers > 0 ? source.plays / uniquePlayers : 0,
+        coinsAwarded: source.coins,
+        lastPlayed,
+      };
+    })
+    .sort((a, b) => b.plays - a.plays);
+
+  const gameSeries: GameSeries[] = gameSources.map((source) => ({
+    key: source.key,
+    label: source.label,
+    series: countSeries(
+      buckets,
+      source.rows,
+      (row) => row.created_at,
+      granularity
+    ),
+  }));
+
+  const playsByUser = new Map<string, number>();
+  allPlayRows.forEach((row) => {
+    if (!row.profile_id) {
+      return;
+    }
+    playsByUser.set(row.profile_id, (playsByUser.get(row.profile_id) ?? 0) + 1);
+  });
 
   const users: AdminUserRow[] = profiles.map((profile) => ({
     id: profile.id,
     username: profile.username,
+    fullName: profile.name ?? null,
     role: profile.role ?? 'user',
-    active: profile.last_login
-      ? inRange(profile.last_login, startDate, endDate)
-      : false,
+    plays: playsByUser.get(profile.id) ?? 0,
     fanaticCoins: profile.fanatic_coins ?? 0,
     eCoins: profile.e_coins ?? 0,
     streak: profile.streak ?? 0,
     lastLogin: profile.last_login,
   }));
 
-  const topUsers: TopUserRow[] = profiles
-    .slice(0, TOP_USERS_LIMIT)
-    .map((profile) => ({
-      id: profile.id,
-      username: profile.username,
-      fanaticCoins: profile.fanatic_coins ?? 0,
-      eCoins: profile.e_coins ?? 0,
-      streak: profile.streak ?? 0,
-    }));
-
   return {
     kpis,
-    activitySeries,
-    topUsers,
+    series,
+    gameResults,
+    gameSeries,
     users,
     warnings,
   };

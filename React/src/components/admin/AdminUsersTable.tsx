@@ -1,5 +1,10 @@
-import { useMemo, useState } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+} from '@heroicons/react/24/solid';
 import {
   formatDate,
   formatNumber,
@@ -13,11 +18,20 @@ import EmptyState from '../common/EmptyState';
 
 type AdminUsersTableProps = {
   rows: AdminUserRow[];
+  onlineUserIds: Set<string>;
 };
 
 type RoleFilter = 'all' | 'admin' | 'user';
-type SortKey = 'fanaticCoins' | 'eCoins' | 'streak' | 'lastLogin' | 'username';
+type SortKey =
+  | 'plays'
+  | 'fanaticCoins'
+  | 'eCoins'
+  | 'streak'
+  | 'lastLogin'
+  | 'username';
 type SortDir = 'asc' | 'desc';
+
+const PAGE_SIZE = 10;
 
 const ROLE_OPTIONS: readonly { key: RoleFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -26,6 +40,7 @@ const ROLE_OPTIONS: readonly { key: RoleFilter; label: string }[] = [
 ];
 
 const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
+  { key: 'plays', label: 'Plays' },
   { key: 'fanaticCoins', label: 'Coins' },
   { key: 'eCoins', label: 'E-coins' },
   { key: 'streak', label: 'Streak' },
@@ -34,12 +49,15 @@ const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
 ];
 
 const HEAD =
-  'px-3 py-2.5 font-lato text-xs font-bold uppercase tracking-wider text-text-light';
+  'whitespace-nowrap px-3 py-2.5 font-lato text-xs font-bold uppercase tracking-wider text-text-light';
 const HEAD_RIGHT = `${HEAD} text-right`;
 const CELL_RIGHT =
   'px-3 py-2.5 text-right font-lato text-sm tabular-nums text-text';
 
 function numericValue(row: AdminUserRow, key: SortKey): number {
+  if (key === 'plays') {
+    return row.plays;
+  }
   if (key === 'eCoins') {
     return row.eCoins;
   }
@@ -66,22 +84,57 @@ function compareUsers(
   return dir === 'asc' ? result : -result;
 }
 
-export default function AdminUsersTable({ rows }: AdminUsersTableProps) {
+function RoleBadge({ role }: { role: 'user' | 'admin' }) {
+  return (
+    <AdminBadge variant={role === 'admin' ? 'gold' : 'muted'}>{role}</AdminBadge>
+  );
+}
+
+function StatusBadge({ live }: { live: boolean }) {
+  return (
+    <AdminBadge variant={live ? 'blue' : 'muted'}>
+      {live ? 'Live' : 'Offline'}
+    </AdminBadge>
+  );
+}
+
+export default function AdminUsersTable({
+  rows,
+  onlineUserIds,
+}: AdminUsersTableProps) {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [search, setSearch] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('fanaticCoins');
+  const [sortKey, setSortKey] = useState<SortKey>('plays');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return rows
       .filter((row) => roleFilter === 'all' || row.role === roleFilter)
-      .filter((row) =>
-        query ? row.username.toLowerCase().includes(query) : true
-      )
+      .filter((row) => {
+        if (!query) {
+          return true;
+        }
+        return (
+          row.username.toLowerCase().includes(query) ||
+          (row.fullName?.toLowerCase().includes(query) ?? false)
+        );
+      })
       .slice()
       .sort((a, b) => compareUsers(a, b, sortKey, sortDir));
   }, [rows, roleFilter, search, sortKey, sortDir]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, search, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
   return (
     <div>
@@ -89,22 +142,33 @@ export default function AdminUsersTable({ rows }: AdminUsersTableProps) {
         <AdminSearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search username…"
-          className="sm:w-56"
+          placeholder="Search username or name…"
+          className="w-full sm:min-w-[260px] sm:flex-1"
         />
         <AdminSegmentedControl
           options={ROLE_OPTIONS}
           value={roleFilter}
           onChange={setRoleFilter}
           size="sm"
+          block
+          className="w-full sm:w-auto"
         />
         <div className="flex items-center gap-2 sm:ml-auto">
-          <AdminSegmentedControl
-            options={SORT_OPTIONS}
+          <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
+            Sort by
+          </span>
+          <select
             value={sortKey}
-            onChange={setSortKey}
-            size="sm"
-          />
+            onChange={(event) => setSortKey(event.target.value as SortKey)}
+            className="h-9 flex-1 rounded-xl border-2 border-secondary bg-white px-3 font-lato text-xs font-bold text-secondary focus:outline-none sm:flex-none"
+            aria-label="Sort users by"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={() =>
@@ -127,58 +191,86 @@ export default function AdminUsersTable({ rows }: AdminUsersTableProps) {
       {filtered.length === 0 ? (
         <EmptyState message="No users match your filters." variant="compact" />
       ) : (
-        <div className="w-full overflow-hidden">
-          <div className="overflow-x-auto [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-secondary/20 [&::-webkit-scrollbar]:h-2">
-            <table className="min-w-[880px] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-container-border bg-text-light-soft/60">
-                  <th className={HEAD}>User</th>
-                  <th className={HEAD}>Status</th>
-                  <th className={HEAD}>Role</th>
-                  <th className={HEAD_RIGHT}>Fanatic coins</th>
-                  <th className={HEAD_RIGHT}>e-Coins</th>
-                  <th className={HEAD_RIGHT}>Streak</th>
-                  <th className={HEAD}>Last login</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-container-border transition-colors last:border-0 hover:bg-secondary/5"
-                  >
-                    <td className="px-3 py-2.5 font-lato text-sm font-semibold text-secondary">
-                      {row.username}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <AdminBadge variant={row.active ? 'blue' : 'muted'}>
-                        {row.active ? 'Active' : 'Idle'}
-                      </AdminBadge>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <AdminBadge
-                        variant={row.role === 'admin' ? 'gold' : 'muted'}
-                      >
-                        {row.role}
-                      </AdminBadge>
-                    </td>
-                    <td className={CELL_RIGHT}>
-                      {formatNumber(row.fanaticCoins)}
-                    </td>
-                    <td className={CELL_RIGHT}>{formatNumber(row.eCoins)}</td>
-                    <td className={CELL_RIGHT}>{formatNumber(row.streak)}</td>
-                    <td className="px-3 py-2.5 font-lato text-sm text-text-light">
-                      {formatDate(row.lastLogin)}
-                    </td>
+        <>
+          <div className="w-full overflow-hidden">
+            <div className="overflow-x-auto [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-secondary/20 [&::-webkit-scrollbar]:h-2">
+              <table className="min-w-[900px] border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-container-border">
+                    <th className={HEAD}>Username</th>
+                    <th className={HEAD}>Name</th>
+                    <th className={HEAD}>Status</th>
+                    <th className={HEAD}>Role</th>
+                    <th className={HEAD_RIGHT}>Plays</th>
+                    <th className={HEAD_RIGHT}>Coins</th>
+                    <th className={HEAD_RIGHT}>E-coins</th>
+                    <th className={HEAD_RIGHT}>Streak</th>
+                    <th className={HEAD}>Last login</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pageItems.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-container-border transition-colors last:border-0 hover:bg-secondary/5"
+                    >
+                      <td className="px-3 py-3 font-lato text-sm font-semibold text-secondary">
+                        {row.username}
+                      </td>
+                      <td className="px-3 py-3 font-lato text-sm text-text">
+                        {row.fullName ?? '—'}
+                      </td>
+                      <td className="px-3 py-3">
+                        <StatusBadge live={onlineUserIds.has(row.id)} />
+                      </td>
+                      <td className="px-3 py-3">
+                        <RoleBadge role={row.role} />
+                      </td>
+                      <td className={CELL_RIGHT}>{formatNumber(row.plays)}</td>
+                      <td className={CELL_RIGHT}>
+                        {formatNumber(row.fanaticCoins)}
+                      </td>
+                      <td className={CELL_RIGHT}>{formatNumber(row.eCoins)}</td>
+                      <td className={CELL_RIGHT}>{formatNumber(row.streak)}</td>
+                      <td className="px-3 py-3 font-lato text-sm text-text-light">
+                        {formatDate(row.lastLogin)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 font-lato text-[0.7rem] text-text-light sm:hidden">
+              Swipe horizontally to see more →
+            </p>
           </div>
-          <p className="mt-2 font-lato text-[0.7rem] text-text-light sm:hidden">
-            Swipe horizontally to see more →
-          </p>
-        </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage <= 1}
+              className="inline-flex items-center gap-1 rounded-xl border-2 border-secondary px-3 py-1.5 font-lato text-xs font-bold uppercase tracking-wider text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-secondary"
+            >
+              <ChevronLeftIcon className="h-4 w-4" />
+              Prev
+            </button>
+            <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setPage((value) => Math.min(totalPages, value + 1))
+              }
+              disabled={currentPage >= totalPages}
+              className="inline-flex items-center gap-1 rounded-xl border-2 border-secondary px-3 py-1.5 font-lato text-xs font-bold uppercase tracking-wider text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-secondary"
+            >
+              Next
+              <ChevronRightIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

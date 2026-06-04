@@ -27,7 +27,7 @@ const PRIMARY_LINKS = [
 ];
 
 const ADMIN_LINKS = [
-  { to: '/', label: 'Home' },
+  { to: '/admin', label: 'Dashboard' },
   { to: '/shop', label: 'Shop' },
   { to: '/admin/shop', label: 'Admin Shop' },
 ];

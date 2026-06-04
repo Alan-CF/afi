@@ -10,11 +10,6 @@ type AdminKpiCardProps = {
   icon?: ReactNode;
 };
 
-const ACCENT_BAR: Record<AdminKpiTone, string> = {
-  blue: 'bg-secondary',
-  gold: 'bg-primary',
-};
-
 const ICON_CHIP: Record<AdminKpiTone, string> = {
   blue: 'bg-secondary/10 text-secondary',
   gold: 'bg-primary/20 text-primary-dark',
@@ -28,11 +23,7 @@ export default function AdminKpiCard({
   icon,
 }: AdminKpiCardProps) {
   return (
-    <div className="relative flex min-h-[116px] flex-col justify-between overflow-hidden rounded-2xl border border-container-border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-      <span
-        className={`absolute inset-x-0 top-0 h-1 ${ACCENT_BAR[tone]}`}
-        aria-hidden="true"
-      />
+    <div className="flex min-h-[116px] flex-col justify-between rounded-2xl border border-container-border bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] transition-shadow hover:shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
       <div className="flex items-start justify-between gap-2">
         <p className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
           {label}

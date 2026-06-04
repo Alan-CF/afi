@@ -17,24 +17,19 @@ export default function AdminCard({
 }: AdminCardProps) {
   return (
     <section
-      className={`max-w-full overflow-hidden rounded-2xl border border-container-border bg-white p-4 shadow-sm md:p-5 ${className ?? ''}`}
+      className={`max-w-full overflow-hidden rounded-3xl border border-container-border bg-white p-5 shadow-[0_6px_18px_rgba(15,23,42,0.04)] md:p-6 ${className ?? ''}`}
     >
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          <span
-            className="mt-1 h-5 w-1.5 shrink-0 rounded-full bg-primary"
-            aria-hidden="true"
-          />
-          <div>
-            <h2 className="font-anton text-lg uppercase tracking-wide text-secondary md:text-xl">
-              {title}
-            </h2>
-            {subtitle && (
-              <p className="mt-0.5 font-lato text-xs text-text-light md:text-sm">
-                {subtitle}
-              </p>
-            )}
-          </div>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="h-1 w-10 rounded-full bg-primary" />
+          <h2 className="mt-2 font-anton text-xl leading-tight text-secondary md:text-2xl">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-1 font-lato text-xs font-bold text-[#475569] md:text-sm">
+              {subtitle}
+            </p>
+          )}
         </div>
         {actions && <div className="shrink-0">{actions}</div>}
       </div>

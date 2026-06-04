@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import { formatNumber, type TimePoint } from '../../lib/adminDashboardApi';
+import AdminChartFrame from './AdminChartFrame';
 
 type AdminTimeSeriesChartProps = {
   data: TimePoint[];
@@ -56,7 +57,7 @@ export default function AdminTimeSeriesChart({
   };
 
   return (
-    <div className="h-[240px] w-full md:h-[300px]">
+    <AdminChartFrame>
       <ResponsiveContainer width="100%" height="100%">
         {variant === 'bar' ? (
           <BarChart
@@ -107,6 +108,6 @@ export default function AdminTimeSeriesChart({
           </LineChart>
         )}
       </ResponsiveContainer>
-    </div>
+    </AdminChartFrame>
   );
 }
