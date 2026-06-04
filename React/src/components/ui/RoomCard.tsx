@@ -12,7 +12,18 @@ export type Room = {
   lastMessageFromMe?: boolean;
   matchHidden?: boolean;
   imageUrl?: string | null;
+  createdAt?: string | null;
 };
+
+// A room is flagged "NEW" for this long after creation.
+export const ROOM_NEW_WINDOW_MS = 5 * 60 * 1000;
+
+export function isRoomNew(createdAt?: string | null): boolean {
+  if (!createdAt) return false;
+  const created = new Date(createdAt).getTime();
+  if (Number.isNaN(created)) return false;
+  return Date.now() - created < ROOM_NEW_WINDOW_MS;
+}
 
 type RoomCardProps = {
   room: Room;
@@ -67,6 +78,7 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
   const actionLabel = isLive ? "Join" : "Summary";
   const subtitlePreview = splitSubtitlePreview(room.subtitle);
   const lastMessageTime = formatLastMessageTime(room.lastMessageAt);
+  const showNew = isRoomNew(room.createdAt);
 
   return (
     <button
@@ -126,6 +138,11 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
           >
             {room.title}
           </h3>
+          {showNew && (
+            <span className="shrink-0 rounded-md bg-emerald-500 px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white">
+              New
+            </span>
+          )}
           {showLive && (
             <span className="shrink-0 rounded-md bg-primary px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-secondary">
               Live

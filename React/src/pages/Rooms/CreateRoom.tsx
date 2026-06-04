@@ -79,8 +79,8 @@ function CreateRoom() {
     try {
       setCreatingRoom(true);
       setError(null);
-      await createRoomWithMembers(roomName, selectedFriendIds);
-      navigate('/rooms');
+      const roomId = await createRoomWithMembers(roomName, selectedFriendIds);
+      navigate(`/rooms/${roomId}`, { state: { from: '/rooms' } });
     } catch (err) {
       console.error('Error creating room:', err);
       setError(err instanceof Error ? err.message : 'Could not create room.');

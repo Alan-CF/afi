@@ -10,7 +10,7 @@ import {
   type FriendOption,
   type RoomInvite,
 } from '../../hooks/useRooms';
-import RoomCard, { type Room } from '../../components/ui/RoomCard';
+import RoomCard, { isRoomNew, type Room } from '../../components/ui/RoomCard';
 import {
   jumpToMockGameLastQuarter,
   resetMockGame,
@@ -242,6 +242,16 @@ function RoomsPage() {
 
   const orderedRooms = useMemo(() => {
     return [...rooms].sort((a, b) => {
+      // Newly created rooms float to the very top for their NEW window.
+      const aNew = isRoomNew(a.createdAt);
+      const bNew = isRoomNew(b.createdAt);
+      if (aNew !== bNew) return aNew ? -1 : 1;
+      if (aNew && bNew) {
+        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bCreated - aCreated;
+      }
+
       const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
       const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
       if (aTime !== bTime) return bTime - aTime;

@@ -19,6 +19,7 @@ export type RoomCardData = {
   lastMessageFromMe: boolean;
   matchHidden: boolean;
   imageUrl: string | null;
+  createdAt: string | null;
 };
 
 export type FriendOption = {
@@ -203,7 +204,7 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
 
   const { data: rooms, error: roomsError } = await supabase
     .from("rooms")
-    .select("id, title, status, accent, match_hidden, image_url")
+    .select("id, title, status, accent, match_hidden, image_url, created_at")
     .in("id", roomIds);
 
   if (roomsError) {
@@ -284,6 +285,7 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
       accent: room.accent,
       matchHidden: room.match_hidden ?? false,
       imageUrl: room.image_url ?? null,
+      createdAt: room.created_at ?? null,
       members: formatMembers(membersForRoom),
       subtitle,
       memberProfileIds,

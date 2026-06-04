@@ -674,6 +674,13 @@ function RoomChat() {
     try {
       if (next) {
         await removeRoomMatch(activeRoomId);
+        const eventMessage = await sendRoomEventMessage(
+          activeRoomId,
+          "La funcionalidad de match ha sido removida"
+        );
+        setMessages((current) =>
+          mergeMessages(current, toDisplayMessage(eventMessage, currentUserId))
+        );
       } else {
         await setRoomMatchHidden(activeRoomId, false);
       }
