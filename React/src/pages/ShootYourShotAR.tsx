@@ -702,23 +702,6 @@ function ShootYourShotAR() {
     };
   }, [challengeId]);
 
-  useEffect(() => {
-    const shouldLockScroll = gameMode === 'solo' && status === 'playing';
-
-    if (!shouldLockScroll) return;
-
-    const previousOverflow = document.body.style.overflow;
-    const previousTouchAction = document.body.style.touchAction;
-
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.body.style.touchAction = previousTouchAction;
-    };
-  }, [gameMode, status]);
-
   const successRate =
     totalShots > 0 ? Math.round((score / totalShots) * 100) : 0;
 
@@ -920,7 +903,7 @@ function ShootYourShotAR() {
         )}
 
         {gameMode === 'solo' && (
-          <section className="relative h-[calc(100dvh-2rem)] md:h-[72vh] md:min-h-[480px] md:max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none">
+          <section className="relative h-[80dvh] md:h-[72vh] md:min-h-[480px] md:max-h-[620px] overflow-hidden rounded-3xl bg-secondary border border-[var(--color-container-border)] shadow-sm select-none overscroll-contain">
             <img
               src="/court_warriors.png"
               alt="Warriors court"
@@ -929,7 +912,11 @@ function ShootYourShotAR() {
             <div className="absolute inset-0 bg-black/20" />
             <div
               className="absolute inset-0 z-10 touch-none select-none cursor-grab active:cursor-grabbing"
-              style={{ touchAction: 'none' }}
+              style={{
+                touchAction: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+              }}
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.currentTarget.setPointerCapture(event.pointerId);
@@ -939,6 +926,9 @@ function ShootYourShotAR() {
                 event.preventDefault();
                 event.currentTarget.releasePointerCapture(event.pointerId);
                 gestureHandlers.onPointerUp(event);
+              }}
+              onPointerCancel={(event) => {
+                event.preventDefault();
               }}
               onContextMenu={(event) => event.preventDefault()}
             />
