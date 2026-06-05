@@ -767,6 +767,43 @@ export async function updateFanEvent(
 
 export async function attendFanEvent(eventId: number): Promise<void> {
   const userId = await getAuthenticatedUserId();
+
+  const { data: eventRow, error: eventError } = await supabase
+    .from("fan_events")
+    .select("capacity")
+    .eq("id", eventId)
+    .maybeSingle<{ capacity: number | null }>();
+  if (eventError) {
+    throw buildQueryError("fan_events capacity check failed", eventError.message);
+  }
+
+  const capacity = eventRow?.capacity ?? null;
+  if (capacity != null) {
+    const { data: mine, error: mineError } = await supabase
+      .from("fan_event_attendees")
+      .select("status")
+      .eq("fan_event_id", eventId)
+      .eq("profile_id", userId)
+      .maybeSingle<{ status: string }>();
+    if (mineError) {
+      throw buildQueryError("fan_event_attendees check failed", mineError.message);
+    }
+
+    if (mine?.status !== "going") {
+      const { count, error: countError } = await supabase
+        .from("fan_event_attendees")
+        .select("id", { count: "exact", head: true })
+        .eq("fan_event_id", eventId)
+        .eq("status", "going");
+      if (countError) {
+        throw buildQueryError("fan_event_attendees count failed", countError.message);
+      }
+      if ((count ?? 0) >= capacity) {
+        throw new Error("This event is full. There are no spots left.");
+      }
+    }
+  }
+
   const { error } = await supabase
     .from("fan_event_attendees")
     .upsert(

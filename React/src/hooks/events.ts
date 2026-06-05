@@ -28,6 +28,7 @@ export interface UnifiedEvent {
     opponentAbbr?: string;
     opponentName?: string;
     broadcast?: string | null;
+    city?: string | null;
     goingCount?: number;
     fanEventId?: number;
   };
@@ -63,6 +64,7 @@ function espnGameToUnified(g: WarriorsGame): UnifiedEvent {
       opponentAbbr: g.opponentAbbr,
       opponentName: g.opponentName,
       broadcast: g.broadcast,
+      city: g.city,
     },
   };
 }

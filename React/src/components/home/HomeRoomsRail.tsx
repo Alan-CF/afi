@@ -191,21 +191,66 @@ export default function HomeRoomsRail() {
           </button>
         </div>
       ) : (
-        <div className="rounded-3xl border border-container-border bg-white p-10 text-center">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/[0.08] text-secondary mb-4">
+        <article className="relative overflow-hidden rounded-3xl bg-secondary p-6 sm:p-8 md:p-10 flex flex-col items-start gap-4 fade-in-up stagger-1">
+          <svg
+            viewBox="0 0 800 400"
+            className="pointer-events-none absolute inset-0 h-full w-full text-white opacity-[0.04]"
+            aria-hidden
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <rect
+              x="20"
+              y="20"
+              width="760"
+              height="360"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+            />
+            <path
+              d="M 160 20 Q 160 200, 400 200 Q 640 200, 640 20"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+            />
+            <circle
+              cx="400"
+              cy="380"
+              r="160"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+            />
+          </svg>
+          <span
+            className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 translate-x-[15%] font-anton text-primary opacity-[0.08] select-none leading-none"
+            style={{ fontSize: 'clamp(7rem, 16vw, 14rem)' }}
+            aria-hidden
+          >
+            W
+          </span>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
+
+          <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20 text-primary">
             <UserGroupIcon className="h-6 w-6" />
           </span>
-          <p className="font-lato text-sm text-text-light">
-            No rooms yet. Start a watch party with your crew.
-          </p>
+          <div className="relative z-10 max-w-md">
+            <h3 className="font-anton text-xl md:text-2xl text-white leading-tight">
+              No watch parties yet
+            </h3>
+            <p className="font-lato text-sm text-white/65 mt-1.5">
+              Start a room and invite your crew to react live during the game.
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => navigate('/rooms/create')}
-            className="mt-4 font-lato text-sm font-bold text-secondary hover:text-[#5780AE] transition-colors"
+            className="relative z-10 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-primary-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            Create the first room
+            <PlusIcon className="h-4 w-4" />
+            Create a room
           </button>
-        </div>
+        </article>
       )}
     </section>
   );

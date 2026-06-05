@@ -18,6 +18,7 @@ export interface WarriorsGame {
   warriorsLogo: string;
   isHome: boolean;
   venue: string | null;
+  city: string | null;
   broadcast: string | null;
   state: GameState;
   warriorsScore?: number;
@@ -36,7 +37,10 @@ interface EspnEvent {
   id: string;
   date: string;
   competitions: Array<{
-    venue?: { fullName: string };
+    venue?: {
+      fullName: string;
+      address?: { city?: string; state?: string };
+    };
     broadcasts?: Array<{ names: string[] }>;
     competitors: EspnCompetitor[];
     status: {
@@ -64,6 +68,11 @@ function extractWarriorsGame(ev: EspnEvent): WarriorsGame | null {
     warriorsLogo: warriors.team.logo,
     isHome: warriors.homeAway === "home",
     venue: comp.venue?.fullName ?? null,
+    city: comp.venue?.address?.city
+      ? [comp.venue.address.city, comp.venue.address.state]
+          .filter(Boolean)
+          .join(", ")
+      : null,
     broadcast: comp.broadcasts?.[0]?.names?.join(" / ") ?? null,
     state: comp.status.type.state,
     warriorsScore: warriors.score ? Number(warriors.score) : undefined,

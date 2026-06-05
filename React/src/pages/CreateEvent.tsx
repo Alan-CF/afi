@@ -723,8 +723,8 @@ export default function CreateEvent() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate("/events")}
-              aria-label="Go back"
+              onClick={() => (step === 1 ? navigate("/events") : goBack())}
+              aria-label={step === 1 ? "Close" : "Go back a step"}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#edf3ff] text-secondary transition-colors hover:bg-[#dfe9fb]"
             >
               <ArrowLeftIcon className="h-4 w-4" />
