@@ -14,6 +14,7 @@ function notifyCartUpdated() {
 
 export interface CartItem {
   id: number;
+  product_id: number | null;
   product_name: string;
   product_description: string;
   is_active: boolean;
@@ -112,10 +113,39 @@ export async function startCheckout() {
     throw new Error('You must be signed in to checkout.');
   }
 
+  // Read the current cart so the log captures every product being purchased.
+  const { data, error: cartError } = await supabase.rpc('get_cart', {
+    p_profile_id: profileId,
+  });
+
+  if (cartError) {
+    throw cartError;
+  }
+
+  const items = (data ?? []) as CartItem[];
+
+  if (items.length === 0) {
+    throw new Error('Your cart is empty.');
+  }
+
+  const productNames = items
+    .map((item) => (item.product_id != null ? `${item.product_name} #${item.product_id}` : item.product_name))
+    .join(', ');
+
   const { error } = await supabase.rpc('log_shop_action', {
     p_action_type: 'PURCHASE_STARTED',
     p_status: 'PENDING',
-    p_details: 'Checkout started',
+    p_product_name: productNames,
+    p_metadata: {
+      count: items.length,
+      products: items.map((item) => ({
+        product_id: item.product_id,
+        cart_item_id: item.id,
+        name: item.product_name,
+        price: item.price,
+        discount: item.discount,
+      })),
+    },
   });
 
   if (error) {

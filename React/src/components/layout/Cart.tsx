@@ -40,7 +40,7 @@ export default function Cart({ isOpen, onClose }: CartProps) {
     setCheckoutMsg(null);
     try {
       await startCheckout();
-      setCheckoutMsg({ ok: true, text: "Purchase started! We logged your checkout." });
+      setCheckoutMsg({ ok: true, text: "Success" });
     } catch (err) {
       setCheckoutMsg({
         ok: false,
@@ -50,6 +50,14 @@ export default function Cart({ isOpen, onClose }: CartProps) {
       setCheckingOut(false);
     }
   };
+
+  // Reset the checkout feedback each time the cart is closed/reopened.
+  useEffect(() => {
+    if (!isOpen) {
+      setCheckoutMsg(null);
+      setCheckingOut(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const { body, documentElement } = document;

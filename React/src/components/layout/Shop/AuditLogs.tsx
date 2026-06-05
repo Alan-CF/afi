@@ -4,6 +4,8 @@ import {
   XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   ClipboardDocumentListIcon,
 } from "@heroicons/react/24/solid";
 import {
@@ -11,6 +13,7 @@ import {
   type ShopAuditActionType,
   type ShopAuditRole,
   type ShopAuditStatus,
+  type ShopAuditLog,
 } from "../../../hooks/useShopAuditLogs";
 
 //  Label + style maps
@@ -92,6 +95,59 @@ function Badge({ className, children }: { className: string; children: React.Rea
   );
 }
 
+interface CartProductMeta {
+  product_id?: number | null;
+  name?: string;
+}
+
+function getProductList(log: ShopAuditLog): CartProductMeta[] | null {
+  const products = (log.metadata as { products?: unknown })?.products;
+  return Array.isArray(products) && products.length > 0 ? (products as CartProductMeta[]) : null;
+}
+
+// Renders a single product, or an expandable "Total products: N" button with a
+// bulleted breakdown (each line shows the product number) for multi-item logs.
+function ProductCell({ log }: { log: ShopAuditLog }) {
+  const [open, setOpen] = useState(false);
+  const products = getProductList(log);
+
+  if (products) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/5 px-3 py-1 text-sm font-bold text-secondary hover:bg-secondary/10 transition-colors"
+        >
+          {open ? <ChevronUpIcon className="h-3.5 w-3.5" /> : <ChevronDownIcon className="h-3.5 w-3.5" />}
+          Total products: {products.length}
+        </button>
+        {open && (
+          <ul className="mt-2 space-y-1">
+            {products.map((p, i) => (
+              <li key={i} className="flex gap-2 text-sm text-secondary">
+                <span className="text-secondary/50">–</span>
+                <span>
+                  {p.name ?? "Unknown"}
+                  <span className="ml-1 font-semibold text-secondary/70">#{p.product_id ?? "?"}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  if (!log.productName) return <span className="text-gray-500">—</span>;
+  return (
+    <span className="text-secondary">
+      {log.productName}
+      {log.productId != null && <span className="ml-1 text-sm text-secondary">#{log.productId}</span>}
+    </span>
+  );
+}
+
 const selectClass =
   "rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-secondary outline-none focus:border-secondary transition-colors";
 
@@ -131,6 +187,32 @@ export default function AuditLogs() {
     setSearchInput("");
     clearFilters();
   };
+
+  const renderPager = (extraClass = "") => (
+    <div className={`flex items-center justify-between ${extraClass}`}>
+      <p className="text-base text-secondary">
+        Page {page + 1} of {pageCount} · {pageSize} per page
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setPage(Math.max(0, page - 1))}
+          disabled={page === 0}
+          className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-base font-bold text-secondary hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <ChevronLeftIcon className="h-4 w-4" /> Prev
+        </button>
+        <button
+          type="button"
+          onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
+          disabled={page >= pageCount - 1}
+          className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-base font-bold text-secondary hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -295,6 +377,9 @@ export default function AuditLogs() {
         </div>
       ) : (
         <>
+          {/* Pagination (top) */}
+          {renderPager("mb-3")}
+
           {/* Desktop table */}
           <div className="hidden md:block overflow-hidden rounded-2xl border border-[var(--color-container-border)] bg-white">
             <table className="w-full text-left text-base">
@@ -306,7 +391,6 @@ export default function AuditLogs() {
                   <th className="px-4 py-3 font-bold">Action</th>
                   <th className="px-4 py-3 font-bold">Product</th>
                   <th className="px-4 py-3 font-bold">Status</th>
-                  <th className="px-4 py-3 font-bold">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -335,23 +419,11 @@ export default function AuditLogs() {
                         {ACTION_LABELS[log.actionType]}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
-                      {log.productName ? (
-                        <span className="text-secondary">
-                          {log.productName}
-                          {log.productId != null && (
-                            <span className="ml-1 text-sm text-secondary">#{log.productId}</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-gray-500">—</span>
-                      )}
+                    <td className="px-4 py-3 align-top">
+                      <ProductCell log={log} />
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={STATUS_BADGE[log.status]}>{log.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 max-w-[16rem] truncate text-secondary" title={log.details ?? ""}>
-                      {log.details ?? "—"}
                     </td>
                   </tr>
                 ))}
@@ -384,41 +456,15 @@ export default function AuditLogs() {
                   <Badge className={STATUS_BADGE[log.status]}>{log.status}</Badge>
                 </div>
                 {log.actorEmail && <p className="text-sm text-secondary">{log.actorEmail}</p>}
-                {log.productName && (
-                  <p className="mt-1 text-base text-secondary">
-                    {log.productName}
-                    {log.productId != null && <span className="ml-1 text-sm text-secondary">#{log.productId}</span>}
-                  </p>
-                )}
-                {log.details && <p className="mt-1 text-sm text-secondary">{log.details}</p>}
+                <div className="mt-1 text-base">
+                  <ProductCell log={log} />
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Pagination */}
-          <div className="mt-5 flex items-center justify-between">
-            <p className="text-base text-secondary">
-              Page {page + 1} of {pageCount} · {pageSize} per page
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-                className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-base font-bold text-secondary hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <ChevronLeftIcon className="h-4 w-4" /> Prev
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
-                disabled={page >= pageCount - 1}
-                className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-base font-bold text-secondary hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Next <ChevronRightIcon className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          {/* Pagination (bottom) */}
+          {renderPager("mt-5")}
         </>
       )}
     </div>
