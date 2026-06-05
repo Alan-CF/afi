@@ -45,6 +45,7 @@ const MIN_PARAGRAPHS = 2;
 const MIN_PARAGRAPH_CHARS = 40;
 const MIN_KEYWORD_MATCHES = 2;
 const CACHE_TABLE = "news_article_cache";
+const CACHE_MIN_UPDATED_AT = Date.parse("2026-06-05T00:00:00.000Z");
 
 interface RequestPayload {
   url?: string;
@@ -78,6 +79,7 @@ interface CacheRow {
   body: string | null;
   body_paragraphs: string[] | null;
   provider: string | null;
+  updated_at: string | null;
 }
 
 interface ApifyItem {
@@ -190,7 +192,7 @@ async function readCache(
   const { data, error } = await client
     .from(CACHE_TABLE)
     .select(
-      "original_url,title,description,image_url,source,published_at,body,body_paragraphs,provider",
+      "original_url,title,description,image_url,source,published_at,body,body_paragraphs,provider,updated_at",
     )
     .eq("original_url", originalUrl)
     .maybeSingle();
@@ -603,7 +605,9 @@ function isTitleParagraph(paragraph: string, title: string): boolean {
   let hits = 0;
   for (const w of titleWords) if (pSet.has(w)) hits++;
   const overlap = hits / titleWords.length;
-  if (paragraph.length <= 220 && overlap >= 0.7) return true;
+  if (overlap >= 0.7 && paragraph.length <= Math.max(title.length, 40) * 1.4) {
+    return true;
+  }
   return false;
 }
 
@@ -614,6 +618,30 @@ function stripTitleParagraphs(paragraphs: string[], title: string): string[] {
     result.shift();
   }
   return result;
+}
+
+function endsLikeSentence(p: string): boolean {
+  return /[.!?][)\]"'”’]?\s*$/.test(p.trim());
+}
+
+function dropLeadingUnrelated(
+  paragraphs: string[],
+  title: string,
+  description: string,
+): string[] {
+  if (paragraphs.length === 0) return paragraphs;
+  const titleKw = extractTitleKeywords(title);
+  const descKw = extractDescriptionKeywords(description);
+  const isLead = (p: string): boolean =>
+    p.length >= MIN_PARAGRAPH_CHARS &&
+    endsLikeSentence(p) &&
+    (countKeywordMatches(p, titleKw) >= 2 ||
+      countKeywordMatches(p, descKw) >= 3);
+  if (isLead(paragraphs[0])) return paragraphs;
+  for (let i = 1; i < paragraphs.length; i++) {
+    if (isLead(paragraphs[i])) return paragraphs.slice(i);
+  }
+  return paragraphs;
 }
 
 function countUnrelatedHeavy(
@@ -643,7 +671,11 @@ function validateBodyBelongsToArticle(
   title: string,
   description: string,
 ): ValidationResult {
-  const contentParagraphs = stripTitleParagraphs(paragraphs, title);
+  const contentParagraphs = dropLeadingUnrelated(
+    stripTitleParagraphs(paragraphs, title),
+    title,
+    description,
+  );
   const contentBody = contentParagraphs.join("\n\n");
 
   if (
@@ -670,6 +702,13 @@ function validateBodyBelongsToArticle(
 
   const titleMatches = countKeywordMatches(contentBody, titleKeywords);
   const descMatches = countKeywordMatches(contentBody, descKeywords);
+
+  const statLineCount = contentParagraphs.filter(isStatListLine).length;
+  const isListicle = statLineCount >= 4;
+
+  if (isListicle) {
+    return { valid: true, contentParagraphs };
+  }
 
   const unrelatedHeavy = countUnrelatedHeavy(contentBody, title, description);
 
@@ -806,7 +845,11 @@ function buildOutcomeFromSegment(
   if (!segment) return null;
   const paragraphs = toParagraphs(segment);
   if (paragraphs.length < MIN_PARAGRAPHS) return null;
-  const content = stripTitleParagraphs(paragraphs, title);
+  const content = dropLeadingUnrelated(
+    stripTitleParagraphs(paragraphs, title),
+    title,
+    description,
+  );
   if (content.length < MIN_PARAGRAPHS) return null;
   const body = content.join("\n\n");
   if (body.length < MIN_BODY_CHARS) return null;
@@ -834,12 +877,16 @@ function markdownToPlainText(raw: string): string {
   out = out.replace(/^\s{0,3}>\s?/gm, "");
   out = out.replace(/^\s*[-*+]\s+/gm, "");
   out = out.replace(/\\([\[\]\\()*_`#+\-.!>])/g, "$1");
-  out = out.replace(/(\*\*|__)(.+?)\1/g, "$2");
+  out = out.replace(
+    /(\*\*|__)(.+?)\1/g,
+    (_match, _delim, inner) => "\u0001" + inner + "\u0002",
+  );
   out = out.replace(
     /(?<![A-Za-z0-9])(\*|_)(?=\S)([^*_\n]+?)\1(?![A-Za-z0-9])/g,
     "$2",
   );
   out = out.replace(/`([^`\n]+)`/g, "$1");
+  out = out.replace(/\u0001/g, "**").replace(/\u0002/g, "**");
   out = out.replace(/\n{3,}/g, "\n\n");
   return out;
 }
@@ -914,12 +961,14 @@ function sanitizeCachedParagraphs(paragraphs: string[]): {
       changed = true;
       continue;
     }
-    const key = p.toLowerCase();
-    if (seen.has(key)) {
-      changed = true;
-      continue;
+    if (!isStatListLine(p)) {
+      const key = p.toLowerCase();
+      if (seen.has(key)) {
+        changed = true;
+        continue;
+      }
+      seen.add(key);
     }
-    seen.add(key);
     out.push(p);
   }
   return { paragraphs: out, changed };
@@ -965,6 +1014,22 @@ function isCombineStatLine(p: string): boolean {
   );
 }
 
+function isStatListLine(p: string): boolean {
+  if (!p) return false;
+  const s = p.replace(/\*\*/g, "").trim();
+  if (!s) return false;
+  if (/^(19|20)\d{2}-\d{2}\b/.test(s)) return true;
+  if (
+    /^(champion|finals\s+mvp|series\s+mvp|playoff\s+leaders|series\s+result|record|result)\s*:/i.test(
+      s,
+    )
+  ) {
+    return true;
+  }
+  if (/^(pts|reb|trb|ast|stl|blk|min|fg%?|3p%?|ft%?)\s*:/i.test(s)) return true;
+  return false;
+}
+
 function toParagraphs(cleaned: string): string[] {
   const blocks = cleaned
     .split(/\n{2,}/)
@@ -990,20 +1055,29 @@ function toParagraphs(cleaned: string): string[] {
     const trimmed = raw.trim();
     if (!trimmed) continue;
     const rank = isRankLine(trimmed);
-    const preStrip = rank
+    const keepRaw =
+      rank || isStatListLine(trimmed) || trimmed.startsWith("**");
+    const preStrip = keepRaw
       ? trimmed
       : trimmed.replace(/^[#>*\-•·\d\.\)\s]+/, "").trim();
     if (!preStrip) continue;
     const p = stripTrailingCredit(preStrip);
     if (!p) continue;
     if (isNoiseLine(p)) continue;
+    const statLine = isStatListLine(p);
     const structural =
-      rank || isSectionHeader(p) || isPickInfoLine(p) || isCombineStatLine(p);
+      rank ||
+      isSectionHeader(p) ||
+      isPickInfoLine(p) ||
+      isCombineStatLine(p) ||
+      statLine;
     if (!structural && p.length < MIN_PARAGRAPH_CHARS) continue;
     if (structural && p.length < 4) continue;
     const key = p.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (!statLine) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+    }
     filtered.push(p);
   }
   return filtered;
@@ -1030,6 +1104,57 @@ const APIFY_PAGE_FUNCTION = `async function pageFunction({ page }) {
   const fullText = await page.evaluate(() => {
     const body = document.body;
     if (!body) return "";
+    try {
+      const SKIP = new Set([
+        "SCRIPT",
+        "STYLE",
+        "NOSCRIPT",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "BUTTON",
+        "NAV",
+      ]);
+      const isBold = (el) => {
+        const w = window.getComputedStyle(el).fontWeight;
+        if (w === "bold" || w === "bolder") return true;
+        const n = parseInt(w, 10);
+        return !isNaN(n) && n >= 600;
+      };
+      const isSkipped = (el) => {
+        let cur = el;
+        while (cur && cur !== body) {
+          if (SKIP.has(cur.tagName)) return true;
+          cur = cur.parentElement;
+        }
+        return false;
+      };
+      const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+      const targets = [];
+      let node = walker.nextNode();
+      while (node) {
+        const text = node.textContent || "";
+        const el = node.parentElement;
+        if (
+          el &&
+          text.trim() &&
+          text.indexOf("**") === -1 &&
+          !isSkipped(el) &&
+          isBold(el)
+        ) {
+          targets.push(node);
+        }
+        node = walker.nextNode();
+      }
+      targets.forEach((n) => {
+        n.textContent = "**" + n.textContent + "**";
+      });
+    } catch (e) {
+      void e;
+    }
     return body.innerText || "";
   });
 
@@ -1215,26 +1340,36 @@ async function handlePost(req: Request): Promise<Response> {
 
   if (client) {
     const cached = await readCache(client, originalUrl);
+    const cachedUpdatedAt = cached?.updated_at
+      ? Date.parse(cached.updated_at)
+      : 0;
+    const cacheFresh =
+      Number.isNaN(CACHE_MIN_UPDATED_AT) || cachedUpdatedAt >= CACHE_MIN_UPDATED_AT;
     if (
       cached &&
+      cacheFresh &&
       cached.body &&
       cached.body.length >= MIN_BODY_CHARS &&
       Array.isArray(cached.body_paragraphs) &&
       cached.body_paragraphs.length >= MIN_PARAGRAPHS
     ) {
       const sanitized = sanitizeCachedParagraphs(cached.body_paragraphs);
-      const sanitizedBody = sanitized.paragraphs.join("\n\n");
       const cacheValidation = validateBodyBelongsToArticle(
         sanitized.paragraphs,
         requestedTitle,
         requestedDescription,
       );
+      const trimmedCached = cacheValidation.contentParagraphs;
+      const trimmedCachedBody = trimmedCached.join("\n\n");
       if (
         cacheValidation.valid &&
-        sanitized.paragraphs.length >= MIN_PARAGRAPHS &&
-        sanitizedBody.length >= MIN_BODY_CHARS
+        trimmedCached.length >= MIN_PARAGRAPHS &&
+        trimmedCachedBody.length >= MIN_BODY_CHARS
       ) {
-        if (sanitized.changed) {
+        const changed =
+          sanitized.changed ||
+          trimmedCached.length !== sanitized.paragraphs.length;
+        if (changed) {
           await writeCache(client, {
             original_url: originalUrl,
             title: cached.title,
@@ -1242,8 +1377,8 @@ async function handlePost(req: Request): Promise<Response> {
             image_url: cached.image_url,
             source: cached.source,
             published_at: cached.published_at,
-            body: sanitizedBody,
-            body_paragraphs: sanitized.paragraphs,
+            body: trimmedCachedBody,
+            body_paragraphs: trimmedCached,
             provider: cached.provider ?? "apify",
           });
         }
@@ -1253,8 +1388,8 @@ async function handlePost(req: Request): Promise<Response> {
           source: cached.source ?? fallbackMeta.source ?? null,
           publishedAt: cached.published_at ?? fallbackMeta.publishedAt ?? null,
           image: cached.image_url ?? fallbackMeta.image ?? null,
-          body: sanitizedBody,
-          bodyParagraphs: sanitized.paragraphs,
+          body: trimmedCachedBody,
+          bodyParagraphs: trimmedCached,
           originalUrl,
           provider: "cache",
           error: null,

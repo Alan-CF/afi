@@ -20,30 +20,39 @@ export default function AvatarFrame({
   children,
 }: AvatarFrameProps) {
   const frameUrl = useFrameImage(frameId);
+  const frameSize = size * scale;
 
   return (
     <div
       className={`relative inline-flex items-center justify-center ${className}`}
       style={{ width: size, height: size }}
     >
-      {children}
-      {frameUrl ? (
-        <img
-          src={frameUrl}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute select-none max-w-none"
-          style={{
-            width: size * scale,
-            height: size * scale,
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            objectFit: "contain",
-          }}
-          draggable={false}
-        />
-      ) : null}
+      {/* Clip box sized to the frame so nothing (avatar crop or frame art)
+          can escape past the frame bounds and leak into the layout. */}
+      <div
+        className="absolute left-1/2 top-1/2 flex items-center justify-center overflow-hidden rounded-full"
+        style={{
+          width: frameSize,
+          height: frameSize,
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        {children}
+        {frameUrl ? (
+          <img
+            src={frameUrl}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 select-none max-w-none"
+            style={{
+              width: frameSize,
+              height: frameSize,
+              objectFit: "contain",
+            }}
+            draggable={false}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

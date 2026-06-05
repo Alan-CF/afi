@@ -36,6 +36,7 @@ export interface FanEventAttendee {
   createdAt: string;
   username: string;
   avatarUrl: string | null;
+  frameId: string | null;
 }
 
 export interface FanEventDetail {
@@ -207,6 +208,7 @@ type ProfileRow = {
   id: string;
   username: string;
   avatar_url: string | null;
+  selected_frame_id: string | null;
 };
 
 type OrganizerProfileRow = {
@@ -233,7 +235,7 @@ async function fetchProfileMap(
   if (profileIds.length === 0) return new Map();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, selected_frame_id")
     .in("id", profileIds);
   if (error) {
     throw buildQueryError("profiles query failed", error.message);
@@ -255,6 +257,7 @@ function hydrateAttendees(
       createdAt: row.created_at,
       username: profile?.username ?? "Fan",
       avatarUrl: profile?.avatar_url ?? null,
+      frameId: profile?.selected_frame_id ?? null,
     };
   });
 }
@@ -767,6 +770,43 @@ export async function updateFanEvent(
 
 export async function attendFanEvent(eventId: number): Promise<void> {
   const userId = await getAuthenticatedUserId();
+
+  const { data: eventRow, error: eventError } = await supabase
+    .from("fan_events")
+    .select("capacity")
+    .eq("id", eventId)
+    .maybeSingle<{ capacity: number | null }>();
+  if (eventError) {
+    throw buildQueryError("fan_events capacity check failed", eventError.message);
+  }
+
+  const capacity = eventRow?.capacity ?? null;
+  if (capacity != null) {
+    const { data: mine, error: mineError } = await supabase
+      .from("fan_event_attendees")
+      .select("status")
+      .eq("fan_event_id", eventId)
+      .eq("profile_id", userId)
+      .maybeSingle<{ status: string }>();
+    if (mineError) {
+      throw buildQueryError("fan_event_attendees check failed", mineError.message);
+    }
+
+    if (mine?.status !== "going") {
+      const { count, error: countError } = await supabase
+        .from("fan_event_attendees")
+        .select("id", { count: "exact", head: true })
+        .eq("fan_event_id", eventId)
+        .eq("status", "going");
+      if (countError) {
+        throw buildQueryError("fan_event_attendees count failed", countError.message);
+      }
+      if ((count ?? 0) >= capacity) {
+        throw new Error("This event is full. There are no spots left.");
+      }
+    }
+  }
+
   const { error } = await supabase
     .from("fan_event_attendees")
     .upsert(

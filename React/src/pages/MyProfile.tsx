@@ -367,18 +367,20 @@ export default function MyProfile() {
                 onClick={() => { if (!dragState.current.moved) navigate(`/profile/${friend.id}`); }}
                 className="flex flex-col items-center gap-1 shrink-0"
               >
-                {friend.avatar_url ? (
-                  <div className="h-14 w-14 rounded-full overflow-hidden shrink-0">
-                    <img src={friend.avatar_url} alt={friend.name} className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div
-                    className="flex h-14 w-14 items-center justify-center rounded-full text-white text-lg font-extrabold"
-                    style={{ backgroundColor: friend.accent }}
-                  >
-                    {friend.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AvatarFrame frameId={friend.selected_frame_id} size={56} scale={1.0}>
+                  {friend.avatar_url ? (
+                    <div className="h-11 w-11 rounded-full overflow-hidden shrink-0">
+                      <img src={friend.avatar_url} alt={friend.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div
+                      className="flex h-11 w-11 items-center justify-center rounded-full text-white text-lg font-extrabold"
+                      style={{ backgroundColor: friend.accent }}
+                    >
+                      {friend.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </AvatarFrame>
                 <span className="text-[10px] font-semibold text-gray-500 max-w-[56px] truncate">
                   @{friend.name}
                 </span>
@@ -488,7 +490,7 @@ export default function MyProfile() {
         </section>
 
         {user && (
-          <div className="flex justify-center mt-8">
+          <div className="mt-8 flex flex-col items-center gap-4">
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="text-sm font-bold text-red-400 hover:text-red-600 transition-colors"

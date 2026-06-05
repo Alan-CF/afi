@@ -127,7 +127,7 @@ export default function FriendInviteProvider() {
 
             const { data: profile } = await supabase
               .from("profiles")
-              .select("id, username, avatar_url, name")
+              .select("id, username, avatar_url, name, selected_frame_id")
               .eq("id", row.requester_profile_id)
               .single();
 
@@ -143,6 +143,7 @@ export default function FriendInviteProvider() {
                   username: profile.username,
                   avatar_url: profile.avatar_url ?? null,
                   name: profile.name ?? null,
+                  selected_frame_id: profile.selected_frame_id ?? null,
                 },
               },
             ]);

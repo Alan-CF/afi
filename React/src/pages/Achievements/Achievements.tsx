@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  AcademicCapIcon,
   ArrowLeftIcon,
+  FireIcon,
+  HomeIcon,
   LockClosedIcon,
   StarIcon,
   TrophyIcon,
+  UserPlusIcon,
+  UsersIcon,
 } from '@heroicons/react/24/solid';
 import AchievementDetailModal from '../../components/ui/achievements/AchievementDetailModal';
 import { useAchievements } from '../../hooks/useAchievements';
@@ -15,7 +20,13 @@ import type { ComponentType, SVGProps } from 'react';
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
 const ICONS: Record<string, IconType> = {
-  shooter: TrophyIcon,
+  'first-spark': FireIcon,
+  'ten-day-flame': FireIcon,
+  'century-fan': FireIcon,
+  'new-teammate': UserPlusIcon,
+  'squad-builder': UsersIcon,
+  'room-rookie': HomeIcon,
+  'quiz-debut': AcademicCapIcon,
 };
 
 export default function Achievements() {
@@ -135,7 +146,7 @@ function AchievementCard({
     unlockedAt,
   } = achievement;
 
-  const Icon = ICONS[id];
+  const Icon = ICONS[id] ?? TrophyIcon;
   const progress =
     progressTarget > 0 ? (progressCurrent / progressTarget) * 100 : 0;
 
