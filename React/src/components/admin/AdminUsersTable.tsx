@@ -4,6 +4,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronUpIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/solid';
 import {
   formatDate,
@@ -11,9 +13,8 @@ import {
   type AdminUserRow,
 } from '../../lib/adminDashboardApi';
 import AdminBadge from './AdminBadge';
+import AdminDropdown, { AdminDropdownOption } from './AdminDropdown';
 import AdminSearchInput from './AdminSearchInput';
-import AdminSegmentedControl from './AdminSegmentedControl';
-import AdminTableToolbar from './AdminTableToolbar';
 import EmptyState from '../common/EmptyState';
 
 type AdminUsersTableProps = {
@@ -21,7 +22,7 @@ type AdminUsersTableProps = {
   onlineUserIds: Set<string>;
 };
 
-type RoleFilter = 'all' | 'admin' | 'user';
+type FilterKey = 'admin' | 'user' | 'live' | 'offline';
 type SortKey =
   | 'plays'
   | 'fanaticCoins'
@@ -33,10 +34,11 @@ type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 10;
 
-const ROLE_OPTIONS: readonly { key: RoleFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
+const FILTER_OPTIONS: readonly { key: FilterKey; label: string }[] = [
   { key: 'admin', label: 'Admins' },
   { key: 'user', label: 'Users' },
+  { key: 'live', label: 'Live' },
+  { key: 'offline', label: 'Offline' },
 ];
 
 const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
@@ -102,16 +104,40 @@ export default function AdminUsersTable({
   rows,
   onlineUserIds,
 }: AdminUsersTableProps) {
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [filters, setFilters] = useState<Set<FilterKey>>(() => new Set());
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('plays');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
 
+  const toggleFilter = (key: FilterKey) =>
+    setFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+
+  const filterKey = Array.from(filters).sort().join(',');
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const roleActive = filters.has('admin') || filters.has('user');
+    const statusActive = filters.has('live') || filters.has('offline');
     return rows
-      .filter((row) => roleFilter === 'all' || row.role === roleFilter)
+      .filter((row) => !roleActive || filters.has(row.role))
+      .filter((row) => {
+        if (!statusActive) {
+          return true;
+        }
+        return onlineUserIds.has(row.id)
+          ? filters.has('live')
+          : filters.has('offline');
+      })
       .filter((row) => {
         if (!query) {
           return true;
@@ -123,11 +149,15 @@ export default function AdminUsersTable({
       })
       .slice()
       .sort((a, b) => compareUsers(a, b, sortKey, sortDir));
-  }, [rows, roleFilter, search, sortKey, sortDir]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, filterKey, onlineUserIds, search, sortKey, sortDir]);
 
   useEffect(() => {
     setPage(1);
-  }, [roleFilter, search, sortKey, sortDir]);
+  }, [filterKey, search, sortKey, sortDir]);
+
+  const sortLabel =
+    SORT_OPTIONS.find((option) => option.key === sortKey)?.label ?? 'Plays';
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -138,46 +168,90 @@ export default function AdminUsersTable({
 
   return (
     <div>
-      <AdminTableToolbar>
-        <AdminSearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search username or name…"
-          className="w-full sm:min-w-[260px] sm:flex-1"
-        />
-        <AdminSegmentedControl
-          options={ROLE_OPTIONS}
-          value={roleFilter}
-          onChange={setRoleFilter}
-          size="sm"
-          block
-          className="w-full sm:w-auto"
-        />
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
-            Sort by
-          </span>
-          <select
-            value={sortKey}
-            onChange={(event) => setSortKey(event.target.value as SortKey)}
-            className="h-9 flex-1 rounded-xl border-2 border-secondary bg-white px-3 font-lato text-xs font-bold text-secondary focus:outline-none sm:flex-none"
-            aria-label="Sort users by"
+      <div className="mb-4 flex items-center gap-2 overflow-x-auto scrollbar-hide sm:flex-wrap sm:overflow-visible">
+        {!searchOpen && (
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-container-border text-secondary transition-colors hover:border-secondary sm:hidden"
+            aria-label="Search users"
           >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <MagnifyingGlassIcon className="h-4 w-4" />
+          </button>
+        )}
+        <div
+          className={`${
+            searchOpen ? 'flex' : 'hidden'
+          } w-56 shrink-0 items-center gap-1 sm:flex sm:w-auto sm:min-w-[240px] sm:flex-1`}
+        >
+          <AdminSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search users…"
+            className="w-full"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setSearchOpen(false);
+            }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-container-border text-secondary transition-colors hover:border-secondary sm:hidden"
+            aria-label="Close search"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+        <AdminDropdown
+          label={filters.size === 0 ? 'Filter: All' : `Filter: ${filters.size}`}
+          className="w-40 shrink-0 sm:w-44"
+        >
+          {() => (
+            <>
+              <AdminDropdownOption
+                active={filters.size === 0}
+                label="All"
+                onClick={() => setFilters(new Set())}
+              />
+              {FILTER_OPTIONS.map((option) => (
+                <AdminDropdownOption
+                  key={option.key}
+                  active={filters.has(option.key)}
+                  label={option.label}
+                  onClick={() => toggleFilter(option.key)}
+                />
+              ))}
+            </>
+          )}
+        </AdminDropdown>
+        <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
+          <AdminDropdown
+            label={`Sort: ${sortLabel}`}
+            className="w-40 shrink-0 sm:w-44"
+          >
+            {(close) => (
+              <>
+                {SORT_OPTIONS.map((option) => (
+                  <AdminDropdownOption
+                    key={option.key}
+                    active={option.key === sortKey}
+                    label={option.label}
+                    onClick={() => {
+                      setSortKey(option.key);
+                      close();
+                    }}
+                  />
+                ))}
+              </>
+            )}
+          </AdminDropdown>
           <button
             type="button"
             onClick={() =>
               setSortDir((dir) => (dir === 'asc' ? 'desc' : 'asc'))
             }
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-secondary text-secondary transition-colors hover:bg-secondary hover:text-white"
-            aria-label={
-              sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'
-            }
+            aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
           >
             {sortDir === 'asc' ? (
               <ChevronUpIcon className="h-4 w-4" />
@@ -186,7 +260,7 @@ export default function AdminUsersTable({
             )}
           </button>
         </div>
-      </AdminTableToolbar>
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState message="No users match your filters." variant="compact" />
@@ -194,7 +268,7 @@ export default function AdminUsersTable({
         <>
           <div className="w-full overflow-hidden">
             <div className="overflow-x-auto [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-secondary/20 [&::-webkit-scrollbar]:h-2">
-              <table className="min-w-[900px] border-collapse text-left">
+              <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-container-border">
                     <th className={HEAD}>Username</th>
@@ -240,9 +314,6 @@ export default function AdminUsersTable({
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 font-lato text-[0.7rem] text-text-light sm:hidden">
-              Swipe horizontally to see more →
-            </p>
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-3">
@@ -250,10 +321,10 @@ export default function AdminUsersTable({
               type="button"
               onClick={() => setPage((value) => Math.max(1, value - 1))}
               disabled={currentPage <= 1}
-              className="inline-flex items-center gap-1 rounded-xl border-2 border-secondary px-3 py-1.5 font-lato text-xs font-bold uppercase tracking-wider text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-secondary"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-secondary text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-secondary"
+              aria-label="Previous page"
             >
               <ChevronLeftIcon className="h-4 w-4" />
-              Prev
             </button>
             <span className="font-lato text-xs font-bold uppercase tracking-wider text-text-light">
               Page {currentPage} of {totalPages}
@@ -264,9 +335,9 @@ export default function AdminUsersTable({
                 setPage((value) => Math.min(totalPages, value + 1))
               }
               disabled={currentPage >= totalPages}
-              className="inline-flex items-center gap-1 rounded-xl border-2 border-secondary px-3 py-1.5 font-lato text-xs font-bold uppercase tracking-wider text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-secondary"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-secondary text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-secondary"
+              aria-label="Next page"
             >
-              Next
               <ChevronRightIcon className="h-4 w-4" />
             </button>
           </div>

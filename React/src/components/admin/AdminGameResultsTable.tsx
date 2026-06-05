@@ -6,6 +6,7 @@ import {
   formatNumber,
   type GameResultRow,
 } from '../../lib/adminDashboardApi';
+import AdminDropdown, { AdminDropdownOption } from './AdminDropdown';
 import AdminTableToolbar from './AdminTableToolbar';
 
 type AdminGameResultsTableProps = {
@@ -50,6 +51,9 @@ export default function AdminGameResultsTable({
   const [sortKey, setSortKey] = useState<SortKey>('plays');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
+  const sortLabel =
+    SORT_OPTIONS.find((option) => option.key === sortKey)?.label ?? 'Plays';
+
   const sorted = useMemo(() => {
     return rows
       .slice()
@@ -63,22 +67,27 @@ export default function AdminGameResultsTable({
   return (
     <div>
       <AdminTableToolbar>
-        <div className="flex items-center gap-2">
-          <span className="shrink-0 font-lato text-xs font-bold uppercase tracking-wider text-text-light">
-            Sort by
-          </span>
-          <select
-            value={sortKey}
-            onChange={(event) => setSortKey(event.target.value as SortKey)}
-            className="h-9 flex-1 rounded-xl border-2 border-secondary bg-white px-3 font-lato text-xs font-bold text-secondary focus:outline-none sm:flex-none"
-            aria-label="Sort games by"
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <AdminDropdown
+            label={`Sort by: ${sortLabel}`}
+            className="w-full sm:w-44"
           >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            {(close) => (
+              <>
+                {SORT_OPTIONS.map((option) => (
+                  <AdminDropdownOption
+                    key={option.key}
+                    active={option.key === sortKey}
+                    label={option.label}
+                    onClick={() => {
+                      setSortKey(option.key);
+                      close();
+                    }}
+                  />
+                ))}
+              </>
+            )}
+          </AdminDropdown>
           <button
             type="button"
             onClick={() =>
@@ -138,9 +147,6 @@ export default function AdminGameResultsTable({
             </tbody>
           </table>
         </div>
-        <p className="mt-2 font-lato text-[0.7rem] text-text-light sm:hidden">
-          Swipe horizontally to see more →
-        </p>
       </div>
     </div>
   );

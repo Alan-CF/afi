@@ -7,10 +7,12 @@ type PresenceMeta = {
 };
 
 const CHANNEL_NAME = 'afi-online-users';
+const HEARTBEAT_MS = 2500;
 
 let channel: RealtimeChannel | null = null;
 let trackedUserId: string | null = null;
 let starting = false;
+let heartbeat: ReturnType<typeof setInterval> | null = null;
 let onlineIds: Set<string> = new Set();
 const listeners = new Set<Listener>();
 
@@ -20,22 +22,61 @@ function emit() {
   }
 }
 
+function setsAreEqual(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const value of a) {
+    if (!b.has(value)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function setOnline(ids: Set<string>) {
+  if (setsAreEqual(ids, onlineIds)) {
+    return;
+  }
+  onlineIds = ids;
+  emit();
+}
+
 function recompute() {
   if (!channel) {
     return;
   }
-  const state = channel.presenceState<PresenceMeta>();
-  const ids = new Set<string>();
-  for (const key of Object.keys(state)) {
-    for (const entry of state[key]) {
-      ids.add(entry.profile_id ?? key);
+  try {
+    const state = channel.presenceState<PresenceMeta>();
+    const ids = new Set<string>();
+    for (const key of Object.keys(state)) {
+      for (const entry of state[key]) {
+        ids.add(entry.profile_id ?? key);
+      }
     }
+    if (trackedUserId) {
+      ids.add(trackedUserId);
+    }
+    setOnline(ids);
+  } catch (error) {
+    void error;
   }
-  if (trackedUserId) {
-    ids.add(trackedUserId);
+}
+
+async function teardownChannel() {
+  if (heartbeat) {
+    clearInterval(heartbeat);
+    heartbeat = null;
   }
-  onlineIds = ids;
-  emit();
+  if (channel) {
+    try {
+      await channel.untrack();
+    } catch (error) {
+      void error;
+    }
+    await supabase.removeChannel(channel);
+    channel = null;
+  }
 }
 
 export async function startPresence(): Promise<void> {
@@ -54,14 +95,9 @@ export async function startPresence(): Promise<void> {
     return;
   }
   starting = true;
-  await stopPresence();
+  await teardownChannel();
   trackedUserId = user.id;
-
-  try {
-    await supabase.realtime.setAuth(session.access_token);
-  } catch (error) {
-    void error;
-  }
+  setOnline(new Set([user.id]));
 
   let username = 'Fan';
   try {
@@ -86,9 +122,6 @@ export async function startPresence(): Promise<void> {
   });
   channel = presenceChannel;
 
-  onlineIds = new Set([user.id]);
-  emit();
-
   presenceChannel
     .on('presence', { event: 'sync' }, recompute)
     .on('presence', { event: 'join' }, recompute)
@@ -100,25 +133,22 @@ export async function startPresence(): Promise<void> {
           username,
           online_at: new Date().toISOString(),
         });
+        recompute();
       }
     });
+
+  if (heartbeat) {
+    clearInterval(heartbeat);
+  }
+  heartbeat = setInterval(recompute, HEARTBEAT_MS);
 
   starting = false;
 }
 
 export async function stopPresence(): Promise<void> {
-  if (channel) {
-    try {
-      await channel.untrack();
-    } catch (error) {
-      void error;
-    }
-    await supabase.removeChannel(channel);
-    channel = null;
-  }
+  await teardownChannel();
   trackedUserId = null;
-  onlineIds = new Set();
-  emit();
+  setOnline(new Set());
 }
 
 export function subscribeOnline(listener: Listener): () => void {

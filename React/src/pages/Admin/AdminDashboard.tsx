@@ -20,7 +20,6 @@ import {
 } from '../../lib/adminDashboardApi';
 import AdminCard from '../../components/admin/AdminCard';
 import AdminKpiCard from '../../components/admin/AdminKpiCard';
-import AdminBadge from '../../components/admin/AdminBadge';
 import AdminDateRangeFilter, {
   friendlyRange,
 } from '../../components/admin/AdminDateRangeFilter';
@@ -39,12 +38,6 @@ const SECTION_OPTIONS: readonly { key: SectionKey; label: string }[] = [
   { key: 'activity', label: 'Activity' },
   { key: 'games', label: 'Games' },
   { key: 'users', label: 'Users' },
-];
-
-const VIEW_OPTIONS: readonly { key: ActiveUsersGranularity; label: string }[] = [
-  { key: 'daily', label: 'Day' },
-  { key: 'weekly', label: 'Week' },
-  { key: 'monthly', label: 'Month' },
 ];
 
 function hasSeriesData(series: TimePoint[]): boolean {
@@ -163,35 +156,9 @@ function SectionHeader({ children }: { children: string }) {
   );
 }
 
-function GranularitySelect({
-  value,
-  onChange,
-}: {
-  value: ActiveUsersGranularity;
-  onChange: (value: ActiveUsersGranularity) => void;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(event) =>
-        onChange(event.target.value as ActiveUsersGranularity)
-      }
-      className="h-9 rounded-xl border-2 border-secondary bg-white px-3 font-lato text-xs font-bold text-secondary focus:outline-none"
-      aria-label="View active users by"
-    >
-      {VIEW_OPTIONS.map((option) => (
-        <option key={option.key} value={option.key}>
-          View: {option.label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
 export default function AdminDashboard() {
   const [range, setRange] = useState<DateRange>(DEFAULT_RANGE);
-  const [granularity, setGranularity] =
-    useState<ActiveUsersGranularity>('daily');
+  const [granularity] = useState<ActiveUsersGranularity>('daily');
   const [selectedGame, setSelectedGame] = useState('all');
   const [sections, setSections] = useState<Record<SectionKey, boolean>>({
     overview: true,
@@ -221,11 +188,10 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-16 md:px-6 md:pt-8 md:pb-20 lg:px-8">
-        <header className="mb-5 flex flex-wrap items-center gap-3">
+        <header className="mb-5 flex items-center gap-3">
           <h1 className="font-anton text-3xl leading-none text-secondary md:text-4xl">
-            Admin Dashboard
+            Dashboard
           </h1>
-          <AdminBadge variant="gold">Admin</AdminBadge>
           <button
             type="button"
             onClick={() => {
@@ -248,6 +214,10 @@ export default function AdminDashboard() {
             onRangeChange={setRange}
           />
 
+          <p className="font-lato text-xs font-bold text-secondary sm:order-last sm:w-full">
+            {friendlyRange(range.startDate, range.endDate)}
+          </p>
+
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {SECTION_OPTIONS.map((option) => {
               const isOn = sections[option.key];
@@ -269,10 +239,6 @@ export default function AdminDashboard() {
             })}
           </div>
         </div>
-
-        <p className="mt-2 font-lato text-xs font-bold text-secondary">
-          {friendlyRange(range.startDate, range.endDate)}
-        </p>
 
         {loading && !data ? (
           <div className="flex min-h-[40vh] items-center justify-center">
@@ -369,6 +335,8 @@ export default function AdminDashboard() {
                           variant="line"
                           color="#1D428A"
                           valueLabel="Users logged in"
+                          xLabel="Date"
+                          yLabel="Users"
                         />
                       ) : (
                         <EmptyState
@@ -382,12 +350,6 @@ export default function AdminDashboard() {
                       title="Active users over time"
                       subtitle={activeUsersSubtitle(granularity)}
                       className="min-w-0"
-                      actions={
-                        <GranularitySelect
-                          value={granularity}
-                          onChange={setGranularity}
-                        />
-                      }
                     >
                       {hasSeriesData(data.series.activeUsers) ? (
                         <AdminTimeSeriesChart
@@ -395,6 +357,8 @@ export default function AdminDashboard() {
                           variant="line"
                           color="#BB921F"
                           valueLabel="Active users"
+                          xLabel="Date"
+                          yLabel="Users"
                         />
                       ) : (
                         <EmptyState
@@ -431,6 +395,8 @@ export default function AdminDashboard() {
                         variant="bar"
                         color="#1D428A"
                         valueLabel="Plays"
+                        xLabel="Date"
+                        yLabel="Plays"
                       />
                     ) : (
                       <EmptyState
@@ -457,13 +423,7 @@ export default function AdminDashboard() {
             )}
 
             {sections.users && (
-              <AdminCard
-                title="Users"
-                subtitle="Engagement, roles and balances"
-                actions={
-                  <AdminBadge variant="blue">{onlineCount} live now</AdminBadge>
-                }
-              >
+              <AdminCard title="Users" subtitle="Engagement, roles and balances">
                 {data.users.length > 0 ? (
                   <AdminUsersTable
                     rows={data.users}

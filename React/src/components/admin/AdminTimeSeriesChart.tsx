@@ -2,9 +2,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Label,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -17,10 +17,17 @@ type AdminTimeSeriesChartProps = {
   variant?: 'line' | 'bar';
   color?: string;
   valueLabel?: string;
+  xLabel?: string;
+  yLabel?: string;
 };
 
 const AXIS_COLOR = '#64748B';
 const GRID_COLOR = '#E2E8F0';
+const LABEL_STYLE = {
+  fontSize: 11,
+  fontWeight: 700,
+  fill: AXIS_COLOR,
+};
 
 const TOOLTIP_CONTENT_STYLE = {
   borderRadius: 12,
@@ -40,6 +47,8 @@ export default function AdminTimeSeriesChart({
   variant = 'line',
   color = '#1D428A',
   valueLabel = 'Value',
+  xLabel = 'Date',
+  yLabel = 'Value',
 }: AdminTimeSeriesChartProps) {
   const tooltipFormatter = (
     value: number | string | ReadonlyArray<number | string> | undefined
@@ -56,21 +65,37 @@ export default function AdminTimeSeriesChart({
     tickLine: false,
   };
 
+  const margin = { top: 8, right: 12, bottom: 22, left: 8 };
+
+  const xAxis = (
+    <XAxis dataKey="label" interval="preserveStartEnd" height={36} {...axisProps}>
+      <Label value={xLabel} position="insideBottom" offset={2} style={LABEL_STYLE} />
+    </XAxis>
+  );
+
+  const yAxis = (
+    <YAxis allowDecimals={false} width={48} {...axisProps}>
+      <Label
+        value={yLabel}
+        angle={-90}
+        position="insideLeft"
+        style={{ ...LABEL_STYLE, textAnchor: 'middle' }}
+      />
+    </YAxis>
+  );
+
   return (
     <AdminChartFrame>
-      <ResponsiveContainer width="100%" height="100%">
-        {variant === 'bar' ? (
-          <BarChart
-            data={data}
-            margin={{ top: 8, right: 8, bottom: 0, left: -12 }}
-          >
+      {({ width, height }) =>
+        variant === 'bar' ? (
+          <BarChart width={width} height={height} data={data} margin={margin}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={GRID_COLOR}
               vertical={false}
             />
-            <XAxis dataKey="label" interval="preserveStartEnd" {...axisProps} />
-            <YAxis allowDecimals={false} width={36} {...axisProps} />
+            {xAxis}
+            {yAxis}
             <Tooltip
               formatter={tooltipFormatter}
               contentStyle={TOOLTIP_CONTENT_STYLE}
@@ -80,17 +105,14 @@ export default function AdminTimeSeriesChart({
             <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} />
           </BarChart>
         ) : (
-          <LineChart
-            data={data}
-            margin={{ top: 8, right: 8, bottom: 0, left: -12 }}
-          >
+          <LineChart width={width} height={height} data={data} margin={margin}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={GRID_COLOR}
               vertical={false}
             />
-            <XAxis dataKey="label" interval="preserveStartEnd" {...axisProps} />
-            <YAxis allowDecimals={false} width={36} {...axisProps} />
+            {xAxis}
+            {yAxis}
             <Tooltip
               formatter={tooltipFormatter}
               contentStyle={TOOLTIP_CONTENT_STYLE}
@@ -106,8 +128,8 @@ export default function AdminTimeSeriesChart({
               activeDot={{ r: 4 }}
             />
           </LineChart>
-        )}
-      </ResponsiveContainer>
+        )
+      }
     </AdminChartFrame>
   );
 }

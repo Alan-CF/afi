@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+export type ChartSize = {
+  width: number;
+  height: number;
+};
+
 type AdminChartFrameProps = {
-  children: ReactNode;
+  children: (size: ChartSize) => ReactNode;
 };
 
 export default function AdminChartFrame({ children }: AdminChartFrameProps) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [ready, setReady] = useState(false);
+  const [size, setSize] = useState<ChartSize>({ width: 0, height: 0 });
 
   useEffect(() => {
     const element = ref.current;
@@ -14,10 +19,12 @@ export default function AdminChartFrame({ children }: AdminChartFrameProps) {
       return;
     }
     const measure = () => {
-      const { width, height } = element.getBoundingClientRect();
-      if (width > 0 && height > 0) {
-        setReady(true);
-      }
+      const rect = element.getBoundingClientRect();
+      setSize((prev) =>
+        prev.width === rect.width && prev.height === rect.height
+          ? prev
+          : { width: rect.width, height: rect.height }
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -27,7 +34,7 @@ export default function AdminChartFrame({ children }: AdminChartFrameProps) {
 
   return (
     <div ref={ref} className="h-[240px] w-full min-w-0 md:h-[300px]">
-      {ready ? children : null}
+      {size.width > 0 && size.height > 0 ? children(size) : null}
     </div>
   );
 }

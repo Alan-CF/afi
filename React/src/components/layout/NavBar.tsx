@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
+  ArrowRightOnRectangleIcon,
   Bars3Icon,
   ShoppingBagIcon,
   XMarkIcon,
@@ -9,6 +10,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useCart } from '../../hooks/useCart';
+import { signOut } from '../../lib/auth';
 import Cart from './Cart';
 import Notifications from './Notifications';
 import ProfileIcon from '../ui/ProfileIcon';
@@ -52,6 +54,12 @@ export default function NavBar() {
   const isAdmin = user?.role === 'admin';
   const navLinks = isAdmin ? ADMIN_LINKS : PRIMARY_LINKS;
 
+  const handleLogout = async () => {
+    setIsMenuOpen(false);
+    await signOut();
+    navigate('/login');
+  };
+
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
     return () => {
@@ -72,9 +80,9 @@ export default function NavBar() {
       <nav className="sticky top-0 z-40 w-full bg-secondary text-white">
         <div className="mx-auto w-full max-w-[1280px] flex items-center justify-between gap-2 px-3 py-3 min-[900px]:px-4 xl:px-8">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(isAdmin ? '/admin' : '/')}
             className="shrink-0 cursor-pointer"
-            aria-label="Go to home"
+            aria-label={isAdmin ? 'Go to dashboard' : 'Go to home'}
           >
             <img src="/logo.png" alt="AFI" className="h-10" />
           </button>
@@ -84,7 +92,7 @@ export default function NavBar() {
               <li key={link.to}>
                 <NavLink
                   to={link.to}
-                  end={link.to === '/'}
+                  end={link.to === '/' || link.to === '/admin'}
                   className={({ isActive }) =>
                     `whitespace-nowrap px-1.5 lg:px-2 xl:px-3 py-2 font-lato text-[0.68rem] lg:text-xs xl:text-sm font-black uppercase tracking-normal xl:tracking-wider transition-colors ${
                       isActive
@@ -100,7 +108,7 @@ export default function NavBar() {
           </ul>
 
           <div className="flex items-center gap-4 lg:gap-2 xl:gap-4 shrink-0">
-            {isLoggedIn && user && (
+            {!isAdmin && isLoggedIn && user && (
               <button
                 type="button"
                 onClick={() => navigate('/eshop')}
@@ -173,7 +181,19 @@ export default function NavBar() {
                 );
               })()}
 
-            {!isLoggedOut ? (
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleLogout();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#BE3A34] px-3 py-1.5 font-lato text-xs min-[900px]:text-sm font-bold text-white transition-colors hover:bg-[#a3302b]"
+                aria-label="Log out"
+              >
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                <span className="hidden min-[900px]:inline">Log out</span>
+              </button>
+            ) : !isLoggedOut ? (
               <button
                 type="button"
                 onClick={() => navigate('/myprofile')}
@@ -274,7 +294,21 @@ export default function NavBar() {
             </li>
           ))}
 
-          {isLoggedIn && (
+          {isLoggedIn && isAdmin && (
+            <li className="mt-auto p-6">
+              <button
+                type="button"
+                onClick={() => {
+                  void handleLogout();
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#BE3A34] py-3 font-lato font-bold uppercase text-white transition-all duration-200 active:scale-[0.98]"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                Log out
+              </button>
+            </li>
+          )}
+          {isLoggedIn && !isAdmin && (
             <li className="mt-auto">
               <NavLink
                 to="/myprofile"
