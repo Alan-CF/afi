@@ -1,9 +1,25 @@
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  FireIcon,
-  UserGroupIcon,
-  AcademicCapIcon,
-} from '@heroicons/react/24/solid';
+import { FireIcon, AcademicCapIcon } from '@heroicons/react/24/solid';
+
+function BasketballIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={7}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="50" cy="50" r="42" />
+      <line x1="8" y1="50" x2="92" y2="50" />
+      <line x1="50" y1="8" x2="50" y2="92" />
+      <path d="M 50 8 Q 24 50, 50 92" />
+      <path d="M 50 8 Q 76 50, 50 92" />
+    </svg>
+  );
+}
 import ScoreboardRibbon from '../components/layout/ScoreboardRibbon';
 import HomeTopNews from '../components/home/HomeTopNews';
 import HomeEventsSection from '../components/home/HomeEventsSection';
@@ -24,10 +40,10 @@ function QuickActions() {
   const actions = [
     { icon: FireIcon, label: 'Fanatic', desc: 'Keep playing', to: '/fanatic' },
     {
-      icon: UserGroupIcon,
-      label: 'Rooms',
-      desc: 'Join the conversation',
-      to: '/rooms',
+      icon: BasketballIcon,
+      label: 'Shoot Your Shot',
+      desc: 'Take the shot',
+      to: '/shoot-your-shot',
     },
     {
       icon: AcademicCapIcon,
