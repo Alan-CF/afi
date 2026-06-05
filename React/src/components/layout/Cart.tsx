@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import CartItem from "../ui/shop/CartItem";
-import { useCart } from "../../hooks/useCart";
+import { useCart, startCheckout } from "../../hooks/useCart";
 
 interface CartProps {
   isOpen: boolean;
@@ -26,6 +26,30 @@ export default function Cart({ isOpen, onClose }: CartProps) {
     loading: loadingCart,
     error: cartError,
   } = useCart();
+
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutMsg, setCheckoutMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const total = cartItems.reduce(
+    (sum, item) => sum + item.price * (1 - (item.discount || 0) / 100),
+    0
+  );
+
+  const handleCheckout = async () => {
+    setCheckingOut(true);
+    setCheckoutMsg(null);
+    try {
+      await startCheckout();
+      setCheckoutMsg({ ok: true, text: "Purchase started! We logged your checkout." });
+    } catch (err) {
+      setCheckoutMsg({
+        ok: false,
+        text: err instanceof Error ? err.message : "Could not start checkout.",
+      });
+    } finally {
+      setCheckingOut(false);
+    }
+  };
 
   useEffect(() => {
     const { body, documentElement } = document;
@@ -89,6 +113,38 @@ export default function Cart({ isOpen, onClose }: CartProps) {
             </div>
           )}
         </div>
+
+        {cartItems.length > 0 && (
+          <div className="border-t border-black/10 px-6 py-5 space-y-3">
+            <div className="flex items-center justify-between font-lato">
+              <span className="text-lg font-semibold text-black/70">Total</span>
+              <span className="text-2xl font-anton text-black tabular-nums">
+                ${total.toFixed(2)}
+              </span>
+            </div>
+
+            {checkoutMsg && (
+              <p
+                className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+                  checkoutMsg.ok
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-600"
+                }`}
+              >
+                {checkoutMsg.text}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={checkingOut}
+              className="w-full rounded-xl bg-secondary px-4 py-3 font-lato text-base font-bold uppercase tracking-wide text-white transition-colors hover:bg-secondary/90 disabled:opacity-50"
+            >
+              {checkingOut ? "Starting..." : "Checkout"}
+            </button>
+          </div>
+        )}
 
       </aside>
     </div>

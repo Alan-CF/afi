@@ -102,6 +102,27 @@ export async function removeItemFromCart(cartItemId: number) {
   notifyCartUpdated();
 }
 
+// Logs PURCHASE_STARTED (status PENDING) for the current user. Called from the
+// cart's Checkout button. The audit trigger handles ORDER_COMPLETED separately.
+export async function startCheckout() {
+  const session = await getSession();
+  const profileId = session?.user?.id;
+
+  if (!profileId) {
+    throw new Error('You must be signed in to checkout.');
+  }
+
+  const { error } = await supabase.rpc('log_shop_action', {
+    p_action_type: 'PURCHASE_STARTED',
+    p_status: 'PENDING',
+    p_details: 'Checkout started',
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export function useCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);

@@ -217,7 +217,7 @@ function SelectionButtons<T extends { name: string; image_url: string }>({
       <p className={`text-base font-bold uppercase tracking-widest ${invalid ? "text-red-500" : "text-secondary"}`}>{label}</p>
       {items.length === 0 ? <p className="text-base text-secondary">Loading options...</p> : (
         <div className={`flex flex-wrap gap-2 ${invalid ? "rounded-2xl ring-2 ring-red-300 p-2" : ""}`}>
-          {items.map((item) => {
+          {items.filter(Boolean).map((item) => {
             const isSelected = item.name === selectedName;
             return (
               <button key={item.name} type="button" onClick={() => onSelect(item)}
@@ -244,7 +244,7 @@ function PlayerSelection({ players, selectedName, onSelect, onClear }: {
       <p className="text-base font-bold uppercase tracking-widest text-secondary">Choose one player (optional)</p>
       {players.length === 0 ? <p className="text-base text-secondary">Loading players...</p> : (
         <div className="flex flex-wrap gap-2">
-          {players.map((item) => {
+          {players.filter(Boolean).map((item) => {
             const isSelected = item.name === selectedName;
             return (
               <button key={item.name} type="button" onClick={() => isSelected ? onClear() : onSelect(item)}

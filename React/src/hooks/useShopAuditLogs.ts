@@ -123,6 +123,8 @@ export function useShopAuditLogs() {
         "id, actor_id, actor_name, actor_email, actor_role, action_type, product_id, product_name, status, details, metadata, created_at",
         { count: "exact" }
       )
+      // System / service-role actions have no actor — never surface them.
+      .not("actor_id", "is", null)
       .order("created_at", { ascending: false });
 
     if (filters.actionType !== "ALL") query = query.eq("action_type", filters.actionType);
