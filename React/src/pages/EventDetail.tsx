@@ -136,6 +136,7 @@ export default function EventDetail() {
         createdAt: new Date().toISOString(),
         username: profile.username,
         avatarUrl: profile.avatar_url || null,
+        frameId: profile.selected_frame_id ?? null,
       };
       return [me, ...event.attendees];
     }

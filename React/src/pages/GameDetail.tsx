@@ -53,6 +53,7 @@ function gameAttendeeToFan(attendee: WarriorsGameAttendee): FanEventAttendee {
     createdAt: new Date().toISOString(),
     username: attendee.username,
     avatarUrl: attendee.avatarUrl,
+    frameId: null,
   };
 }
 
@@ -80,6 +81,7 @@ export default function GameDetail() {
         createdAt: new Date().toISOString(),
         username: profile.username,
         avatarUrl: profile.avatar_url || null,
+        frameId: profile.selected_frame_id ?? null,
       };
       return [me, ...base];
     }
