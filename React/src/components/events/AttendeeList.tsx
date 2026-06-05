@@ -1,5 +1,6 @@
 import type { FanEventAttendee } from "../../lib/eventsApi";
 import InitialsAvatar from "./InitialsAvatar";
+import FramedAvatar from "../ui/FramedAvatar";
 
 interface Props {
   attendees: FanEventAttendee[];
@@ -8,20 +9,15 @@ interface Props {
 }
 
 function AttendeeAvatar({ attendee }: { attendee: FanEventAttendee }) {
-  if (attendee.avatarUrl) {
-    return (
-      <img
-        src={attendee.avatarUrl}
-        alt={attendee.username}
-        className="h-10 w-10 shrink-0 rounded-full object-cover"
-        loading="lazy"
-        onError={(event) => {
-          (event.currentTarget as HTMLImageElement).style.display = "none";
-        }}
-      />
-    );
-  }
-  return <InitialsAvatar username={attendee.username} size={40} />;
+  return (
+    <FramedAvatar
+      avatarUrl={attendee.avatarUrl}
+      frameId={attendee.frameId}
+      size={40}
+      className="shrink-0"
+      fallback={<InitialsAvatar username={attendee.username} size={40} />}
+    />
+  );
 }
 
 export default function AttendeeList({

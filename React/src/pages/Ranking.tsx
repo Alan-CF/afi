@@ -1,8 +1,8 @@
-import { UserCircleIcon } from '@heroicons/react/24/solid';
 import ScoreboardRibbon from '../components/layout/ScoreboardRibbon';
 import { useLeaderboard } from '../hooks/useRanking';
 import { useProfile } from '../hooks/useProfile';
 import EmptyState from '../components/common/EmptyState';
+import FramedAvatar from '../components/ui/FramedAvatar';
 import LeaderboardPodium, {
   type PodiumEntry,
 } from '../components/common/LeaderboardPodium';
@@ -13,6 +13,7 @@ interface RowEntry {
   username: string;
   points: number;
   avatar_url: string | null;
+  frameId: string | null;
 }
 
 function ListRow({ entry, isMe = false }: { entry: RowEntry; isMe?: boolean }) {
@@ -23,20 +24,12 @@ function ListRow({ entry, isMe = false }: { entry: RowEntry; isMe?: boolean }) {
       <span className="font-anton text-lg tabular-nums w-10 text-right shrink-0 text-secondary/60">
         {String(entry.rank).padStart(2, '0')}
       </span>
-      <div className="h-10 w-10 md:h-11 md:w-11 shrink-0 rounded-full overflow-hidden bg-secondary">
-        {entry.avatar_url ? (
-          <img
-            src={entry.avatar_url}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        ) : (
-          <UserCircleIcon className="h-full w-full text-white/70" />
-        )}
-      </div>
+      <FramedAvatar
+        avatarUrl={entry.avatar_url}
+        frameId={entry.frameId}
+        size={44}
+        className="shrink-0"
+      />
       <span className="flex-1 min-w-0 truncate font-lato font-bold text-sm md:text-base text-text">
         {isMe ? 'You' : `@${entry.username}`}
         {isMe && (
@@ -98,6 +91,7 @@ export default function Ranking() {
     username: e.username,
     points: e.points,
     avatar_url: e.avatar_url,
+    frameId: e.frameId,
   }));
 
   const list: RowEntry[] = leaderboard.slice(3, 10).map((e) => ({
@@ -106,6 +100,7 @@ export default function Ranking() {
     username: e.username,
     points: e.points,
     avatar_url: e.avatar_url,
+    frameId: e.frameId,
   }));
 
   const meInTop =
@@ -150,21 +145,12 @@ export default function Ranking() {
                   <span className="font-anton text-3xl md:text-4xl text-secondary tabular-nums shrink-0">
                     #{myRank.rank}
                   </span>
-                  <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-secondary">
-                    {myRank.avatar_url ? (
-                      <img
-                        src={myRank.avatar_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            'none';
-                        }}
-                      />
-                    ) : (
-                      <UserCircleIcon className="h-full w-full text-white/70" />
-                    )}
-                  </div>
+                  <FramedAvatar
+                    avatarUrl={myRank.avatar_url}
+                    frameId={myRank.frameId}
+                    size={48}
+                    className="shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-lato font-bold text-secondary truncate">
                       @{user?.username ?? 'you'}
@@ -233,6 +219,7 @@ export default function Ranking() {
                             username: user?.username ?? 'you',
                             points: myRank.points,
                             avatar_url: myRank.avatar_url,
+                            frameId: myRank.frameId,
                           }}
                           isMe
                         />

@@ -36,6 +36,7 @@ export interface FanEventAttendee {
   createdAt: string;
   username: string;
   avatarUrl: string | null;
+  frameId: string | null;
 }
 
 export interface FanEventDetail {
@@ -207,6 +208,7 @@ type ProfileRow = {
   id: string;
   username: string;
   avatar_url: string | null;
+  selected_frame_id: string | null;
 };
 
 type OrganizerProfileRow = {
@@ -233,7 +235,7 @@ async function fetchProfileMap(
   if (profileIds.length === 0) return new Map();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, selected_frame_id")
     .in("id", profileIds);
   if (error) {
     throw buildQueryError("profiles query failed", error.message);
@@ -255,6 +257,7 @@ function hydrateAttendees(
       createdAt: row.created_at,
       username: profile?.username ?? "Fan",
       avatarUrl: profile?.avatar_url ?? null,
+      frameId: profile?.selected_frame_id ?? null,
     };
   });
 }

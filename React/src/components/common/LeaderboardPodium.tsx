@@ -1,4 +1,4 @@
-import { UserCircleIcon } from "@heroicons/react/24/solid";
+import FramedAvatar from "../ui/FramedAvatar";
 
 export interface PodiumEntry {
   profile_id: string;
@@ -6,6 +6,7 @@ export interface PodiumEntry {
   username: string;
   points: number;
   avatar_url: string | null;
+  frameId?: string | null;
 }
 
 interface Props {
@@ -57,14 +58,17 @@ function Step({
 }) {
   const accent = ACCENTS[rank];
   const heights = size === "full" ? HEIGHTS_FULL : HEIGHTS_COMPACT;
-  const avatarSize = size === "full" ? "h-16 w-16 md:h-20 md:w-20" : "h-12 w-12 md:h-14 md:w-14";
+  const avatarPx = size === "full" ? 72 : 52;
   const nameSize = rank === 1 ? "text-base md:text-lg" : "text-sm";
   const pointsSize = rank === 1 ? "text-lg md:text-xl" : "text-base";
 
   if (!entry) {
     return (
       <div className="flex flex-col items-center gap-2 min-w-0">
-        <div className={`${avatarSize} rounded-full bg-secondary/10`} />
+        <div
+          className="rounded-full bg-secondary/10"
+          style={{ width: avatarPx, height: avatarPx }}
+        />
         <p className="font-lato text-xs text-text-light">—</p>
         <div className={`${heights[rank]} w-full rounded-t-2xl bg-secondary/10 flex items-end justify-center pb-2`}>
           <span className="font-anton text-xl text-secondary/40 tabular-nums">{rank}</span>
@@ -75,18 +79,12 @@ function Step({
 
   return (
     <div className="flex flex-col items-center gap-2 min-w-0">
-      <div className={`${avatarSize} relative rounded-full overflow-hidden bg-secondary ${accent.ring}`}>
-        {entry.avatar_url ? (
-          <img
-            src={entry.avatar_url}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-        ) : (
-          <UserCircleIcon className="h-full w-full text-white/70" />
-        )}
-      </div>
+      <FramedAvatar
+        avatarUrl={entry.avatar_url}
+        frameId={entry.frameId}
+        size={avatarPx}
+        ringClassName={accent.ring}
+      />
       <div className="text-center min-w-0 w-full">
         <p className={`font-anton ${nameSize} text-secondary leading-tight truncate`}>
           @{entry.username}
