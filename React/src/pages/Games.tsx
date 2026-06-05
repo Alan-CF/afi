@@ -99,7 +99,7 @@ export default function Games() {
             Games
           </h1>
           <p className="mt-2 font-lato text-sm md:text-base text-text-light">
-            Daily challenges, AR shots, and trivia.
+            Daily challenges, arcade basketball game, and trivia.
           </p>
         </header>
 
