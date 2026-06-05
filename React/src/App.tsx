@@ -27,6 +27,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 import Friends from './pages/Friends';
 import PublicProfile from './pages/PublicProfile';
 import FriendInviteProvider from './components/ui/FriendInviteNotification';
+import RoomInviteProvider from './components/ui/RoomInviteNotification';
 import Achievements from './pages/Achievements/Achievements';
 import ProductDetail from './pages/Shop/ProductDetail';
 import ShoppingCartItem from './pages/Shop/ShopingCartItem';
@@ -37,19 +38,18 @@ import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from './components/ui/PointsToastGlobal';
 import RequireAdmin from './components/admin/RequireAdmin';
 import BasketballLoader from './components/common/BasketballLoader';
-import { useAppPresence } from './hooks/useAppPresence';
+import { PresenceProvider } from './hooks/usePresence';
 
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
 import AdminShop from './pages/Shop/AdminShop';
 
 function App() {
-  useAppPresence();
-
   return (
-    <>
+    <PresenceProvider>
       <PointsToastGlobal />
       <ScrollToTop />
       <FriendInviteProvider />
+      <RoomInviteProvider />
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -107,7 +107,7 @@ function App() {
         <Route path="/rooms/:roomId" element={<RoomChat />} />
         <Route path="/pointshistory" element={<PointsHistory />} />
       </Routes>
-    </>
+    </PresenceProvider>
   );
 }
 

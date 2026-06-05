@@ -4,6 +4,8 @@ import type { PredictionOption } from "./useMockRoomGameFeed";
 
 export const ROOM_SYSTEM_MESSAGE_PREFIX = "[[system]] ";
 export const ROOM_PREDICTION_MESSAGE_PREFIX = "[[prediction]] ";
+// Visible, centered notice persisted in the chat (e.g. "Roberto changed the group photo").
+export const ROOM_EVENT_MESSAGE_PREFIX = "[[event]] ";
 
 export type RoomChatMessageRecord = {
   id: number;
@@ -16,6 +18,8 @@ export type RoomChatMessageRecord = {
 export type RoomChatBootstrap = {
   room: Room;
   currentUserId: string;
+  currentUsername: string;
+  isOwner: boolean;
   messages: RoomChatMessageRecord[];
 };
 
@@ -31,6 +35,7 @@ export type RoomPredictionEntryRecord = {
 
 type RoomMemberRow = {
   profile_id: string;
+  role: string;
 };
 
 type ProfileRow = {
@@ -43,6 +48,11 @@ type RoomMessageRow = {
   sender_profile_id: string;
   content: string;
   created_at: string;
+};
+
+type RoomMatchHiddenRow = {
+  id: number;
+  match_hidden: boolean;
 };
 
 type SerializedPredictionPayload = {
@@ -68,7 +78,12 @@ export function isRoomPredictionMessage(content: string) {
   return content.startsWith(ROOM_PREDICTION_MESSAGE_PREFIX);
 }
 
+export function isRoomEventMessage(content: string) {
+  return content.startsWith(ROOM_EVENT_MESSAGE_PREFIX);
+}
+
 export function shouldHideRoomMessage(content: string) {
+  // Event messages stay visible (rendered as a centered notice).
   return isRoomSystemMessage(content) || isRoomPredictionMessage(content);
 }
 
@@ -106,7 +121,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id, title, status, accent")
+    .select("id, title, status, accent, match_hidden, image_url, owner_profile_id")
     .eq("id", roomId)
     .single();
 
@@ -116,8 +131,9 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 
   const { data: members, error: membersError } = await supabase
     .from("room_members")
-    .select("profile_id")
-    .eq("room_id", roomId);
+    .select("profile_id, role")
+    .eq("room_id", roomId)
+    .eq("status", "accepted");
 
   if (membersError) {
     throw buildQueryError("room_members query failed", membersError.message);
@@ -151,11 +167,20 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
         .filter(Boolean) as string[]
     ),
     subtitle: "Live chat is on",
+    matchHidden: room.match_hidden ?? false,
+    imageUrl: room.image_url ?? null,
   };
 
   return {
     room: roomCard,
     currentUserId,
+    currentUsername: profileMap.get(currentUserId) ?? "Someone",
+    isOwner:
+      room.owner_profile_id === currentUserId ||
+      ((members ?? []) as RoomMemberRow[]).some(
+        (member) =>
+          member.profile_id === currentUserId && member.role === "owner"
+      ),
     messages: ((messages ?? []) as RoomMessageRow[]).map((message) => ({
       id: message.id,
       senderProfileId: message.sender_profile_id,
@@ -231,6 +256,61 @@ export async function sendRoomMessage(
     content: message.content,
     createdAt: message.created_at,
   };
+}
+
+// Sends a centered, persistent notice to the chat (visible to everyone).
+export async function sendRoomEventMessage(
+  roomId: number,
+  text: string
+): Promise<RoomChatMessageRecord> {
+  return sendRoomMessage(roomId, `${ROOM_EVENT_MESSAGE_PREFIX}${text}`);
+}
+
+const ROOM_AVATAR_BUCKET = "room-avatars";
+
+// Uploads a room photo to storage and returns its public URL.
+export async function uploadRoomImage(
+  roomId: number,
+  file: File
+): Promise<string> {
+  if (!["image/jpeg", "image/png"].includes(file.type)) {
+    throw new Error("Only JPG and PNG images are allowed.");
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error("Image must be under 2MB.");
+  }
+
+  const fileExt = file.name.split(".").pop() ?? "jpg";
+  const filePath = `${roomId}/photo-${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(ROOM_AVATAR_BUCKET)
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    throw buildQueryError("room image upload failed", uploadError.message);
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(ROOM_AVATAR_BUCKET).getPublicUrl(filePath);
+
+  return publicUrl;
+}
+
+// Updates the room's shared photo. Any accepted member is allowed (RLS).
+export async function updateRoomImage(
+  roomId: number,
+  imageUrl: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("rooms")
+    .update({ image_url: imageUrl })
+    .eq("id", roomId);
+
+  if (error) {
+    throw buildQueryError("room image update failed", error.message);
+  }
 }
 
 function serializePredictionPayload(payload: SerializedPredictionPayload) {
@@ -335,6 +415,51 @@ export async function leaveRoom(roomId: number): Promise<void> {
   }
 }
 
+export async function fetchRoomMatchHidden(roomId: number): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("match_hidden")
+    .eq("id", roomId)
+    .single();
+
+  if (error) {
+    throw buildQueryError("room match_hidden query failed", error.message);
+  }
+
+  return data?.match_hidden ?? false;
+}
+
+// Owner-only (enforced by the "rooms_update" RLS policy).
+export async function setRoomMatchHidden(
+  roomId: number,
+  hidden: boolean
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("rooms")
+    .update({ match_hidden: hidden })
+    .eq("id", roomId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw buildQueryError("room match_hidden update failed", error.message);
+  }
+
+  if (!data) {
+    throw new Error("Room match setting was not updated. Only the room owner can change it.");
+  }
+}
+
+export async function removeRoomMatch(roomId: number): Promise<void> {
+  const { error } = await supabase.rpc("remove_room_match", {
+    target_room_id: roomId,
+  });
+
+  if (error) {
+    throw buildQueryError("remove room match failed", error.message);
+  }
+}
+
 export function subscribeToRoomMessages(
   roomId: number,
   onMessage: (message: RoomChatMessageRecord) => void
@@ -360,6 +485,70 @@ export function subscribeToRoomMessages(
             profileMap.get(insertedMessage.sender_profile_id) ?? "User",
           content: insertedMessage.content,
           createdAt: insertedMessage.created_at,
+        });
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeToRoomMatchHidden(
+  roomId: number,
+  onChange: (hidden: boolean) => void
+) {
+  const channel = supabase
+    .channel(`room-match-hidden-${roomId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "rooms",
+        filter: `id=eq.${roomId}`,
+      },
+      (payload) => {
+        const updatedRoom = payload.new as RoomMatchHiddenRow;
+        onChange(updatedRoom.match_hidden ?? false);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export type RoomMessageBroadcast = RoomChatMessageRecord & { roomId: number };
+
+// Subscribes to new messages across every room the user belongs to. RLS makes
+// realtime only deliver rows from rooms where the user is an accepted member,
+// so no client-side room filtering is required.
+export function subscribeToAllRoomMessages(
+  onMessage: (message: RoomMessageBroadcast) => void
+) {
+  const channel = supabase
+    .channel("room-messages-all")
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "room_messages",
+      },
+      async (payload) => {
+        const inserted = payload.new as RoomMessageRow & { room_id: number };
+        const profileMap = await fetchProfileMap([inserted.sender_profile_id]);
+
+        onMessage({
+          id: inserted.id,
+          roomId: inserted.room_id,
+          senderProfileId: inserted.sender_profile_id,
+          senderName: profileMap.get(inserted.sender_profile_id) ?? "User",
+          content: inserted.content,
+          createdAt: inserted.created_at,
         });
       }
     )

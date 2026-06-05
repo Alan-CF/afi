@@ -1,20 +1,33 @@
 import {
   ArrowLeftIcon,
-  InformationCircleIcon,
+  ArrowPathIcon,
+  EllipsisVerticalIcon,
   PaperAirplaneIcon,
+  PencilIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   fetchRoomChat,
   fetchRoomMessages,
+  fetchRoomMatchHidden,
+  setRoomMatchHidden,
   leaveRoom,
   parseRoomPredictionEntry,
   ROOM_SYSTEM_MESSAGE_PREFIX,
+  ROOM_EVENT_MESSAGE_PREFIX,
+  isRoomEventMessage,
+  removeRoomMatch,
   sendRoomMessage,
+  sendRoomEventMessage,
   sendRoomPrediction,
   shouldHideRoomMessage,
+  updateRoomImage,
+  uploadRoomImage,
+  subscribeToRoomMatchHidden,
   subscribeToRoomMessages,
   type RoomChatMessageRecord,
   type RoomPredictionEntryRecord,
@@ -53,6 +66,8 @@ const defaultRoom: Room = {
   memberProfileIds: [],
 };
 
+const AUTO_SCROLL_BOTTOM_THRESHOLD = 96;
+
 function formatMessageTime(date: Date) {
   return date.toLocaleTimeString([], {
     hour: "numeric",
@@ -66,6 +81,18 @@ function toDisplayMessage(
 ): ChatMessage {
   const createdAt = new Date(message.createdAt);
 
+  // Event notices render as a centered pill (no bubble, no sender side).
+  if (isRoomEventMessage(message.content)) {
+    return {
+      id: message.id,
+      sender: "System",
+      text: message.content.replace(ROOM_EVENT_MESSAGE_PREFIX, ""),
+      time: formatMessageTime(createdAt),
+      align: "center",
+      createdAt: createdAt.getTime(),
+    };
+  }
+
   return {
     id: message.id,
     sender: message.senderName,
@@ -76,6 +103,39 @@ function toDisplayMessage(
         ? "right"
         : "left",
     createdAt: createdAt.getTime(),
+  };
+}
+
+function splitRoomMessageRecords(
+  roomMessages: RoomChatMessageRecord[],
+  currentUserId: string,
+  includePredictionEntries: boolean
+) {
+  const visibleMessages: ChatMessage[] = [];
+  const predictionEntries: RoomPredictionEntryRecord[] = [];
+
+  for (const message of roomMessages) {
+    const predictionEntry = includePredictionEntries
+      ? parseRoomPredictionEntry(message)
+      : null;
+
+    if (predictionEntry) {
+      predictionEntries.push(predictionEntry);
+      continue;
+    }
+
+    if (shouldHideRoomMessage(message.content)) {
+      continue;
+    }
+
+    visibleMessages.push(toDisplayMessage(message, currentUserId));
+  }
+
+  return {
+    messages: visibleMessages.sort((a, b) => a.createdAt - b.createdAt),
+    predictionEntries: predictionEntries.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    ),
   };
 }
 
@@ -228,18 +288,30 @@ function RoomChat() {
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [gameHidden, setGameHidden] = useState<boolean>(
+    state?.room?.matchHidden ?? false
+  );
+  const [isOwner, setIsOwner] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [predictionEntries, setPredictionEntries] = useState<
     RoomPredictionEntryRecord[]
   >([]);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUsername, setCurrentUsername] = useState("Someone");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [chatError, setChatError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [sendingPrediction, setSendingPrediction] = useState(false);
   const [leavingRoom, setLeavingRoom] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [removeMatchDialogOpen, setRemoveMatchDialogOpen] = useState(false);
+  const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const previousMessageCountRef = useRef(0);
 
   const clockSeconds = parseClockToSeconds(gameState.clock);
   const isFinalState = gameState.statusLabel === "Final";
@@ -287,15 +359,17 @@ function RoomChat() {
     [gameState.cycleStartMs, predictionEntries, predictionState]
   );
 
-  const displayMessages = useMemo(
-    () =>
-      [...messages, ...predictionAnnouncements].sort(
-        (a, b) => a.createdAt - b.createdAt
-      ),
-    [messages, predictionAnnouncements]
-  );
+  const displayMessages = useMemo(() => {
+    const base = gameHidden
+      ? messages
+      : [...messages, ...predictionAnnouncements];
+    return [...base].sort((a, b) => a.createdAt - b.createdAt);
+  }, [messages, predictionAnnouncements, gameHidden]);
 
   useEffect(() => {
+    shouldStickToBottomRef.current = true;
+    previousMessageCountRef.current = 0;
+
     if (!activeRoomId) {
       setLoadingMessages(false);
       setChatError("Room not found.");
@@ -312,27 +386,17 @@ function RoomChat() {
 
         setRoom(data.room);
         setCurrentUserId(data.currentUserId);
-        setMessages([]);
-        setPredictionEntries([]);
+        setCurrentUsername(data.currentUsername);
+        setIsOwner(data.isOwner);
+        setGameHidden(data.room.matchHidden ?? false);
+        const parsedMessages = splitRoomMessageRecords(
+          data.messages,
+          data.currentUserId,
+          !(data.room.matchHidden ?? false)
+        );
 
-        for (const message of data.messages) {
-          const predictionEntry = parseRoomPredictionEntry(message);
-
-          if (predictionEntry) {
-            setPredictionEntries((current) =>
-              mergePredictionEntries(current, predictionEntry)
-            );
-            continue;
-          }
-
-          if (shouldHideRoomMessage(message.content)) {
-            continue;
-          }
-
-          setMessages((current) =>
-            mergeMessages(current, toDisplayMessage(message, data.currentUserId))
-          );
-        }
+        setMessages(parsedMessages.messages);
+        setPredictionEntries(parsedMessages.predictionEntries);
       } catch (error) {
         console.error("Error loading room chat:", error);
         setChatError(
@@ -355,8 +419,34 @@ function RoomChat() {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMessages]);
+    if (loadingMessages) return;
+
+    const previousMessageCount = previousMessageCountRef.current;
+    const currentMessageCount = displayMessages.length;
+    const isInitialMessagePaint = previousMessageCount === 0;
+
+    previousMessageCountRef.current = currentMessageCount;
+
+    if (!isInitialMessagePaint && !shouldStickToBottomRef.current) return;
+
+    window.requestAnimationFrame(() => {
+      const scrollElement = messagesScrollRef.current;
+      if (!scrollElement) return;
+
+      scrollElement.scrollTo({
+        top: scrollElement.scrollHeight,
+        behavior: isInitialMessagePaint ? "auto" : "smooth",
+      });
+    });
+  }, [displayMessages.length, loadingMessages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || activeRoomId === null) return;
+    window.localStorage.setItem(
+      `room-last-read-${activeRoomId}`,
+      String(Date.now())
+    );
+  }, [activeRoomId, displayMessages]);
 
   useEffect(() => {
     if (!actionsOpen) return;
@@ -381,6 +471,7 @@ function RoomChat() {
       const predictionEntry = parseRoomPredictionEntry(message);
 
       if (predictionEntry) {
+        if (gameHidden) return;
         setPredictionEntries((current) =>
           mergePredictionEntries(current, predictionEntry)
         );
@@ -397,7 +488,19 @@ function RoomChat() {
     });
 
     return unsubscribe;
-  }, [activeRoomId, currentUserId]);
+  }, [activeRoomId, currentUserId, gameHidden]);
+
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    return subscribeToRoomMatchHidden(activeRoomId, (hidden) => {
+      setGameHidden(hidden);
+      setRoom((currentRoom) => ({ ...currentRoom, matchHidden: hidden }));
+      if (hidden) {
+        setPredictionEntries([]);
+      }
+    });
+  }, [activeRoomId]);
 
   useEffect(() => {
     if (!activeRoomId || !currentUserId) return;
@@ -407,27 +510,21 @@ function RoomChat() {
 
     async function syncMessages() {
       try {
-        const latestMessages = await fetchRoomMessages(roomIdToSync);
+        const [latestMessages, matchHidden] = await Promise.all([
+          fetchRoomMessages(roomIdToSync),
+          fetchRoomMatchHidden(roomIdToSync),
+        ]);
         if (cancelled) return;
 
-        for (const message of latestMessages) {
-          const predictionEntry = parseRoomPredictionEntry(message);
+        setGameHidden(matchHidden);
+        const parsedMessages = splitRoomMessageRecords(
+          latestMessages,
+          currentUserId,
+          !matchHidden
+        );
 
-          if (predictionEntry) {
-            setPredictionEntries((current) =>
-              mergePredictionEntries(current, predictionEntry)
-            );
-            continue;
-          }
-
-          if (shouldHideRoomMessage(message.content)) {
-            continue;
-          }
-
-          setMessages((current) =>
-            mergeMessages(current, toDisplayMessage(message, currentUserId))
-          );
-        }
+        setMessages(parsedMessages.messages);
+        setPredictionEntries(parsedMessages.predictionEntries);
       } catch (error) {
         if (cancelled) return;
         console.error("Error syncing room messages:", error);
@@ -450,6 +547,7 @@ function RoomChat() {
     if (!trimmedDraft || !activeRoomId || sendingMessage) return;
 
     try {
+      shouldStickToBottomRef.current = true;
       setSendingMessage(true);
       setChatError(null);
       const insertedMessage = await sendRoomMessage(activeRoomId, trimmedDraft);
@@ -478,6 +576,7 @@ function RoomChat() {
     }
 
     try {
+      shouldStickToBottomRef.current = true;
       setSendingPrediction(true);
       setChatError(null);
       const entry = await sendRoomPrediction(
@@ -503,14 +602,103 @@ function RoomChat() {
     setActionsOpen(false);
   }
 
+  function handleMessagesScroll() {
+    const scrollElement = messagesScrollRef.current;
+    if (!scrollElement) return;
+
+    const distanceFromBottom =
+      scrollElement.scrollHeight -
+      scrollElement.scrollTop -
+      scrollElement.clientHeight;
+
+    shouldStickToBottomRef.current =
+      distanceFromBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD;
+  }
+
+  async function handleRoomPhotoChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-selecting the same file
+    if (!file || !activeRoomId || uploadingPhoto) return;
+
+    try {
+      setUploadingPhoto(true);
+      setChatError(null);
+
+      const publicUrl = await uploadRoomImage(activeRoomId, file);
+      await updateRoomImage(activeRoomId, publicUrl);
+      setRoom((currentRoom) => ({ ...currentRoom, imageUrl: publicUrl }));
+
+      const eventMessage = await sendRoomEventMessage(
+        activeRoomId,
+        `${currentUsername} changed the group photo`
+      );
+      setMessages((current) =>
+        mergeMessages(current, toDisplayMessage(eventMessage, currentUserId))
+      );
+    } catch (error) {
+      console.error("Error updating room photo:", error);
+      setChatError(
+        error instanceof Error ? error.message : "Could not update the photo."
+      );
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function handleToggleGame() {
+    if (!activeRoomId || !isOwner) return;
+
+    setActionsOpen(false);
+
+    // Removing the match -> ask for confirmation first
+    if (!gameHidden) {
+      setRemoveMatchDialogOpen(true);
+      return;
+    }
+
+    void applyGameVisibility(false);
+  }
+
+  async function applyGameVisibility(next: boolean) {
+    if (!activeRoomId) return;
+
+    setGameHidden(next);
+    setRoom((currentRoom) => ({ ...currentRoom, matchHidden: next }));
+    if (next) {
+      setPredictionEntries([]);
+    }
+    setInfoOpen(false);
+    setActionsOpen(false);
+
+    try {
+      if (next) {
+        await removeRoomMatch(activeRoomId);
+        const eventMessage = await sendRoomEventMessage(
+          activeRoomId,
+          "La funcionalidad de match ha sido removida"
+        );
+        setMessages((current) =>
+          mergeMessages(current, toDisplayMessage(eventMessage, currentUserId))
+        );
+      } else {
+        await setRoomMatchHidden(activeRoomId, false);
+      }
+    } catch (error) {
+      console.error("Error toggling match visibility:", error);
+      setGameHidden(!next); // revert on failure
+      setRoom((currentRoom) => ({ ...currentRoom, matchHidden: !next }));
+      setChatError(
+        error instanceof Error ? error.message : "Could not update match."
+      );
+    }
+  }
+
   async function handleLeaveRoom() {
     if (!activeRoomId || leavingRoom) return;
 
-    const confirmed = window.confirm(
-      "Leave this group? It will no longer appear in your rooms list."
-    );
-
-    if (!confirmed) return;
+    setLeaveDialogOpen(false);
 
     try {
       setLeavingRoom(true);
@@ -531,223 +719,272 @@ function RoomChat() {
     }
   }
 
+  const hasMatch = !gameHidden && room.status === "live";
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fbff_0%,_#eef3fb_48%,_#dce6f3_100%)]">
-      <main className="flex h-screen w-full flex-col">
-        <section className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white">
-          <div className="bg-secondary px-4 py-3 text-white sm:px-5">
-            <div className="flex items-center justify-between gap-3">
+    <div className="min-h-[100dvh] bg-slate-50">
+      <main className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col overflow-hidden sm:p-3">
+        <section className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[0_20px_50px_rgba(15,38,87,0.12)]">
+          {/* Header */}
+          <div className="flex items-center gap-3 bg-secondary px-4 py-4 text-white sm:px-5">
+            <button
+              type="button"
+              onClick={() => navigate(state?.from ?? "/rooms")}
+              aria-label="Go back"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/12 transition-colors hover:bg-white/20"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPhotoDialogOpen(true)}
+              disabled={uploadingPhoto}
+              aria-label="Change group photo"
+              className="group relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white transition disabled:cursor-wait"
+              style={{ backgroundColor: room.imageUrl ? undefined : room.accent }}
+            >
+              {room.imageUrl ? (
+                <img
+                  src={room.imageUrl}
+                  alt={room.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <UserGroupIcon className="h-5 w-5" />
+              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                {uploadingPhoto ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PencilIcon className="h-4 w-4" />
+                )}
+              </span>
+            </button>
+
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png"
+              className="hidden"
+              onChange={handleRoomPhotoChange}
+            />
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-lato text-sm font-bold sm:text-base">
+                {room.title}
+              </p>
+              <p className="truncate font-lato text-[0.72rem] text-white/70 sm:text-xs">
+                {room.members}
+              </p>
+            </div>
+
+            <div className="relative shrink-0" ref={actionsMenuRef}>
               <button
                 type="button"
-                onClick={() => navigate(state?.from ?? "/rooms")}
-                aria-label="Go back"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/18"
+                aria-label="Room actions"
+                onClick={() => setActionsOpen((current) => !current)}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/20"
               >
-                <ArrowLeftIcon className="h-4 w-4" />
+                <EllipsisVerticalIcon className="h-5 w-5" />
               </button>
 
-              <div className="min-w-0 flex-1 text-center">
-                <p className="truncate font-lato text-sm font-bold sm:text-base">
-                  {room.title}
-                </p>
-                <p className="font-lato text-[0.72rem] text-white/70 [overflow-wrap:anywhere] sm:text-xs">
-                  {room.members}
-                </p>
-              </div>
-
-              <div className="relative" ref={actionsMenuRef}>
-                <button
-                  type="button"
-                  aria-label="Room actions"
-                  onClick={() => setActionsOpen((current) => !current)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/18"
-                >
-                  <InformationCircleIcon className="h-5 w-5" />
-                </button>
-
-                {actionsOpen && (
-                  <div className="absolute right-0 top-11 z-20 w-48 rounded-2xl border border-[#d6e0f0] bg-white p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]">
+              {actionsOpen && (
+                <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_36px_rgba(15,23,42,0.18)]">
+                  {hasMatch && (
                     <button
                       type="button"
                       onClick={handleToggleInfo}
-                      className="flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#29477b] transition-colors hover:bg-[#eef4ff]"
+                      className="flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                     >
                       {infoOpen ? "Hide Match Info" : "Show Match Info"}
                     </button>
+                  )}
 
+                  {isOwner && (
                     <button
                       type="button"
-                      onClick={handleLeaveRoom}
-                      disabled={leavingRoom}
-                      className="mt-1 flex w-full rounded-xl px-3 py-2 text-left font-lato text-sm font-semibold text-[#c1124a] transition-colors hover:bg-[#fff1f4] disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={handleToggleGame}
+                      className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                     >
-                      {leavingRoom ? "Leaving..." : "Leave Group"}
+                      {gameHidden ? "Show Match" : "Remove Match"}
                     </button>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsOpen(false);
+                      setLeaveDialogOpen(true);
+                    }}
+                    disabled={leavingRoom}
+                    className="mt-0.5 flex w-full rounded-lg px-3 py-2 text-left font-lato text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {leavingRoom ? "Leaving..." : "Leave Group"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div
-            className={`px-4 py-3 sm:px-5 sm:py-3.5 ${
-              isFinalState
-                ? "bg-[#d2d7e1] text-secondary"
-                : isClutchMoment
-                  ? "bg-[linear-gradient(135deg,#a40f2a_0%,#d62d47_52%,#ff5c73_100%)] text-white shadow-[inset_0_-12px_28px_rgba(100,0,14,0.18)]"
-                  : "bg-primary text-secondary"
-            }`}
-          >
-            <div className="grid grid-cols-3 items-center">
-              <div className="text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/70"
-                      : isClutchMoment
-                        ? "text-white/80"
-                        : "text-secondary/65"
-                  }`}
-                >
-                  {gameState.leftTeam}
-                </p>
-                <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
-                  {gameState.leftScore}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/70"
-                      : isClutchMoment
-                        ? "text-white/80"
-                        : "text-secondary/65"
-                  }`}
-                >
-                  {gameState.quarterLabel}
-                </p>
-                <p
-                  className={`mt-0.5 font-barlow-condensed font-semibold leading-none sm:text-[1.8rem] ${
-                    isFinalState
-                      ? "text-[1.5rem] text-secondary"
-                      : isClutchMoment
-                        ? "text-[1.6rem] text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.18)]"
-                        : "text-[1.35rem]"
-                  }`}
-                >
-                  {gameState.clock}
-                </p>
-                <p
-                  className={`mt-0.5 font-lato text-[0.64rem] font-bold uppercase tracking-[0.18em] sm:text-[0.7rem] ${
-                    isFinalState
-                      ? "text-secondary/75"
-                      : isClutchMoment
-                        ? "text-white/85"
-                        : "text-secondary/70"
-                  }`}
-                >
-                  {gameState.statusLabel}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.16em] sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/70"
-                      : isClutchMoment
-                        ? "text-white/80"
-                        : "text-secondary/65"
-                  }`}
-                >
-                  {gameState.rightTeam}
-                </p>
-                <p className="font-anton text-[1.75rem] leading-none sm:text-[2.2rem]">
-                  {gameState.rightScore}
-                </p>
-              </div>
-            </div>
-
-            {gameState.detail && !isFinalState && (
-              <div className="mt-2 text-center">
-                <p
-                  className={`font-lato text-[0.68rem] font-semibold sm:text-xs ${
-                    isFinalState
-                      ? "text-secondary/80"
-                      : isClutchMoment
-                        ? "text-white/88"
-                        : "text-secondary/75"
-                  }`}
-                >
-                  {gameState.detail}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {isFinalState && finalPredictionLeaderText && (
-            <div className="border-b border-[#d7dfec] bg-[#edf4ff] px-4 py-2.5 sm:px-5">
-              <p className="font-lato text-[0.72rem] font-bold uppercase tracking-[0.16em] text-secondary/55">
-                Winner:
-              </p>
-              <p className="mt-1 font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
-                {finalPredictionLeaderText.replace(/^Top predictor:\s*/i, "").replace(/^Top predictors:\s*/i, "").replace(/^Prediction leader:\s*/i, "")}
-              </p>
-            </div>
-          )}
-
-          {infoOpen && (
-            <div className="border-b border-[#d8e2f1] bg-[#2a4e8e] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:px-5">
-              <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
-                {gameState.highlights.length > 0 ? (
-                  gameState.highlights.map((highlight) => (
-                    <div
-                      key={`${highlight.time}-${highlight.text}`}
-                      className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2 rounded-xl bg-[#244887] px-3 py-2"
+          {!gameHidden && !loadingMessages && (
+            <>
+              {/* Score strip */}
+              <div
+                className={`px-4 py-3 sm:px-5 ${
+                  isFinalState
+                    ? "bg-slate-100 text-secondary"
+                    : isClutchMoment
+                      ? "bg-primary text-secondary"
+                      : "bg-secondary text-white"
+                }`}
+              >
+                <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <div className="text-center">
+                    <p
+                      className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.14em] sm:text-xs ${
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/65"
+                          : "text-white/70"
+                      }`}
                     >
-                      <span className="font-lato text-xs font-bold text-white/88">
-                        {highlight.time}
-                      </span>
-                      <span className="font-lato text-xs text-white sm:text-sm">
-                        {highlight.text}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-xl bg-[#244887] px-3 py-3">
-                    <p className="font-lato text-xs text-white sm:text-sm">
-                      Tip-off is live. Score updates will start rolling in from the
-                      mock game feed.
+                      {gameState.leftTeam}
+                    </p>
+                    <p className="font-anton text-[1.85rem] leading-none sm:text-[2.3rem]">
+                      {gameState.leftScore}
                     </p>
                   </div>
+
+                  <div
+                    className={`min-w-[70px] rounded-lg px-2.5 py-1 text-center ${
+                      isFinalState
+                        ? "bg-white/60"
+                        : isClutchMoment
+                          ? "bg-secondary/10"
+                          : "bg-white/10"
+                    }`}
+                  >
+                    <p
+                      className={`font-lato text-[0.62rem] font-bold uppercase tracking-[0.16em] ${
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/65"
+                          : "text-primary"
+                      }`}
+                    >
+                      {gameState.quarterLabel}
+                    </p>
+                    <p className="font-barlow-condensed text-[1.4rem] font-semibold leading-none">
+                      {gameState.clock}
+                    </p>
+                    <p
+                      className={`font-lato text-[0.6rem] font-bold uppercase tracking-[0.16em] ${
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/70"
+                          : "text-white/75"
+                      }`}
+                    >
+                      {gameState.statusLabel}
+                    </p>
+                  </div>
+
+                  <div className="text-center">
+                    <p
+                      className={`font-lato text-[0.68rem] font-bold uppercase tracking-[0.14em] sm:text-xs ${
+                        isFinalState || isClutchMoment
+                          ? "text-secondary/65"
+                          : "text-white/70"
+                      }`}
+                    >
+                      {gameState.rightTeam}
+                    </p>
+                    <p className="font-anton text-[1.85rem] leading-none sm:text-[2.3rem]">
+                      {gameState.rightScore}
+                    </p>
+                  </div>
+                </div>
+
+                {gameState.detail && !isFinalState && (
+                  <p
+                    className={`mt-2 text-center font-lato text-[0.68rem] font-semibold sm:text-xs ${
+                      isClutchMoment ? "text-secondary/80" : "text-white/85"
+                    }`}
+                  >
+                    {gameState.detail}
+                  </p>
                 )}
               </div>
-            </div>
+
+              {isFinalState && finalPredictionLeaderText && (
+                <div className="flex items-center gap-2 border-b border-slate-200 bg-primary/15 px-4 py-2.5 sm:px-5">
+                  <span className="rounded-md bg-primary px-2 py-0.5 font-lato text-[0.62rem] font-bold uppercase tracking-[0.14em] text-secondary">
+                    Winner
+                  </span>
+                  <p className="min-w-0 flex-1 truncate font-lato text-sm font-bold text-secondary">
+                    {finalPredictionLeaderText
+                      .replace(/^Top predictor:\s*/i, "")
+                      .replace(/^Top predictors:\s*/i, "")
+                      .replace(/^Prediction leader:\s*/i, "")}
+                  </p>
+                </div>
+              )}
+
+              {infoOpen && (
+                <div className="border-b border-slate-200 bg-[#1a3a72] px-3 py-2.5 sm:px-5">
+                  <div className="max-h-[124px] space-y-1.5 overflow-y-auto pr-1">
+                    {gameState.highlights.length > 0 ? (
+                      gameState.highlights.map((highlight) => (
+                        <div
+                          key={`${highlight.time}-${highlight.text}`}
+                          className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-2 rounded-lg bg-white/10 px-3 py-2"
+                        >
+                          <span className="font-lato text-xs font-bold text-primary">
+                            {highlight.time}
+                          </span>
+                          <span className="font-lato text-xs text-white sm:text-sm">
+                            {highlight.text}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg bg-white/10 px-3 py-3">
+                        <p className="font-lato text-xs text-white sm:text-sm">
+                          Tip-off is live. Score updates will start rolling in
+                          from the mock game feed.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
+          {/* Messages */}
+          <div
+            ref={messagesScrollRef}
+            onScroll={handleMessagesScroll}
+            className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-4 sm:px-5"
+          >
             {loadingMessages ? (
               <div className="flex h-full items-center justify-center">
-                <p className="font-lato text-sm text-[#8b99ae]">
+                <p className="font-lato text-sm text-slate-400">
                   Loading messages...
                 </p>
               </div>
             ) : chatError && displayMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
-                <p className="max-w-[28rem] rounded-2xl bg-[#fff1f2] px-4 py-3 text-center font-lato text-sm text-[#be123c]">
+                <p className="max-w-[28rem] rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center font-lato text-sm text-rose-700">
                   {chatError}
                 </p>
               </div>
             ) : displayMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
-                <p className="rounded-2xl bg-[#f6f8fc] px-4 py-3 text-center font-lato text-sm text-[#7b8aa2]">
+                <p className="rounded-xl bg-white px-4 py-3 text-center font-lato text-sm text-slate-500 shadow-sm">
                   No messages yet. Start the conversation.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {displayMessages.map((message) => (
                   <div
                     key={message.id}
@@ -760,23 +997,23 @@ function RoomChat() {
                     }`}
                   >
                     {message.align === "center" ? (
-                      <div className="rounded-full bg-[#eef3fb] px-4 py-2 shadow-[0_8px_18px_rgba(27,52,95,0.06)]">
-                        <p className="font-lato text-[0.76rem] font-bold text-[#5b6a80] sm:text-sm">
+                      <div className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5">
+                        <p className="font-lato text-[0.74rem] font-bold text-slate-500 sm:text-sm">
                           {message.text}
                         </p>
                       </div>
                     ) : (
                       <div className="max-w-[82%]">
                         {message.align === "left" && (
-                          <p className="mb-1 px-1 font-lato text-[0.7rem] text-[#9aa6b8] [overflow-wrap:anywhere]">
+                          <p className="mb-1 px-1 font-lato text-[0.7rem] font-semibold text-slate-400 [overflow-wrap:anywhere]">
                             {message.sender}
                           </p>
                         )}
                         <div
-                          className={`rounded-[1.2rem] px-3 py-2 shadow-[0_10px_24px_rgba(15,23,42,0.06)] ${
+                          className={`px-3.5 py-2 shadow-sm ${
                             message.align === "right"
-                              ? "rounded-tr-md bg-secondary text-white"
-                              : "rounded-tl-md border border-[#d5dfef] bg-[#fbfdff] text-[#31435f]"
+                              ? "rounded-2xl rounded-br-md bg-secondary text-white"
+                              : "rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-700"
                           }`}
                         >
                           <p className="font-lato text-sm leading-6 [overflow-wrap:anywhere] sm:text-[0.95rem]">
@@ -784,7 +1021,7 @@ function RoomChat() {
                           </p>
                         </div>
                         <p
-                          className={`mt-1 px-1 font-lato text-[0.68rem] text-[#b0bac8] ${
+                          className={`mt-0.5 px-1 font-lato text-[0.66rem] text-slate-400 ${
                             message.align === "right" ? "text-right" : "text-left"
                           }`}
                         >
@@ -794,54 +1031,61 @@ function RoomChat() {
                     )}
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
             )}
           </div>
 
-          <div className="sticky bottom-0 border-t border-[#e7edf6] bg-white px-4 py-3 sm:px-5">
+          {/* Composer */}
+          <div className="sticky bottom-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
             {chatError && displayMessages.length > 0 && (
-              <div className="mb-3 rounded-[1rem] border border-[#ffd7dc] bg-[#fff1f2] px-4 py-3">
-                <p className="font-lato text-sm text-[#be123c]">{chatError}</p>
+              <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5">
+                <p className="font-lato text-sm text-rose-700">{chatError}</p>
               </div>
             )}
 
-            {currentPredictionEntry && (
-              <div className="mb-3 rounded-[1rem] border border-[#d5e2f6] bg-[#edf4ff] px-4 py-3 shadow-[0_8px_20px_rgba(30,64,140,0.08)]">
-                <p className="font-lato text-sm font-bold text-secondary sm:text-[0.95rem]">
-                  Prediction: {currentPredictionEntry.choice}
+            {!gameHidden && !loadingMessages && currentPredictionEntry && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-secondary/20 bg-secondary/5 px-4 py-2.5">
+                <span className="rounded-md bg-secondary px-2 py-0.5 font-lato text-[0.62rem] font-bold uppercase tracking-[0.12em] text-white">
+                  Locked
+                </span>
+                <p className="font-lato text-sm font-bold text-secondary">
+                  {currentPredictionEntry.choice}
                 </p>
               </div>
             )}
 
-            {predictionState.activeRound !== null && !currentPredictionEntry && (
-              <div className="mb-3 overflow-hidden rounded-[1.15rem] border border-[#c7d8f2] bg-[#2d4f8d] shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
-                <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 text-white">
-                  <p className="font-lato text-[0.72rem] font-bold tracking-[0.02em] sm:text-xs">
-                    Next Play: What will it be?
-                  </p>
-                  <span className="rounded-full bg-white/12 px-2 py-1 font-lato text-[0.68rem] font-bold">
-                    {predictionState.closesInSeconds ?? 0}s
-                  </span>
-                </div>
+            {!gameHidden &&
+              !loadingMessages &&
+              predictionState.activeRound !== null &&
+              !currentPredictionEntry && (
+                <div className="mb-3 overflow-hidden rounded-xl border border-secondary/20 bg-secondary shadow-[0_12px_24px_rgba(25,52,102,0.18)]">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2 text-white">
+                    <p className="flex items-center gap-1.5 font-lato text-[0.74rem] font-bold sm:text-xs">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      Next play — call it
+                    </p>
+                    <span className="rounded-full bg-primary px-2 py-0.5 font-lato text-[0.68rem] font-bold text-secondary">
+                      {predictionState.closesInSeconds ?? 0}s
+                    </span>
+                  </div>
 
-                <div className="grid grid-cols-3 gap-2 p-2">
-                  {predictionOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => void handlePredictionSelect(option)}
-                      disabled={sendingPrediction}
-                      className="rounded-[0.9rem] bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-[#eef4ff] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
-                    >
-                      {option}
-                    </button>
-                  ))}
+                  <div className="grid grid-cols-3 gap-2 p-2">
+                    {predictionOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => void handlePredictionSelect(option)}
+                        disabled={sendingPrediction}
+                        className="rounded-lg bg-white px-2 py-2 font-lato text-[0.78rem] font-bold text-secondary transition-colors hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="flex items-center gap-3 rounded-full bg-[#f6f8fc] px-4 py-2.5">
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 focus-within:border-secondary focus-within:bg-white">
               <input
                 type="text"
                 value={draft}
@@ -854,14 +1098,14 @@ function RoomChat() {
                 }}
                 placeholder="Type a message..."
                 disabled={!activeRoomId || sendingMessage}
-                className="w-full bg-transparent font-lato text-sm text-[#334155] placeholder:text-[#9aa6b8] focus:outline-none"
+                className="w-full bg-transparent font-lato text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
               />
               <button
                 type="button"
                 aria-label="Send message"
                 onClick={() => void handleSendMessage()}
-                disabled={!activeRoomId || sendingMessage}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d7e5fb] text-secondary transition-colors hover:bg-[#c6daf8] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!activeRoomId || sendingMessage || !draft.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-white transition-colors hover:bg-[#16327a] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 <PaperAirplaneIcon className="h-4 w-4" />
               </button>
@@ -869,6 +1113,44 @@ function RoomChat() {
           </div>
         </section>
       </main>
+
+      <ConfirmDialog
+        isOpen={photoDialogOpen}
+        title="¿Cambiar foto?"
+        message="Selecciona una nueva imagen para el grupo."
+        confirmLabel="Cambiar foto"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          setPhotoDialogOpen(false);
+          photoInputRef.current?.click();
+        }}
+        onCancel={() => setPhotoDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={leaveDialogOpen}
+        title="Leave this group?"
+        message="It will no longer appear in your rooms list."
+        confirmLabel={leavingRoom ? "Leaving..." : "Leave Group"}
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleLeaveRoom}
+        onCancel={() => setLeaveDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={removeMatchDialogOpen}
+        title="Remove match?"
+        message="If you remove the match all the people inside of the chat will also have the match removed."
+        confirmLabel="Remove Match"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => {
+          setRemoveMatchDialogOpen(false);
+          void applyGameVisibility(true);
+        }}
+        onCancel={() => setRemoveMatchDialogOpen(false)}
+      />
     </div>
   );
 }

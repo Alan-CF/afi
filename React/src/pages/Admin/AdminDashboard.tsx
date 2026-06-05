@@ -9,7 +9,7 @@ import {
   UsersIcon,
 } from '@heroicons/react/24/outline';
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
-import { useLiveUsers } from '../../hooks/useLiveUsers';
+import { usePresence } from '../../hooks/usePresence';
 import {
   formatNumber,
   presetToRange,
@@ -167,7 +167,8 @@ export default function AdminDashboard() {
     users: true,
   });
 
-  const { onlineUserIds, onlineCount } = useLiveUsers();
+  const onlineUserIds = usePresence();
+  const onlineCount = onlineUserIds.size;
 
   const { data, loading, error, refetch } = useAdminDashboard({
     startDate: range.startDate,
