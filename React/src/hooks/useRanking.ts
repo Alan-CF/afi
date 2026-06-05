@@ -34,7 +34,7 @@ export function useLeaderboard() {
                     .from("profiles")
                     .select("id, username, fanatic_coins, avatar_url, selected_frame_id")
                     .order("fanatic_coins", { ascending: false })
-                    .limit(10);
+                    .limit(100);
 
                 if (topError) throw topError;
 
