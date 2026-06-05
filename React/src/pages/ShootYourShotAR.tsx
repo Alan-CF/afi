@@ -722,7 +722,7 @@ function ShootYourShotAR() {
         {gameMode === 'menu' && (
           <section className="rounded-3xl bg-white border border-[var(--color-container-border)] p-6 text-center shadow-sm">
             <p className="text-secondary/70 text-sm uppercase tracking-widest font-semibold">
-              Warriors AR Game
+              Warriors Arcade Game
             </p>
 
             <h1 className="mt-2 text-4xl font-extrabold text-secondary">
@@ -890,7 +890,7 @@ function ShootYourShotAR() {
         {gameMode === 'solo' && (
           <section className="rounded-2xl bg-white px-4 py-6 text-center mb-5 border border-[var(--color-container-border)]">
             <p className="text-secondary/70 text-sm uppercase tracking-widest font-semibold">
-              Warriors AR Game
+              Warriors Arcade Game
             </p>
             <h1 className="text-4xl md:text-5xl font-extrabold text-secondary mt-2">
               Shoot Your Shot
