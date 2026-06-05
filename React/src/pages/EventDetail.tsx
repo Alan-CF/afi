@@ -155,6 +155,12 @@ export default function EventDetail() {
     return baseGoing;
   }, [event, seedAttendance.isAttending, profile]);
 
+  const isFull =
+    !!event &&
+    event.capacity != null &&
+    displayedGoingCount >= event.capacity &&
+    !isAttending;
+
   async function handleToggleAttendance() {
     if (!event) return;
     if (event.source === "seed") {
@@ -427,7 +433,13 @@ export default function EventDetail() {
                     isLoggedIn={!!currentUserId}
                     isAttending={isAttending}
                     onToggle={handleToggleAttendance}
+                    disabled={isFull}
                   />
+                  {isFull && (
+                    <p className="text-center font-lato text-xs font-bold text-[#be123c]">
+                      This event is full — no spots left.
+                    </p>
+                  )}
                   <InviteFriendsButton
                     eventPath={eventPath}
                     eventTitle={event.title}

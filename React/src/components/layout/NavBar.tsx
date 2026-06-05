@@ -53,6 +53,7 @@ export default function NavBar() {
   const isLoggedOut = hasLoadedOnce && user === null;
   const isAdmin = user?.role === 'admin';
   const navLinks = isAdmin ? ADMIN_LINKS : PRIMARY_LINKS;
+  const desktopLinks = navLinks.filter((link) => link.to !== '/');
 
   const handleLogout = async () => {
     setIsMenuOpen(false);
@@ -88,7 +89,7 @@ export default function NavBar() {
           </button>
 
           <ul className="hidden min-[900px]:flex flex-1 min-w-0 items-center justify-center gap-0 xl:gap-3">
-            {navLinks.map((link) => (
+            {desktopLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
