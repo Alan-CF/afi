@@ -25,6 +25,7 @@ function buildGame(
   daysAhead: number,
   isHome: boolean,
   venue: string,
+  city: string,
   broadcast: string,
 ): UnifiedEvent {
   const team = TEAM_LOGOS[abbr];
@@ -48,17 +49,18 @@ function buildGame(
       opponentAbbr: team.abbr,
       opponentName: team.name,
       broadcast,
+      city,
     },
   };
 }
 
 export const SEED_GAMES: UnifiedEvent[] = [
-  buildGame("seed-game-lal", "LAL", 2, true, "Chase Center", "ESPN"),
-  buildGame("seed-game-phx", "PHX", 5, false, "Footprint Center", "TNT"),
-  buildGame("seed-game-den", "DEN", 9, true, "Chase Center", "NBC Sports Bay Area"),
-  buildGame("seed-game-dal", "DAL", 13, false, "American Airlines Center", "ESPN"),
-  buildGame("seed-game-bos", "BOS", 18, true, "Chase Center", "ABC"),
-  buildGame("seed-game-okc", "OKC", 24, false, "Paycom Center", "TNT"),
+  buildGame("seed-game-lal", "LAL", 2, true, "Chase Center", "San Francisco, CA", "ESPN"),
+  buildGame("seed-game-phx", "PHX", 5, false, "Footprint Center", "Phoenix, AZ", "TNT"),
+  buildGame("seed-game-den", "DEN", 9, true, "Chase Center", "San Francisco, CA", "NBC Sports Bay Area"),
+  buildGame("seed-game-dal", "DAL", 13, false, "American Airlines Center", "Dallas, TX", "ESPN"),
+  buildGame("seed-game-bos", "BOS", 18, true, "Chase Center", "San Francisco, CA", "ABC"),
+  buildGame("seed-game-okc", "OKC", 24, false, "Paycom Center", "Oklahoma City, OK", "TNT"),
 ];
 
 export const SEED_FAN_EVENTS: UnifiedEvent[] = listSeedFanEventDetails().map(
