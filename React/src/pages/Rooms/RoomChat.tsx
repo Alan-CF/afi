@@ -60,7 +60,7 @@ const defaultRoom: Room = {
   id: 999,
   title: "Warriors Game Night",
   status: "live",
-  members: "Cesar, Luis, Maria +2",
+  members: "",
   subtitle: "Live chat is on",
   accent: "#1D428A",
   memberProfileIds: [],
