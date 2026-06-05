@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import Home from './pages/Home';
 import Fanatic from './pages/Fanatic';
 import Login from './pages/Login';
@@ -34,19 +35,23 @@ import MainLayout from './components/layout/MainLayout';
 import ShootYourShotAR from './pages/ShootYourShotAR';
 import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
-import PointsToastGlobal from "./components/ui/PointsToastGlobal";
-import AdminShop from "./pages/Shop/AdminShop";
-import { PresenceProvider } from "./hooks/usePresence";
+import PointsToastGlobal from './components/ui/PointsToastGlobal';
+import RequireAdmin from './components/admin/RequireAdmin';
+import BasketballLoader from './components/common/BasketballLoader';
+import { PresenceProvider } from './hooks/usePresence';
+
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+import AdminShop from './pages/Shop/AdminShop';
 
 function App() {
   return (
     <PresenceProvider>
       <PointsToastGlobal />
-        <ScrollToTop />
-        <FriendInviteProvider />
-        <RoomInviteProvider />
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <ScrollToTop />
+      <FriendInviteProvider />
+      <RoomInviteProvider />
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
         <Route element={<MainLayout />}>
           <Route path="/quizzes" element={<Quizzes />} />
@@ -79,13 +84,29 @@ function App() {
           <Route path="/news" element={<News />} />
           <Route path="/news/:slug" element={<NewsDetail />} />
           <Route path="/shoot-your-shot" element={<ShootYourShotAR />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <Suspense
+                  fallback={
+                    <main className="flex min-h-[60vh] items-center justify-center px-4">
+                      <BasketballLoader size="lg" />
+                    </main>
+                  }
+                >
+                  <AdminDashboard />
+                </Suspense>
+              </RequireAdmin>
+            }
+          />
           <Route path="/admin/shop" element={<AdminShop />} />
         </Route>
 
-          <Route path="/rooms/chat" element={<RoomChat />} />
-          <Route path="/rooms/:roomId" element={<RoomChat />} />
-          <Route path="/pointshistory" element={<PointsHistory />} />
-        </Routes>
+        <Route path="/rooms/chat" element={<RoomChat />} />
+        <Route path="/rooms/:roomId" element={<RoomChat />} />
+        <Route path="/pointshistory" element={<PointsHistory />} />
+      </Routes>
     </PresenceProvider>
   );
 }

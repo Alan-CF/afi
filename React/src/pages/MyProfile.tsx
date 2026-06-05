@@ -490,7 +490,7 @@ export default function MyProfile() {
         </section>
 
         {user && (
-          <div className="flex justify-center mt-8">
+          <div className="mt-8 flex flex-col items-center gap-4">
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="text-sm font-bold text-red-400 hover:text-red-600 transition-colors"
