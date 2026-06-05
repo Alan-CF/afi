@@ -187,8 +187,8 @@ export default function AdminDashboard() {
         []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-text-light-soft">
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-16 md:px-6 md:pt-8 md:pb-20 lg:px-8">
+    <div className="flex min-h-screen flex-col bg-[var(--color-background)]">
+      <main className="w-full flex-1 px-8 pb-10 pt-5">
         <header className="mb-5 flex items-center gap-3">
           <h1 className="font-anton text-3xl leading-none text-secondary md:text-4xl">
             Dashboard
