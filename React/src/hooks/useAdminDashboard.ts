@@ -6,7 +6,7 @@ import {
 } from '../lib/adminDashboardApi';
 
 export function useAdminDashboard(params: AdminDashboardParams) {
-  const { startDate, endDate, granularity } = params;
+  const { startDate, endDate, granularity, autoRange } = params;
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -23,6 +23,7 @@ export function useAdminDashboard(params: AdminDashboardParams) {
         startDate,
         endDate,
         granularity,
+        autoRange,
       });
       if (requestId === requestIdRef.current) {
         setData(result);
@@ -38,7 +39,7 @@ export function useAdminDashboard(params: AdminDashboardParams) {
         setLoading(false);
       }
     }
-  }, [startDate, endDate, granularity]);
+  }, [startDate, endDate, granularity, autoRange]);
 
   useEffect(() => {
     void load();

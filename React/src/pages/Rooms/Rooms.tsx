@@ -73,6 +73,7 @@ function RoomsPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loggedOut, setLoggedOut] = useState(false);
   const [myId, setMyId] = useState<string | null>(null);
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [friends, setFriends] = useState<FriendOption[]>([]);
@@ -163,6 +164,15 @@ function RoomsPage() {
       try {
         setLoading(true);
         setError(null);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user) {
+          setLoggedOut(true);
+          setRooms([]);
+          return;
+        }
+        setLoggedOut(false);
         const data = await fetchMyRooms();
         setRooms(data);
       } catch (err) {
@@ -318,6 +328,10 @@ function RoomsPage() {
   const offlineCount = rooms.length - liveCount;
 
   function handleCreateRoom() {
+    if (loggedOut) {
+      navigate('/login');
+      return;
+    }
     navigate('/rooms/create');
   }
 
@@ -594,13 +608,35 @@ function RoomsPage() {
         </div>
       )}
 
-      {panelView === 'rooms' && error && (
+      {panelView === 'rooms' && loggedOut && (
+        <div className="rounded-2xl border border-container-border bg-white px-6 py-12 text-center shadow-sm">
+          <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/[0.08] text-secondary">
+            <UserGroupIcon className="h-6 w-6" />
+          </span>
+          <h3 className="font-anton text-xl text-secondary">
+            Log in to join the conversation
+          </h3>
+          <p className="mx-auto mt-2 max-w-sm font-lato text-sm text-text-light">
+            Sign in to create rooms, join live discussions, and connect with
+            other fans.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/login')}
+            className="mx-auto mt-5 inline-flex items-center rounded-xl px-6 py-2.5 font-lato text-sm font-bold"
+          >
+            Log in
+          </Button>
+        </div>
+      )}
+
+      {panelView === 'rooms' && error && !loggedOut && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-center font-lato text-sm font-semibold text-rose-700">
           {error}
         </div>
       )}
 
-      {panelView === 'rooms' && !loading && !error && filteredRooms.length === 0 && (
+      {panelView === 'rooms' && !loggedOut && !loading && !error && filteredRooms.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
           <p className="font-lato text-base font-bold text-slate-700">
             No rooms here yet

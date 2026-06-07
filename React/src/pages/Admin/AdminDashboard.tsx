@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ArrowDownTrayIcon,
   CalendarDaysIcon,
@@ -8,13 +8,12 @@ import {
   UserGroupIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline';
+import { toBlob } from 'html-to-image';
 import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import { usePresence } from '../../hooks/usePresence';
 import {
   formatNumber,
-  presetToRange,
   type ActiveUsersGranularity,
-  type AdminDashboardData,
   type DateRange,
   type TimePoint,
 } from '../../lib/adminDashboardApi';
@@ -29,7 +28,11 @@ import AdminUsersTable from '../../components/admin/AdminUsersTable';
 import BasketballLoader from '../../components/common/BasketballLoader';
 import EmptyState from '../../components/common/EmptyState';
 
-const DEFAULT_RANGE = presetToRange('30d');
+const ALL_TIME_START = '2020-01-01';
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 type SectionKey = 'overview' | 'activity' | 'games' | 'users';
 
@@ -64,87 +67,6 @@ function gamesSubtitle(granularity: ActiveUsersGranularity): string {
   return 'Game plays per day';
 }
 
-function csvCell(value: string | number): string {
-  const text = String(value);
-  if (/[",\n]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
-}
-
-function buildDashboardCsv(
-  data: AdminDashboardData,
-  onlineUserIds: Set<string>,
-  range: DateRange
-): string {
-  const lines: string[] = [];
-  lines.push('AFI Admin Dashboard');
-  lines.push(`Range,${range.startDate} to ${range.endDate}`);
-  lines.push('');
-  lines.push('KPIs');
-  lines.push('Metric,Value');
-  lines.push(`Total users,${data.kpis.totalUsers}`);
-  lines.push(`Live users,${onlineUserIds.size}`);
-  lines.push(`Active users,${data.kpis.activeUsers}`);
-  lines.push(`Games played,${data.kpis.gamesPlayed}`);
-  lines.push(`Room messages,${data.kpis.roomMessages}`);
-  lines.push(`Fan events,${data.kpis.fanEvents}`);
-  lines.push('');
-  lines.push('Game performance');
-  lines.push(
-    'Game,Plays,Unique players,Avg plays/user,Coins awarded,Last played'
-  );
-  for (const game of data.gameResults) {
-    lines.push(
-      [
-        csvCell(game.label),
-        game.plays,
-        game.uniquePlayers,
-        game.avgPlaysPerUser.toFixed(2),
-        game.coinsAwarded === null ? '' : game.coinsAwarded,
-        game.lastPlayed ?? '',
-      ].join(',')
-    );
-  }
-  lines.push('');
-  lines.push('Users');
-  lines.push('Username,Name,Status,Role,Plays,Coins,E-coins,Streak,Last login');
-  for (const user of data.users) {
-    lines.push(
-      [
-        csvCell(user.username),
-        csvCell(user.fullName ?? ''),
-        onlineUserIds.has(user.id) ? 'Live' : 'Offline',
-        user.role,
-        user.plays,
-        user.fanaticCoins,
-        user.eCoins,
-        user.streak,
-        user.lastLogin ?? '',
-      ].join(',')
-    );
-  }
-  return lines.join('\n');
-}
-
-function downloadDashboardCsv(
-  data: AdminDashboardData,
-  onlineUserIds: Set<string>,
-  range: DateRange
-) {
-  const csv = buildDashboardCsv(data, onlineUserIds, range);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const today = new Date().toISOString().slice(0, 10);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `afi-admin-dashboard-${today}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 function SectionHeader({ children }: { children: string }) {
   return (
     <div className="mb-4">
@@ -157,7 +79,7 @@ function SectionHeader({ children }: { children: string }) {
 }
 
 export default function AdminDashboard() {
-  const [range, setRange] = useState<DateRange>(DEFAULT_RANGE);
+  const [range, setRange] = useState<DateRange>({ startDate: '', endDate: '' });
   const [granularity] = useState<ActiveUsersGranularity>('daily');
   const [selectedGame, setSelectedGame] = useState('all');
   const [sections, setSections] = useState<Record<SectionKey, boolean>>({
@@ -169,15 +91,52 @@ export default function AdminDashboard() {
 
   const onlineUserIds = usePresence();
   const onlineCount = onlineUserIds.size;
+  const captureRef = useRef<HTMLElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const effectiveStart = range.startDate || ALL_TIME_START;
+  const effectiveEnd = range.endDate || todayIso();
+  const rangeLabel =
+    !range.startDate && !range.endDate
+      ? 'All time'
+      : friendlyRange(effectiveStart, effectiveEnd);
 
   const { data, loading, error, refetch } = useAdminDashboard({
-    startDate: range.startDate,
-    endDate: range.endDate,
+    startDate: effectiveStart,
+    endDate: effectiveEnd,
     granularity,
+    autoRange: !range.startDate && !range.endDate,
   });
 
   const toggleSection = (key: SectionKey) =>
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const handleExportPng = async () => {
+    const node = captureRef.current;
+    if (!node || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await toBlob(node, {
+        backgroundColor: '#ffffff',
+        pixelRatio: 1.5,
+        cacheBust: true,
+        filter: (el) =>
+          !(el instanceof HTMLElement && el.dataset.exportExclude === 'true'),
+      });
+      if (!blob) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `afi-admin-dashboard-${today}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      void err;
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const gamesChartData =
     selectedGame === 'all'
@@ -188,23 +147,22 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-background)]">
-      <main className="w-full flex-1 px-4 sm:px-8 pb-10 pt-5">
+      <main ref={captureRef} className="w-full flex-1 px-4 sm:px-8 pb-10 pt-5">
         <header className="mb-5 flex items-center gap-3">
           <h1 className="font-anton text-3xl leading-none text-secondary md:text-4xl">
             Dashboard
           </h1>
           <button
             type="button"
+            data-export-exclude="true"
             onClick={() => {
-              if (data) {
-                downloadDashboardCsv(data, onlineUserIds, range);
-              }
+              void handleExportPng();
             }}
-            disabled={!data}
+            disabled={!data || exporting}
             className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-secondary bg-white px-3.5 font-lato text-xs font-bold text-secondary transition-colors hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-secondary"
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
-            Export
+            {exporting ? 'Exporting…' : 'Export'}
           </button>
         </header>
 
@@ -216,7 +174,7 @@ export default function AdminDashboard() {
           />
 
           <p className="font-lato text-xs font-bold text-secondary sm:order-last sm:w-full">
-            {friendlyRange(range.startDate, range.endDate)}
+            {rangeLabel}
           </p>
 
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
@@ -277,7 +235,7 @@ export default function AdminDashboard() {
                   <AdminKpiCard
                     label="Total users"
                     value={formatNumber(data.kpis.totalUsers)}
-                    hint="Registered fans"
+                    hint="By last login, in period"
                     tone="blue"
                     icon={<UserGroupIcon className="h-5 w-5" />}
                   />
