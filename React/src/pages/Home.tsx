@@ -93,7 +93,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-4 md:pt-6 pb-16 md:pb-20">
+      <main className="w-full flex-1 px-4 sm:px-8 pt-4 md:pt-6 pb-16 md:pb-20">
         {isLoggedIn && user && (
           <p className="font-lato text-sm text-text-light mb-3 md:mb-4">
             {getTimeOfDay()},{' '}

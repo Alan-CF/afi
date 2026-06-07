@@ -111,7 +111,7 @@ export default function GameDetail() {
     return (
       <div className="flex min-h-screen flex-col bg-text-light-soft">
         <ScoreboardRibbon />
-        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-12 md:px-6 lg:px-8">
+        <main className="w-full flex-1 px-4 sm:px-8 py-12">
           <div className="rounded-3xl border border-container-border bg-white p-8 text-center">
             <p className="font-lato text-base text-text">Game not found.</p>
             <button
@@ -140,7 +140,7 @@ export default function GameDetail() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+      <main className="flex-1 w-full px-4 sm:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <div className="mb-4 flex items-center justify-between gap-3">
           <button
             type="button"

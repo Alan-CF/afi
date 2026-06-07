@@ -843,7 +843,7 @@ function RoomsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <main className="mx-auto w-full max-w-[1200px] px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <main className="w-full px-4 sm:px-8 pb-10 pt-6">
         {/* Header */}
         <div className="mb-5 overflow-hidden rounded-2xl bg-secondary px-5 py-5 shadow-[0_18px_40px_rgba(15,38,87,0.28)] sm:px-7 sm:py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
