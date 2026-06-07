@@ -193,7 +193,7 @@ export default function EShop() {
 
   return (
     <div className="min-h-screen bg-background text-text font-[family-name:var(--font-lato)]">
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-16 pt-6 md:px-6 md:pt-8 lg:px-8">
+      <main className="w-full flex-1 px-4 sm:px-8 pb-16 pt-6 md:pt-8">
         <button
           onClick={() => navigate(-1)}
           className="mb-4 inline-flex items-center gap-1.5 font-lato text-sm font-bold text-secondary transition-colors hover:text-secondary/70"

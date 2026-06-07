@@ -313,7 +313,7 @@ export default function Statistics() {
 
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-6 pb-16">
+      <main className="w-full flex-1 px-4 sm:px-8 pt-6 pb-16">
         <section className="rounded-2xl bg-secondary overflow-hidden mb-6">
           <div className="flex flex-col md:flex-row items-center gap-4 px-6 py-5">
             <img

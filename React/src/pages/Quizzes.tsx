@@ -171,7 +171,7 @@ function Quizzes() {
     <>
       <div className="flex flex-col min-h-screen bg-text-light-soft">
         {screen === 'list' && (
-          <div className="flex-1 px-6 py-8 max-w-5xl mx-auto w-full">
+          <div className="flex-1 w-full px-4 sm:px-8 py-8">
             <button
                       type="button"
                       onClick={() => navigate('/games')}
@@ -489,7 +489,7 @@ function Quizzes() {
         )}
 
         {screen === 'result' && latestResult && (
-          <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
+          <div className="flex-1 w-full px-4 sm:px-8 py-8">
             <div className="text-center mb-8">
               <button
                 type="button"

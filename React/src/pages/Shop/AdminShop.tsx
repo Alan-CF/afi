@@ -868,7 +868,7 @@ export default function AdminShop() {
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] font-[family-name:var(--font-lato)]">
-      <main className="w-full px-8 pb-10 pt-5 lg:px-8">
+      <main className="w-full px-4 sm:px-8 pb-10 pt-5 lg:px-8">
 
         <section className="rounded-2xl bg-secondary overflow-hidden mb-5">
           <div className="px-8 py-6">

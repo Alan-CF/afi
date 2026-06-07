@@ -10,6 +10,7 @@ export type DateRange = {
 
 export type AdminDashboardParams = DateRange & {
   granularity: ActiveUsersGranularity;
+  autoRange?: boolean;
 };
 
 export type TimePoint = {
@@ -313,10 +314,15 @@ async function fetchProfiles(): Promise<ProfileRow[]> {
   return data ?? [];
 }
 
-async function countProfiles(): Promise<number> {
+async function countProfilesInRange(
+  startDate: string,
+  endDate: string
+): Promise<number> {
   const { count, error } = await supabase
     .from('profiles')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .gte('last_login', startDate)
+    .lte('last_login', endDate);
   if (error) {
     throw error;
   }
@@ -463,9 +469,9 @@ export async function fetchAdminDashboard(
   params: AdminDashboardParams
 ): Promise<AdminDashboardData> {
   const { startDate, endDate, granularity } = params;
+  const autoRange = params.autoRange ?? false;
   const { startIso, endIso } = rangeToIso(params);
   const warnings: string[] = [];
-  const buckets = buildBuckets(startIso, endIso, granularity);
 
   const [
     profiles,
@@ -481,7 +487,9 @@ export async function fetchAdminDashboard(
     fanEvents,
   ] = await Promise.all([
     safe('users', warnings, [] as ProfileRow[], () => fetchProfiles()),
-    safe('totalUsers', warnings, 0, () => countProfiles()),
+    safe('totalUsers', warnings, 0, () =>
+      countProfilesInRange(startDate, endDate)
+    ),
     safe('fanatic', warnings, [] as FanaticRow[], () =>
       fetchFanaticRows(startIso, endIso)
     ),
@@ -566,6 +574,20 @@ export async function fetchAdminDashboard(
       userId: row.sender_profile_id,
     })),
   ];
+
+  let bucketStartIso = startIso;
+  let bucketEndIso = endIso;
+  if (autoRange) {
+    const times = activityEvents
+      .map((event) => (event.time ? new Date(event.time).getTime() : NaN))
+      .filter((value) => !Number.isNaN(value))
+      .sort((a, b) => a - b);
+    if (times.length > 0) {
+      bucketStartIso = new Date(times[0]).toISOString();
+      bucketEndIso = new Date(times[times.length - 1]).toISOString();
+    }
+  }
+  const buckets = buildBuckets(bucketStartIso, bucketEndIso, granularity);
 
   const kpis: AdminKpis = {
     totalUsers,
