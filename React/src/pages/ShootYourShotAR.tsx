@@ -647,6 +647,8 @@ function ShootYourShot() {
 
   const handleOpenJoinChallenge = async () => {
     setChallengeError(null);
+    setJoinError(null);
+    setJoinCode('');
 
     const {
       data: { user },
@@ -721,6 +723,8 @@ function ShootYourShot() {
     setChallengeWinner(null);
     setIsHost(false);
     setJoinCode('');
+    setJoinError(null);
+    setChallengeError(null);
 
     challengeStartedRef.current = false;
 
