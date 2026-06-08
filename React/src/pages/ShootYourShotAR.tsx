@@ -153,7 +153,7 @@ function Ball({
 
     const wentThroughHoop =
       isFalling &&
-      Math.abs(ballPosition.x - rimCenter.x) < 0.34 &&
+      Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
       Math.abs(ballPosition.z - rimCenter.z) < 0.40 &&
       ballPosition.y < rimCenter.y + 0.36 &&
       ballPosition.y > rimCenter.y - 0.36;
@@ -164,7 +164,7 @@ function Ball({
       Math.abs(ballPosition.y - rimCenter.y) < 0.16;
 
     const insideScoringArea =
-      Math.abs(ballPosition.x - rimCenter.x) < 0.34 &&
+      Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
       Math.abs(ballPosition.z - rimCenter.z) < 0.38;
 
     const hitRim =
