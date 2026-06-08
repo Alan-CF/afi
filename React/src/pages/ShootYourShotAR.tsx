@@ -280,37 +280,6 @@ function ShootYourShot() {
     }
   }, [gameMode, challengeId]);
 
-  const checkHostStatus = async () => {
-    if (!challengeId) return;
-
-    const { data: challenge } = await supabase
-      .from('shoot_challenges')
-      .select('host_profile_id, status')
-      .eq('id', challengeId)
-      .maybeSingle();
-
-    if (!challenge || challenge.status !== 'waiting') return;
-
-    const { data: hostPlayer } = await supabase
-      .from('shoot_challenge_players')
-      .select('status, last_seen_at')
-      .eq('challenge_id', challengeId)
-      .eq('profile_id', challenge.host_profile_id)
-      .maybeSingle();
-
-    const hostInactive =
-      !hostPlayer ||
-      hostPlayer.status === 'disconnected' ||
-      !hostPlayer.last_seen_at ||
-      new Date(hostPlayer.last_seen_at).getTime() < Date.now() - 15000;
-
-    if (hostInactive) {
-      await supabase.rpc('transfer_shoot_challenge_host', {
-        p_challenge_id: challengeId,
-      });
-    }
-  };
-
   const completeChallengeIfReady = async () => {
     if (!challengeId || !isChallengeMode) return;
 
@@ -487,16 +456,11 @@ function ShootYourShot() {
 
     const { data, error } = await supabase
       .from('shoot_challenges')
-      .select('status, started_at, host_profile_id')
+      .select('status, started_at')
       .eq('id', challengeId)
       .maybeSingle();
 
     if (error || !data) return;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    setIsHost(Boolean(user && data.host_profile_id === user.id));
 
     if (
       data.status === 'playing' &&
@@ -529,7 +493,6 @@ function ShootYourShot() {
 
     const interval = window.setInterval(() => {
       markInactivePlayersDisconnected();
-      checkHostStatus();
       loadChallengeStatus();
       loadChallengePlayers(challengeId);
     }, 1500);
@@ -751,6 +714,19 @@ function ShootYourShot() {
     setGameMode('menu');
   };
 
+  const cancelCurrentChallenge = async () => {
+    if (!challengeId || !isHost) return;
+
+    await supabase
+      .from('shoot_challenges')
+      .update({
+        status: 'cancelled',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', challengeId)
+      .eq('status', 'waiting');
+  };
+
   useEffect(() => {
     if (!challengeId) return;
 
@@ -902,12 +878,17 @@ function ShootYourShot() {
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             if (gameMode === 'menu') {
               navigate('/games');
-            } else {
-              handleBackToMenu();
+              return;
             }
+
+            if (gameMode === 'lobby' && isHost) {
+              await cancelCurrentChallenge();
+            }
+
+            handleBackToMenu();
           }}
           aria-label="Go back"
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md transition hover:bg-secondary/90"
