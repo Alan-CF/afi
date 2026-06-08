@@ -17,11 +17,7 @@ export type MockGameSnapshot = {
   highlights: MockGameHighlight[];
   elapsedSecond: number;
   cycleStartMs: number;
-};
-
-type MockGameControlState = {
-  anchorMs: number;
-  offsetSeconds: number;
+  matchId: MockMatchId;
 };
 
 type TeamKey = "warriors" | "lakers";
@@ -75,11 +71,15 @@ export const predictionOptions: PredictionOption[] = [
   "Foul",
 ];
 
+// ---------------------------------------------------------------------------
+// Match A — full Lakers vs Warriors game (4 quarters).
+// ---------------------------------------------------------------------------
+
 // Stretches the whole match timeline (and therefore the gap between
 // prediction rounds / score messages). Higher = more time between points.
-const TIME_SCALE = 3;
+const FULL_TIME_SCALE = 3;
 
-const timeline: TimelineSegment[] = [
+const fullTimeline: TimelineSegment[] = [
   {
     kind: "quarter",
     quarter: 1,
@@ -278,7 +278,7 @@ const timeline: TimelineSegment[] = [
   },
 ];
 
-const baseScoreEvents: ScoreEvent[] = [
+const fullBaseScoreEvents: ScoreEvent[] = [
   {
     at: 7,
     team: "warriors",
@@ -456,38 +456,190 @@ const baseScoreEvents: ScoreEvent[] = [
   },
 ];
 
-// Scale every event timestamp so messages land further apart in real time.
-const scoreEvents: ScoreEvent[] = baseScoreEvents.map((event) => ({
-  ...event,
-  at: event.at * TIME_SCALE,
-}));
+// ---------------------------------------------------------------------------
+// Match B — short clutch stretch (video 0:30 → 0:57, ~27s).
+// Lakers in front 94–85; Warriors hit a triple, Lakers answer at the line
+// off a foul. Final: Lakers 96 – Warriors 88.
+// ---------------------------------------------------------------------------
 
-const resolvedTimeline = timeline.reduce<ResolvedSegment[]>(
-  (segments, segment) => {
-    const previousEnd = segments.length === 0 ? 0 : segments[segments.length - 1].endAt;
+const SHORT_TIME_SCALE = 2;
 
-    segments.push({
-      ...segment,
-      startAt: previousEnd,
-      endAt: previousEnd + segment.duration * TIME_SCALE,
-    });
+const shortBaseScore = { warriors: 85, lakers: 94 };
 
-    return segments;
+const shortTimeline: TimelineSegment[] = [
+  {
+    kind: "quarter",
+    quarter: 4,
+    duration: 11,
+    clockStart: 27,
+    clockEnd: 16,
+    statusLabel: "Live",
+    detail: null,
   },
-  []
-);
+  {
+    kind: "quarter",
+    quarter: 4,
+    duration: 5,
+    clockStart: 16,
+    clockEnd: 16,
+    statusLabel: "Clock Stopped",
+    detail: "Shooting foul — two at the line.",
+  },
+  {
+    kind: "quarter",
+    quarter: 4,
+    duration: 11,
+    clockStart: 16,
+    clockEnd: 0,
+    statusLabel: "Live",
+    detail: null,
+  },
+  {
+    kind: "final",
+    duration: 9999,
+    clockStart: 0,
+    clockEnd: 0,
+    statusLabel: "Final",
+    detail: null,
+  },
+];
 
-const finalPlayableSecond =
-  resolvedTimeline.find((segment) => segment.kind === "final")?.startAt ?? 0;
-const fourthQuarterStartSecond =
-  resolvedTimeline.find(
-    (segment) => segment.kind === "quarter" && segment.quarter === 4
-  )?.startAt ?? 0;
+const shortBaseScoreEvents: ScoreEvent[] = [
+  {
+    at: 8,
+    team: "warriors",
+    points: 3,
+    shotType: "Triple",
+    text: "Warriors splash a deep triple to pull within two.",
+  },
+  {
+    at: 18,
+    team: "lakers",
+    points: 2,
+    shotType: "Foul",
+    text: "Lakers knock down both free throws after the foul.",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Match registry + derived config builder.
+// ---------------------------------------------------------------------------
+
+export type MockMatchId = "full" | "short";
+
+type MatchDefinition = {
+  id: MockMatchId;
+  label: string;
+  timeScale: number;
+  baseScore: { warriors: number; lakers: number };
+  timeline: TimelineSegment[];
+  baseScoreEvents: ScoreEvent[];
+};
+
+type MatchConfig = {
+  id: MockMatchId;
+  label: string;
+  timeScale: number;
+  baseScore: { warriors: number; lakers: number };
+  scoreEvents: ScoreEvent[];
+  resolvedTimeline: ResolvedSegment[];
+  finalPlayableSecond: number;
+  fourthQuarterStartSecond: number;
+  matchCycleSeconds: number;
+};
+
 const finalStateHoldSeconds = 45;
-const matchCycleSeconds = finalPlayableSecond + finalStateHoldSeconds;
+
+function buildMatchConfig(definition: MatchDefinition): MatchConfig {
+  const { timeScale } = definition;
+
+  // Scale every event timestamp so messages land further apart in real time.
+  const scoreEvents = definition.baseScoreEvents.map((event) => ({
+    ...event,
+    at: event.at * timeScale,
+  }));
+
+  const resolvedTimeline = definition.timeline.reduce<ResolvedSegment[]>(
+    (segments, segment) => {
+      const previousEnd =
+        segments.length === 0 ? 0 : segments[segments.length - 1].endAt;
+
+      segments.push({
+        ...segment,
+        startAt: previousEnd,
+        endAt: previousEnd + segment.duration * timeScale,
+      });
+
+      return segments;
+    },
+    []
+  );
+
+  const finalPlayableSecond =
+    resolvedTimeline.find((segment) => segment.kind === "final")?.startAt ?? 0;
+  const fourthQuarterStartSecond =
+    resolvedTimeline.find(
+      (segment) => segment.kind === "quarter" && segment.quarter === 4
+    )?.startAt ?? 0;
+
+  return {
+    id: definition.id,
+    label: definition.label,
+    timeScale,
+    baseScore: definition.baseScore,
+    scoreEvents,
+    resolvedTimeline,
+    finalPlayableSecond,
+    fourthQuarterStartSecond,
+    matchCycleSeconds: finalPlayableSecond + finalStateHoldSeconds,
+  };
+}
+
+const matchConfigs: Record<MockMatchId, MatchConfig> = {
+  full: buildMatchConfig({
+    id: "full",
+    label: "Full Game",
+    timeScale: FULL_TIME_SCALE,
+    baseScore: { warriors: 0, lakers: 0 },
+    timeline: fullTimeline,
+    baseScoreEvents: fullBaseScoreEvents,
+  }),
+  short: buildMatchConfig({
+    id: "short",
+    label: "Clutch (27s)",
+    timeScale: SHORT_TIME_SCALE,
+    baseScore: shortBaseScore,
+    timeline: shortTimeline,
+    baseScoreEvents: shortBaseScoreEvents,
+  }),
+};
+
+export const mockMatches: { id: MockMatchId; label: string }[] = [
+  { id: "full", label: matchConfigs.full.label },
+  { id: "short", label: matchConfigs.short.label },
+];
+
+const defaultMatchId: MockMatchId = "full";
+
+// Fixed absolute epoch used when a room has not taken manual control yet
+// (mock_anchor_ms is null). Because it is a constant, every device computes
+// the same free-running clock with no dependence on local wall-clock offset.
 const sharedMatchEpochMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-const mockGameControlStorageKey = "afi.mock-game-control";
-const mockGameControlEvent = "afi:mock-game-control";
+
+// Serializable control state persisted per-room in Supabase. The whole live
+// game is a pure function of this control + the current time, so any device
+// holding the same control renders the same match and clock.
+export type MockGameControl = {
+  matchId: MockMatchId;
+  anchorMs: number | null;
+  offsetSeconds: number;
+};
+
+export const DEFAULT_MOCK_CONTROL: MockGameControl = {
+  matchId: defaultMatchId,
+  anchorMs: null,
+  offsetSeconds: 0,
+};
 
 function formatClock(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -505,18 +657,22 @@ function formatQuarterLabel(segment: ResolvedSegment) {
   return "4th";
 }
 
-function resolveSegment(second: number) {
+function resolveSegment(config: MatchConfig, second: number) {
   return (
-    resolvedTimeline.find(
+    config.resolvedTimeline.find(
       (segment) => second >= segment.startAt && second < segment.endAt
-    ) ?? resolvedTimeline[resolvedTimeline.length - 1]
+    ) ?? config.resolvedTimeline[config.resolvedTimeline.length - 1]
   );
 }
 
-function resolveClock(segment: ResolvedSegment, second: number) {
+function resolveClock(
+  config: MatchConfig,
+  segment: ResolvedSegment,
+  second: number
+) {
   if (segment.kind === "final") return "0:00";
 
-  const offset = Math.max(0, second - segment.startAt) / TIME_SCALE;
+  const offset = Math.max(0, second - segment.startAt) / config.timeScale;
   const remaining = Math.max(
     segment.clockEnd,
     segment.clockStart - Math.floor(offset)
@@ -524,8 +680,8 @@ function resolveClock(segment: ResolvedSegment, second: number) {
   return formatClock(remaining);
 }
 
-function resolveScore(second: number) {
-  return scoreEvents.reduce(
+function resolveScore(config: MatchConfig, second: number) {
+  return config.scoreEvents.reduce(
     (score, event) => {
       if (event.at > second) return score;
 
@@ -538,34 +694,60 @@ function resolveScore(second: number) {
           event.team === "lakers" ? score.lakers + event.points : score.lakers,
       };
     },
-    { warriors: 0, lakers: 0 }
+    { warriors: config.baseScore.warriors, lakers: config.baseScore.lakers }
   );
 }
 
-function buildMomentLabel(at: number) {
-  const segment = resolveSegment(at);
+function buildMomentLabel(config: MatchConfig, at: number) {
+  const segment = resolveSegment(config, at);
   const quarterLabel = formatQuarterLabel(segment);
 
   if (segment.kind === "final") return "Final";
-  return `${quarterLabel} ${resolveClock(segment, at)}`;
+  return `${quarterLabel} ${resolveClock(config, segment, at)}`;
 }
 
-function resolveHighlights(second: number): MockGameHighlight[] {
-  return scoreEvents
+function resolveHighlights(
+  config: MatchConfig,
+  second: number
+): MockGameHighlight[] {
+  return config.scoreEvents
     .filter((event) => event.at <= second)
     .slice(-5)
     .reverse()
     .map((event) => ({
-      time: buildMomentLabel(event.at),
+      time: buildMomentLabel(config, event.at),
       text: event.text,
     }));
 }
 
-export function getMockGameSnapshot(second: number): MockGameSnapshot {
-  const clampedSecond = Math.min(second, finalPlayableSecond);
-  const segment = resolveSegment(clampedSecond);
-  const score = resolveScore(clampedSecond);
-  const cycleStartMs = getCurrentCycleStartMs();
+function getCycleContext(control: MockGameControl, nowMs: number) {
+  const config = matchConfigs[control.matchId] ?? matchConfigs[defaultMatchId];
+  const anchorMs = control.anchorMs ?? sharedMatchEpochMs;
+  const offsetSeconds = control.offsetSeconds ?? 0;
+  const elapsedMs = nowMs - anchorMs + offsetSeconds * 1000;
+  const cycleDurationMs = config.matchCycleSeconds * 1000;
+  const normalizedMs =
+    ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
+
+  return {
+    config,
+    cycleStartMs: nowMs - normalizedMs,
+    second: Math.min(
+      Math.floor(normalizedMs / 1000),
+      config.finalPlayableSecond
+    ),
+  };
+}
+
+// Pure: the whole live game derives from the (room-synced) control + the
+// current time. Two devices holding the same control render the same game.
+export function computeMockGameSnapshot(
+  control: MockGameControl,
+  nowMs: number = Date.now()
+): MockGameSnapshot {
+  const { config, cycleStartMs, second } = getCycleContext(control, nowMs);
+  const segment = resolveSegment(config, second);
+  const score = resolveScore(config, second);
 
   return {
     leftTeam: teams.warriors,
@@ -573,82 +755,21 @@ export function getMockGameSnapshot(second: number): MockGameSnapshot {
     leftScore: score.warriors,
     rightScore: score.lakers,
     quarterLabel: formatQuarterLabel(segment),
-    clock: resolveClock(segment, clampedSecond),
+    clock: resolveClock(config, segment, second),
     statusLabel: segment.statusLabel,
     detail: segment.detail,
-    highlights: resolveHighlights(clampedSecond),
-    elapsedSecond: clampedSecond,
+    highlights: resolveHighlights(config, second),
+    elapsedSecond: second,
     cycleStartMs,
+    matchId: config.id,
   };
-}
-
-function getCurrentCycleContext(nowMs = Date.now()) {
-  const controlState = getMockGameControlState();
-  const anchorMs = controlState?.anchorMs ?? sharedMatchEpochMs;
-  const offsetSeconds = controlState?.offsetSeconds ?? 0;
-  const elapsedMs = nowMs - anchorMs + offsetSeconds * 1000;
-  const cycleDurationMs = matchCycleSeconds * 1000;
-  const normalizedMs =
-    ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
-
-  return {
-    cycleStartMs: nowMs - normalizedMs,
-    second: Math.min(Math.floor(normalizedMs / 1000), finalPlayableSecond),
-  };
-}
-
-function getSharedMatchSecond(nowMs = Date.now()) {
-  return getCurrentCycleContext(nowMs).second;
-}
-
-function getCurrentCycleStartMs(nowMs = Date.now()) {
-  return getCurrentCycleContext(nowMs).cycleStartMs;
-}
-
-function getMockGameControlState(): MockGameControlState | null {
-  if (typeof window === "undefined") return null;
-
-  const raw = window.localStorage.getItem(mockGameControlStorageKey);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as MockGameControlState;
-    if (
-      typeof parsed.anchorMs !== "number" ||
-      typeof parsed.offsetSeconds !== "number"
-    ) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function updateMockGameControl(offsetSeconds: number) {
-  if (typeof window === "undefined") return;
-
-  const nextState: MockGameControlState = {
-    anchorMs: Date.now(),
-    offsetSeconds,
-  };
-
-  window.localStorage.setItem(
-    mockGameControlStorageKey,
-    JSON.stringify(nextState)
-  );
-  window.dispatchEvent(new CustomEvent(mockGameControlEvent));
-}
-
-export function getCurrentMockGameSnapshot() {
-  return getMockGameSnapshot(getSharedMatchSecond());
 }
 
 export function getMockPredictionState(
-  snapshot: Pick<MockGameSnapshot, "elapsedSecond" | "cycleStartMs">
+  snapshot: Pick<MockGameSnapshot, "elapsedSecond" | "cycleStartMs" | "matchId">
 ): MockPredictionState {
-  const activeEventIndex = scoreEvents.findIndex(
+  const config = matchConfigs[snapshot.matchId] ?? matchConfigs[defaultMatchId];
+  const activeEventIndex = config.scoreEvents.findIndex(
     (event) => event.at > snapshot.elapsedSecond
   );
 
@@ -656,9 +777,9 @@ export function getMockPredictionState(
   const closesInSeconds =
     activeRound === null
       ? null
-      : Math.max(0, scoreEvents[activeRound].at - snapshot.elapsedSecond);
+      : Math.max(0, config.scoreEvents[activeRound].at - snapshot.elapsedSecond);
 
-  const resolvedRounds = scoreEvents
+  const resolvedRounds = config.scoreEvents
     .filter((event) => event.at <= snapshot.elapsedSecond)
     .map((event, index) => ({
       round: index,
@@ -676,42 +797,27 @@ export function getMockPredictionState(
   };
 }
 
-export function resetMockGame() {
-  updateMockGameControl(0);
+// ---------------------------------------------------------------------------
+// Owner control builders. These produce the next control state to persist on
+// the room when the owner presses a button. anchorMs = now re-bases the clock
+// so the new match / jump starts immediately for everyone in the room.
+// ---------------------------------------------------------------------------
+
+export function buildResetControl(matchId: MockMatchId): MockGameControl {
+  return { matchId, anchorMs: Date.now(), offsetSeconds: 0 };
 }
 
-export function jumpToMockGameLastQuarter() {
-  updateMockGameControl(fourthQuarterStartSecond);
+export function buildLastQuarterControl(matchId: MockMatchId): MockGameControl {
+  const config = matchConfigs[matchId] ?? matchConfigs[defaultMatchId];
+  return {
+    matchId,
+    anchorMs: Date.now(),
+    offsetSeconds: config.fourthQuarterStartSecond,
+  };
 }
 
-export function subscribeToMockGameFeed(
-  onUpdate: (snapshot: MockGameSnapshot) => void
-) {
-  const emitSnapshot = () => {
-    onUpdate(getCurrentMockGameSnapshot());
-  };
-
-  emitSnapshot();
-  const intervalId = window.setInterval(() => {
-    emitSnapshot();
-  }, 1000);
-
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === mockGameControlStorageKey) {
-      emitSnapshot();
-    }
-  };
-
-  const handleControlUpdate = () => {
-    emitSnapshot();
-  };
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(mockGameControlEvent, handleControlUpdate);
-
-  return () => {
-    window.clearInterval(intervalId);
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(mockGameControlEvent, handleControlUpdate);
-  };
+// Switching matches restarts the freshly selected match from the top so the
+// scoreboard and prediction rounds line up with the new timeline.
+export function buildSelectMatchControl(matchId: MockMatchId): MockGameControl {
+  return buildResetControl(matchId);
 }

@@ -14,10 +14,6 @@ import {
 } from '../../hooks/useRooms';
 import RoomCard, { isRoomNew, type Room } from '../../components/ui/RoomCard';
 import {
-  jumpToMockGameLastQuarter,
-  resetMockGame,
-} from '../../hooks/useMockRoomGameFeed';
-import {
   subscribeToAllRoomMessages,
   shouldHideRoomMessage,
   isRoomEventMessage,
@@ -332,14 +328,6 @@ function RoomsPage() {
     });
   }
 
-  function handleResetGame() {
-    resetMockGame();
-  }
-
-  function handleJumpToLastQuarter() {
-    jumpToMockGameLastQuarter();
-  }
-
   function isRoomUnread(room: Room): boolean {
     if (!room.lastMessageAt || room.lastMessageFromMe) return false;
     if (typeof window === 'undefined') return false;
@@ -636,26 +624,6 @@ function RoomsPage() {
         </div>
       )}
 
-      {/* Mock game controls */}
-      <div className="mt-1 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5">
-        <p className="font-lato text-[0.7rem] font-bold uppercase tracking-[0.16em] text-slate-400">
-          Mock Game
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={handleResetGame}
-            className="rounded-lg px-3 py-1.5 font-lato text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
-          >
-            Reset
-          </button>
-          <button
-            onClick={handleJumpToLastQuarter}
-            className="rounded-lg bg-primary px-3 py-1.5 font-lato text-xs font-bold text-secondary transition hover:bg-primary-dark"
-          >
-            Last Quarter
-          </button>
-        </div>
-      </div>
     </div>
   );
 
