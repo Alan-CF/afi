@@ -709,6 +709,7 @@ function ShootYourShot() {
   };
 
   const handleBackToMenu = () => {
+    const wasInChallenge = Boolean(challengeId);
     resetGame();
     setThrowRequest(null);
     setHasShotOnce(false);
@@ -734,6 +735,10 @@ function ShootYourShot() {
     sessionStorage.removeItem('shoot_join_code');
 
     setGameMode('menu');
+
+    if (wasInChallenge) {
+      window.location.reload();
+    }
   };
 
   const cancelCurrentChallenge = async () => {
