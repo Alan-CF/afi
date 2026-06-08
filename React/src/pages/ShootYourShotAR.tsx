@@ -1392,11 +1392,25 @@ function ShootYourShot() {
                       </div>
                     )}
                   </div>
-
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGame();
+                      setThrowRequest(null);
+                      setHasShotOnce(false);
+                      setTotalShots(0);
+                      setGameSaved(false);
+                      startGame();
+                    }}
+                    className="mt-6 w-full rounded-2xl bg-primary text-secondary py-4 font-extrabold uppercase tracking-wide hover:brightness-90 transition"
+                  >
+                    Play Again
+                  </button>
                   <button
                     type="button"
                     onClick={handleBackToMenu}
-                    className="mt-6 w-full rounded-2xl bg-secondary text-white py-4 font-extrabold uppercase tracking-wide hover:bg-secondary/90 transition"
+                    className="mt-3 w-full rounded-2xl bg-secondary text-white py-4 font-extrabold uppercase tracking-wide hover:bg-secondary/90 transition"
                   >
                     Back to Menu
                   </button>
