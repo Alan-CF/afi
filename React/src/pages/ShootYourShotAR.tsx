@@ -480,9 +480,12 @@ function ShootYourShot() {
       setChallengeId('');
       setChallengeCode('');
       setChallengePlayers([]);
+      setChallengeResults([]);
+      setChallengeCompleted(false);
+      setChallengeWinner(null);
       setIsHost(false);
       setGameMode('menu');
-      setChallengeError('This challenge was cancelled because the host disconnected.');
+      setChallengeError('This challenge was cancelled because the host left.');
     }
   };
 
@@ -570,7 +573,10 @@ function ShootYourShot() {
 
       await supabase
         .from('shoot_challenge_players')
-        .update({ last_seen_at: new Date().toISOString() })
+        .update({
+          last_seen_at: new Date().toISOString(),
+          status: gameMode === 'lobby' ? 'joined' : 'playing',
+        })
         .eq('challenge_id', challengeId)
         .eq('profile_id', user.id);
     };
@@ -830,6 +836,18 @@ function ShootYourShot() {
             challengeStartedRef.current = true;
             setGameMode('solo');
             startGame();
+          }
+
+          if (updatedChallenge.status === 'cancelled') {
+            setChallengeId('');
+            setChallengeCode('');
+            setChallengePlayers([]);
+            setChallengeResults([]);
+            setChallengeCompleted(false);
+            setChallengeWinner(null);
+            setIsHost(false);
+            setGameMode('menu');
+            setChallengeError('This challenge was cancelled because the host left.');
           }
         }
       )
