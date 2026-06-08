@@ -16,6 +16,8 @@ type ThrowVelocity = {
 
 type Position3D = [number, number, number];
 
+type GameMode = 'menu' | 'solo' | 'join' | 'lobby';
+
 type ShootRankingPlayer = {
   profile_id: string;
   name: string | null;
@@ -49,19 +51,16 @@ type ChallengeResultPlayer = {
   } | null;
 };
 
-function Hoop({ position, onMoveX, }: { position: Position3D;
-  onMoveX: (x: number) => void; }) {
+function Hoop({ position, onMoveX }: { position: Position3D; onMoveX: (x: number) => void }) {
   const hoopRef = useRef<THREE.Group>(null);
+  const isDesktop =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(min-width: 768px)').matches;
+  const movementRange = isDesktop ? 1.25 : 0.65;
+  const speed = isDesktop ? 0.65 : 0.75;
 
   useFrame(({ clock }) => {
     if (!hoopRef.current) return;
-
-    const isDesktop =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(min-width: 768px)').matches;
-
-    const movementRange = isDesktop ? 1.25 : 0.65;
-    const speed = isDesktop ? 0.65 : 0.75;
 
     const nextX =
       position[0] + Math.sin(clock.getElapsedTime() * speed) * movementRange;
@@ -106,22 +105,23 @@ function Ball({
   const ballRef = useRef<THREE.Mesh>(null);
   const basketballTexture = useTexture('/basketball-texture.webp');
   const velocity = useRef(new THREE.Vector3(0, 0, 0));
+  const startPosition = useRef<THREE.Vector3>(new THREE.Vector3(0, -0.5, -1.2));
+  const hoopVec = useRef(new THREE.Vector3());
+  const rimCenterVec = useRef(new THREE.Vector3());
   const [isThrown, setIsThrown] = useState(false);
   const hasScored = useRef(false);
   const hasBounced = useRef(false);
 
   const getRandomStartPosition = (): Position3D => {
-    const randomX = THREE.MathUtils.randFloatSpread(0.8); 
-    const randomZ = THREE.MathUtils.randFloat(-1.35, -1.05);
-
-    return [randomX, -0.50, randomZ];
+    const randomZ = THREE.MathUtils.randFloat(-1.28, -1.12);
+    return [0, -0.50, randomZ];
   };
 
   const resetBall = () => {
     if (!ballRef.current) return;
-
     const [x, y, z] = getRandomStartPosition();
     ballRef.current.position.set(x, y, z);
+    startPosition.current.set(x, y, z);
     velocity.current.set(0, 0, 0);
     setIsThrown(false);
     hasScored.current = false;
@@ -144,97 +144,156 @@ function Ball({
     velocity.current.y -= 0.0038;
 
     const ballPosition = ballRef.current.position;
-    const hoop = new THREE.Vector3(...hoopPosition);
-    const rimCenter = new THREE.Vector3(hoop.x, hoop.y, hoop.z + 0.38);
+    hoopVec.current.set(hoopPosition[0], hoopPosition[1], hoopPosition[2]);
+    rimCenterVec.current.set(hoopPosition[0], hoopPosition[1], hoopPosition[2] + 0.38);
+    const hoop = hoopVec.current;
+    const rimCenter = rimCenterVec.current;
 
     const isFalling = velocity.current.y < 0;
 
     const wentThroughHoop =
-    isFalling &&
-    Math.abs(ballPosition.x - rimCenter.x) < 0.23 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.23 &&
-    ballPosition.y < rimCenter.y + 0.2 &&
-    ballPosition.y > rimCenter.y - 0.22;
+      isFalling &&
+      Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
+      Math.abs(ballPosition.z - rimCenter.z) < 0.40 &&
+      ballPosition.y < rimCenter.y + 0.36 &&
+      ballPosition.y > rimCenter.y - 0.36;
 
     const nearRim =
-    Math.abs(ballPosition.x - rimCenter.x) < 0.48 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.48 &&
-    Math.abs(ballPosition.y - rimCenter.y) < 0.2;
+      Math.abs(ballPosition.x - rimCenter.x) < 0.44 &&
+      Math.abs(ballPosition.z - rimCenter.z) < 0.44 &&
+      Math.abs(ballPosition.y - rimCenter.y) < 0.16;
 
     const insideScoringArea =
-    Math.abs(ballPosition.x - rimCenter.x) < 0.23 &&
-    Math.abs(ballPosition.z - rimCenter.z) < 0.23;
+      Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
+      Math.abs(ballPosition.z - rimCenter.z) < 0.38;
 
     const hitRim =
-    !wentThroughHoop &&
-    !insideScoringArea &&
-    !hasBounced.current &&
-    nearRim;
+      !wentThroughHoop &&
+      !insideScoringArea &&
+      !hasBounced.current &&
+      nearRim;
 
     const hitBackboard =
-    !wentThroughHoop &&
-    !hasBounced.current &&
-    Math.abs(ballPosition.x - hoop.x) < 0.75 &&
-    ballPosition.y > hoop.y + 0.05 &&
-    ballPosition.y < hoop.y + 0.85 &&
-    ballPosition.z < hoop.z + 0.08 &&
-    ballPosition.z > hoop.z - 0.12;
+      !wentThroughHoop &&
+      !hasBounced.current &&
+      Math.abs(ballPosition.x - hoop.x) < 0.75 &&
+      ballPosition.y > hoop.y + 0.05 &&
+      ballPosition.y < hoop.y + 0.85 &&
+      ballPosition.z < hoop.z + 0.08 &&
+      ballPosition.z > hoop.z - 0.12;
 
     if (wentThroughHoop && !hasScored.current) {
-    hasScored.current = true;
-    onScore();
+      hasScored.current = true;
+      onScore();
     }
 
     if ((hitRim || hitBackboard) && !hasScored.current) {
-    hasBounced.current = true;
+      hasBounced.current = true;
 
-    velocity.current.x =
+      velocity.current.x =
         velocity.current.x * -0.75 + (ballPosition.x - rimCenter.x) * 0.025;
 
-    velocity.current.y = Math.abs(velocity.current.y) * 0.28;
+      velocity.current.y = Math.abs(velocity.current.y) * 0.28;
 
-    velocity.current.z =
+      velocity.current.z =
         velocity.current.z * -0.25 + (ballPosition.z - rimCenter.z) * 0.025;
     }
 
     if (ballPosition.y < -2 || ballPosition.z < -8 || ballPosition.z > 2) {
-    resetBall();
+      resetBall();
     }
   });
 
   return (
     <mesh ref={ballRef} position={[0, -0.50, -1.2]}>
       <sphereGeometry args={[0.1, 48, 48]} />
-
-      <meshStandardMaterial
-        map={basketballTexture}
-        roughness={0.9}
-      />
+      <meshStandardMaterial map={basketballTexture} roughness={0.9} />
     </mesh>
   );
 }
 
-function ShootYourShotAR() {
+function ShootYourShot() {
   const navigate = useNavigate();
-  const [gameMode, setGameMode] = useState<
-    'menu' | 'solo' | 'create' | 'join' | 'lobby'
-  >('menu');
 
-  const [challengeCode, setChallengeCode] = useState('');
-  const [challengeId, setChallengeId] = useState('');
+  const getSavedGameMode = (): GameMode => {
+    const savedMode = sessionStorage.getItem('shoot_game_mode');
+
+    if (
+      savedMode === 'menu' ||
+      savedMode === 'solo' ||
+      savedMode === 'join' ||
+      savedMode === 'lobby'
+    ) {
+      return savedMode;
+    }
+
+    return 'menu';
+  };
+
+  const [gameMode, setGameMode] = useState<GameMode>(getSavedGameMode);
+
+  const [challengeCode, setChallengeCode] = useState(
+    () => sessionStorage.getItem('shoot_challenge_code') ?? ''
+  );
+
+  const [challengeId, setChallengeId] = useState(
+    () => sessionStorage.getItem('shoot_challenge_id') ?? ''
+  );
+
+  const [joinCode, setJoinCode] = useState(
+    () => sessionStorage.getItem('shoot_join_code') ?? ''
+  );
+
   const [challengePlayers, setChallengePlayers] = useState<ChallengePlayer[]>([]);
   const [isHost, setIsHost] = useState(false);
-  const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
   const isChallengeMode = Boolean(challengeId);
   const [challengeResults, setChallengeResults] = useState<ChallengeResultPlayer[]>([]);
   const [challengeCompleted, setChallengeCompleted] = useState(false);
-  const [challengeWinner, setChallengeWinner] =
-    useState<ChallengeResultPlayer | null>(null);
+  const [challengeWinner, setChallengeWinner] = useState<ChallengeResultPlayer | null>(null);
+  const challengeStartedRef = useRef(false);
+  const isCancellingOwnChallengeRef = useRef(false);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
+  const [isCreatingChallenge, setIsCreatingChallenge] = useState(false);
+  const [isJoiningChallenge, setIsJoiningChallenge] = useState(false);
 
-  const completeChallengeIfReady = async () => {
-    if (!challengeId || !isChallengeMode) return;
+  useEffect(() => {
+    sessionStorage.setItem('shoot_game_mode', gameMode);
+  }, [gameMode]);
 
+  useEffect(() => {
+    sessionStorage.setItem('shoot_challenge_id', challengeId);
+  }, [challengeId]);
+
+  useEffect(() => {
+    sessionStorage.setItem('shoot_challenge_code', challengeCode);
+  }, [challengeCode]);
+
+  useEffect(() => {
+    sessionStorage.setItem('shoot_join_code', joinCode);
+  }, [joinCode]);
+
+  useEffect(() => {
+    if (gameMode === 'lobby' && !challengeId) {
+      setGameMode('menu');
+    }
+  }, [gameMode, challengeId]);
+
+  const handleChallengeCancelled = (showMessage: boolean) => {
+    setChallengeId('');
+    setChallengeCode('');
+    setChallengePlayers([]);
+    setChallengeResults([]);
+    setChallengeCompleted(false);
+    setChallengeWinner(null);
+    setIsHost(false);
+    setGameMode('menu');
+    if (showMessage) {
+      setChallengeError('This challenge was cancelled because the host left.');
+    }
+  };
+
+  const fetchChallengePlayerData = async (): Promise<ChallengeResultPlayer[] | null> => {
     const { data, error } = await supabase
       .from('shoot_challenge_players')
       .select(`
@@ -251,9 +310,9 @@ function ShootYourShotAR() {
       `)
       .eq('challenge_id', challengeId);
 
-    if (error || !data) return;
+    if (error || !data) return null;
 
-    const mappedPlayers: ChallengeResultPlayer[] = data.map((player) => ({
+    return data.map((player) => ({
       profile_id: player.profile_id,
       score: player.score,
       total_shots: player.total_shots,
@@ -263,28 +322,17 @@ function ShootYourShotAR() {
         ? player.profiles[0] ?? null
         : player.profiles,
     }));
+  };
 
-    const allFinished =
-      mappedPlayers.length > 0 &&
-      mappedPlayers.every(
-        (player) => player.status === 'finished' || player.status === 'disconnected'
-      );
+  const completeChallengeIfReady = async () => {
+    if (!challengeId || !isChallengeMode) return;
 
-    const sortedPlayers = [...mappedPlayers].sort((a, b) => {
-      const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
-      if (scoreDiff !== 0) return scoreDiff;
+    const players = await fetchChallengePlayerData();
+    if (!players) return;
 
-      return (b.success_rate ?? -1) - (a.success_rate ?? -1);
-    });
-
-    setChallengeResults(sortedPlayers);
+    const { allFinished } = updateChallengeResultsState(players);
 
     if (!allFinished) return;
-
-    const winner = sortedPlayers[0] ?? null;
-
-    setChallengeCompleted(true);
-    setChallengeWinner(winner);
 
     await supabase
       .from('shoot_challenges')
@@ -295,98 +343,113 @@ function ShootYourShotAR() {
       .eq('id', challengeId);
   };
 
-  const loadChallengeResults = async () => {
-    if (!challengeId) return;
-
-    const { data, error } = await supabase
-      .from('shoot_challenge_players')
-      .select(`
-        profile_id,
-        score,
-        total_shots,
-        success_rate,
-        status,
-        profiles (
-          name,
-          username,
-          avatar_url
-        )
-      `)
-      .eq('challenge_id', challengeId)
-      .order('score', { ascending: false });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    const mappedResults: ChallengeResultPlayer[] =
-      data?.map((player) => ({
-        profile_id: player.profile_id,
-        score: player.score,
-        total_shots: player.total_shots,
-        success_rate: player.success_rate,
-        status: player.status,
-        profiles: Array.isArray(player.profiles)
-          ? player.profiles[0] ?? null
-          : player.profiles,
-      })) ?? [];
-
-    mappedResults.sort((a, b) => {
+  const updateChallengeResultsState = (players: ChallengeResultPlayer[]) => {
+    const sortedPlayers = [...players].sort((a, b) => {
       const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
       if (scoreDiff !== 0) return scoreDiff;
 
       return (b.success_rate ?? -1) - (a.success_rate ?? -1);
     });
 
-    setChallengeResults(mappedResults);
+    setChallengeResults(sortedPlayers);
+
+    const allFinished =
+      sortedPlayers.length > 0 &&
+      sortedPlayers.every(
+        (player) =>
+          player.status === 'finished' || player.status === 'disconnected'
+      );
+
+    if (allFinished) {
+      setChallengeCompleted(true);
+      setChallengeWinner(sortedPlayers[0] ?? null);
+    }
+
+    return {
+      sortedPlayers,
+      allFinished,
+    };
+  };
+
+  const loadChallengeResults = async () => {
+    if (!challengeId) return;
+
+    const players = await fetchChallengePlayerData();
+    if (!players) return;
+
+    updateChallengeResultsState(players);
   };
 
   const handleJoinChallenge = async () => {
-    const cleanCode = joinCode.trim().toUpperCase();
+    setIsJoiningChallenge(true);
 
-    if (!cleanCode) {
-      setJoinError('Enter a challenge code.');
-      return;
+    try {
+      const cleanCode = joinCode.trim().toUpperCase();
+
+      if (!cleanCode) {
+        setJoinError('Enter a challenge code.');
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setJoinError('You need to log in to join a challenge.');
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('join_shoot_challenge', {
+        p_code: cleanCode,
+      });
+
+      if (error) {
+        console.error(error);
+
+        if (error.message.includes('not found')) {
+          setJoinError('Challenge not found.');
+        } else if (error.message.includes('already started')) {
+          setJoinError('This challenge already started.');
+        } else if (error.message.includes('cancelled')) {
+          setJoinError('This challenge was cancelled because the host left.');
+        } else if (error.message.includes('already ended')) {
+          setJoinError('This challenge has already ended.');
+        } else {
+          setJoinError('Could not join challenge. Please try again.');
+        }
+
+        return;
+      }
+
+      const joinedChallenge = data?.[0];
+
+      if (!joinedChallenge) {
+        setJoinError('Challenge not found.');
+        return;
+      }
+
+      const joinedChallengeId =
+        joinedChallenge.out_challenge_id ?? joinedChallenge.challenge_id;
+
+      const joinedChallengeCode =
+        joinedChallenge.out_challenge_code ?? joinedChallenge.challenge_code;
+
+      if (!joinedChallengeId || !joinedChallengeCode) {
+        setJoinError('Challenge joined, but response was incomplete.');
+        return;
+      }
+
+      setChallengeId(joinedChallengeId);
+      setChallengeCode(joinedChallengeCode);
+      setIsHost(false);
+      setJoinError(null);
+      setGameMode('lobby');
+
+      await loadChallengePlayers(joinedChallengeId);
+    } finally {
+      setIsJoiningChallenge(false);
     }
-
-    const { data, error } = await supabase.rpc('join_shoot_challenge', {
-      p_code: cleanCode,
-    });
-
-    console.log('join_shoot_challenge response:', { data, error });
-
-    if (error) {
-      setJoinError(error.message);
-      return;
-    }
-
-    const joinedChallenge = data?.[0];
-
-    if (!joinedChallenge) {
-      setJoinError('Challenge not found.');
-      return;
-    }
-
-    const joinedChallengeId =
-      joinedChallenge.out_challenge_id ?? joinedChallenge.challenge_id;
-
-    const joinedChallengeCode =
-      joinedChallenge.out_challenge_code ?? joinedChallenge.challenge_code;
-
-    if (!joinedChallengeId || !joinedChallengeCode) {
-      setJoinError('Challenge joined, but response was incomplete.');
-      console.log('Unexpected join response:', joinedChallenge);
-      return;
-    }
-
-    setChallengeId(joinedChallengeId);
-    setChallengeCode(joinedChallengeCode);
-    setIsHost(false);
-    setJoinError(null);
-    setGameMode('lobby');
-
-    await loadChallengePlayers(joinedChallengeId);
   };
 
   const loadChallengeStatus = async () => {
@@ -394,19 +457,33 @@ function ShootYourShotAR() {
 
     const { data, error } = await supabase
       .from('shoot_challenges')
-      .select('status, started_at')
+      .select('status, started_at, host_profile_id')
       .eq('id', challengeId)
       .maybeSingle();
 
     if (error || !data) return;
 
-    if (data.status === 'playing' && gameMode === 'lobby') {
+    const {data: { user },
+    } = await supabase.auth.getUser();
+
+    setIsHost(Boolean(user && data.host_profile_id === user.id));
+
+    if (
+      data.status === 'playing' &&
+      gameMode === 'lobby' &&
+      !challengeStartedRef.current
+    ) {
+      challengeStartedRef.current = true;
       setGameMode('solo');
       startGame();
     }
 
     if (data.status === 'completed') {
       setChallengeCompleted(true);
+    }
+
+    if (data.status === 'cancelled') {
+      handleChallengeCancelled(!isCancellingOwnChallengeRef.current);
     }
   };
 
@@ -416,12 +493,14 @@ function ShootYourShotAR() {
     loadChallengeStatus();
 
     const interval = window.setInterval(() => {
+      markInactivePlayersDisconnected();
       loadChallengeStatus();
       loadChallengePlayers(challengeId);
     }, 1500);
 
     return () => {
       window.clearInterval(interval);
+      isCancellingOwnChallengeRef.current = false;
     };
   }, [challengeId, gameMode]);
 
@@ -457,8 +536,8 @@ function ShootYourShotAR() {
     setChallengePlayers(mappedPlayers);
   };
 
-  const [hoopPlaced] = useState(true);
-  const [hoopPosition] = useState<Position3D>([0, 0.64, -4]);
+  const hoopPlaced = true;
+  const hoopPosition: Position3D = [0, 0.64, -4];
   const [currentHoopX, setCurrentHoopX] = useState(0);
   const [throwRequest, setThrowRequest] = useState<ThrowVelocity | null>(null);
   const [hasShotOnce, setHasShotOnce] = useState(false);
@@ -480,6 +559,48 @@ function ShootYourShotAR() {
   } = useBasketballGame();
 
   const canThrow = hoopPlaced && status === 'playing';
+
+  useEffect(() => {
+    if (!challengeId || gameMode === 'menu') return;
+
+    const updateHeartbeat = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      await supabase
+        .from('shoot_challenge_players')
+        .update({
+          last_seen_at: new Date().toISOString(),
+          status: gameMode === 'lobby' ? 'joined' : 'playing',
+        })
+        .eq('challenge_id', challengeId)
+        .eq('profile_id', user.id);
+    };
+
+    updateHeartbeat();
+
+    const interval = window.setInterval(updateHeartbeat, 5000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [challengeId, gameMode]);
+
+  const markInactivePlayersDisconnected = async () => {
+    if (!challengeId) return;
+
+    const cutoff = new Date(Date.now() - 15000).toISOString();
+
+    await supabase
+      .from('shoot_challenge_players')
+      .update({ status: 'disconnected' })
+      .eq('challenge_id', challengeId)
+      .in('status', ['joined', 'playing'])
+      .lt('last_seen_at', cutoff);
+  };
 
   const gestureHandlers = useThrowGesture({
     enabled: canThrow,
@@ -509,26 +630,55 @@ function ShootYourShotAR() {
     setRankingLoading(false);
   };
 
-  const [challengeError, setChallengeError] = useState<string | null>(null);
+  const handleOpenJoinChallenge = async () => {
+    setChallengeError(null);
+    setJoinError(null);
+    setJoinCode('');
 
-  const handleCreateChallenge = async () => {
-    const { data, error } = await supabase.rpc(
-      'create_shoot_challenge'
-    );
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (error || !data || data.length === 0) {
-      console.error(error);
-      setChallengeError(error?.message ?? 'Could not create challenge.');
+    if (!user) {
+      setChallengeError('You need to log in to join a challenge.');
       return;
     }
 
-    setChallengeId(data[0].challenge_id);
-    setChallengeCode(data[0].challenge_code);
+    setGameMode('join');
+  };
 
-    await loadChallengePlayers(data[0].challenge_id);
+  const handleCreateChallenge = async () => {
+    setChallengeError(null);
+    setIsCreatingChallenge(true);
 
-    setGameMode('lobby');
-    setIsHost(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setChallengeError('You need to log in to create a challenge.');
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('create_shoot_challenge');
+
+      if (error || !data || data.length === 0) {
+        console.error(error);
+        setChallengeError('Could not create challenge. Please try again.');
+        return;
+      }
+
+      setChallengeId(data[0].challenge_id);
+      setChallengeCode(data[0].challenge_code);
+
+      await loadChallengePlayers(data[0].challenge_id);
+
+      setGameMode('lobby');
+      setIsHost(true);
+    } finally {
+      setIsCreatingChallenge(false);
+    }
   };
 
   const handleStartChallenge = async () => {
@@ -562,14 +712,38 @@ function ShootYourShotAR() {
     setChallengeCompleted(false);
     setChallengeWinner(null);
     setIsHost(false);
+    setJoinCode('');
+    setJoinError(null);
+    setChallengeError(null);
+
+    challengeStartedRef.current = false;
+
+    sessionStorage.removeItem('shoot_game_mode');
+    sessionStorage.removeItem('shoot_challenge_id');
+    sessionStorage.removeItem('shoot_challenge_code');
+    sessionStorage.removeItem('shoot_join_code');
 
     setGameMode('menu');
+  };
+
+  const cancelCurrentChallenge = async () => {
+    if (!challengeId || !isHost) return;
+
+    await supabase
+      .from('shoot_challenges')
+      .update({
+        status: 'cancelled',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', challengeId)
+      .eq('status', 'waiting');
   };
 
   useEffect(() => {
     if (!challengeId) return;
 
     loadChallengePlayers(challengeId);
+    loadChallengeResults();
 
     const channel = supabase
       .channel(`shoot-challenge-${challengeId}`)
@@ -581,8 +755,10 @@ function ShootYourShotAR() {
           table: 'shoot_challenge_players',
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => {
+        async () => {
           loadChallengePlayers(challengeId);
+          await loadChallengeResults();
+          await completeChallengeIfReady();
         }
       )
       .subscribe();
@@ -662,9 +838,17 @@ function ShootYourShotAR() {
             started_at: string | null;
           };
 
-          if (updatedChallenge.status === 'playing') {
+          if (
+            updatedChallenge.status === 'playing' &&
+            !challengeStartedRef.current
+          ) {
+            challengeStartedRef.current = true;
             setGameMode('solo');
             startGame();
+          }
+
+          if (updatedChallenge.status === 'cancelled') {
+            handleChallengeCancelled(!isCancellingOwnChallengeRef.current);
           }
         }
       )
@@ -672,33 +856,7 @@ function ShootYourShotAR() {
 
     return () => {
       supabase.removeChannel(channel);
-    };
-  }, [challengeId]);
-
-  useEffect(() => {
-    if (!challengeId) return;
-
-    const channel = supabase
-      .channel(`shoot-challenge-results-${challengeId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shoot_challenge_players',
-          filter: `challenge_id=eq.${challengeId}`,
-        },
-        async () => {
-          await loadChallengeResults();
-          await completeChallengeIfReady();
-        }
-      )
-      .subscribe();
-
-    loadChallengeResults();
-
-    return () => {
-      supabase.removeChannel(channel);
+      isCancellingOwnChallengeRef.current = false;
     };
   }, [challengeId]);
 
@@ -708,17 +866,30 @@ function ShootYourShotAR() {
   const activeRanking =
     rankingMode === 'global' ? globalRanking : friendsRanking;
 
-    return (
+  return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
       <main className="w-full px-4 sm:px-8 pb-10 pt-5">
         <button
           type="button"
-          onClick={() => navigate('/games')}
+          onClick={async () => {
+            if (gameMode === 'menu') {
+              navigate('/games');
+              return;
+            }
+
+            if (gameMode === 'lobby' && isHost) {
+              isCancellingOwnChallengeRef.current = true;
+              await cancelCurrentChallenge();
+            }
+
+            handleBackToMenu();
+          }}
           aria-label="Go back"
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md transition hover:bg-secondary/90"
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </button>
+
         {gameMode === 'menu' && (
           <section className="rounded-3xl bg-white border border-[var(--color-container-border)] p-6 text-center shadow-sm">
             <p className="text-secondary/70 text-sm uppercase tracking-widest font-semibold">
@@ -745,19 +916,19 @@ function ShootYourShotAR() {
               <button
                 type="button"
                 onClick={handleCreateChallenge}
-                className="rounded-2xl bg-primary py-4 text-secondary font-extrabold uppercase tracking-wide transition hover:brightness-95"
+                disabled={isCreatingChallenge}
+                className="rounded-2xl bg-primary py-4 text-secondary font-extrabold uppercase tracking-wide transition hover:brightness-95 disabled:opacity-50"
               >
-                Create Challenge
+                {isCreatingChallenge ? 'Creating...' : 'Create Challenge'}
               </button>
 
               <button
                 type="button"
-                onClick={() => setGameMode('join')}
+                onClick={handleOpenJoinChallenge}
                 className="rounded-2xl border border-secondary/20 bg-white py-4 text-secondary font-extrabold uppercase tracking-wide transition hover:bg-secondary/5"
               >
                 Join Challenge
               </button>
-
 
               {challengeError && (
                 <p className="mt-3 text-sm font-bold text-red-500">
@@ -783,6 +954,7 @@ function ShootYourShotAR() {
             </p>
 
             <input
+              aria-label="Challenge code"
               value={joinCode}
               onChange={(event) => {
                 setJoinCode(event.target.value.toUpperCase());
@@ -803,22 +975,15 @@ function ShootYourShotAR() {
               <button
                 type="button"
                 onClick={handleJoinChallenge}
-                className="rounded-2xl bg-secondary py-4 text-white font-extrabold uppercase tracking-wide transition hover:bg-secondary/90"
+                disabled={isJoiningChallenge}
+                className="rounded-2xl bg-secondary py-4 text-white font-extrabold uppercase tracking-wide transition hover:bg-secondary/90 disabled:opacity-50"
               >
-                Join Challenge
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setGameMode('menu')}
-                className="rounded-2xl border border-secondary/20 bg-white py-4 text-secondary font-extrabold uppercase tracking-wide transition hover:bg-secondary/5"
-              >
-                Back
+                {isJoiningChallenge ? 'Joining...' : 'Join Challenge'}
               </button>
             </div>
           </section>
         )}
-        
+
         {gameMode === 'lobby' && (
           <section className="rounded-3xl bg-white border border-[var(--color-container-border)] p-6 text-center shadow-sm">
             <p className="text-secondary/70 text-sm uppercase tracking-widest font-semibold">
@@ -873,9 +1038,7 @@ function ShootYourShotAR() {
                 disabled={challengePlayers.length < 2}
                 className="mt-6 w-full rounded-2xl bg-secondary py-4 text-white font-extrabold uppercase tracking-wide transition hover:bg-secondary/90 disabled:opacity-50"
               >
-                {challengePlayers.length < 2
-                  ? 'Waiting for players'
-                  : 'Start Challenge'}
+                {challengePlayers.length < 2 ? 'Waiting for players' : 'Start Challenge'}
               </button>
             )}
 
@@ -1005,9 +1168,6 @@ function ShootYourShotAR() {
                   </div>
                 </div>
               )}
-
-              <div className="pointer-events-auto absolute bottom-5 left-4 right-4 flex flex-col gap-3">
-              </div>
 
               {hoopPlaced && status === 'idle' && (
                 <button
@@ -1224,7 +1384,7 @@ function ShootYourShotAR() {
                                 {player.avg_score} 🏀
                               </p>
                               <p className="text-xs font-bold text-secondary/50">
-                                {player.avg_success_rate}% 
+                                {player.avg_success_rate}%
                               </p>
                             </div>
                           </div>
@@ -1232,11 +1392,25 @@ function ShootYourShotAR() {
                       </div>
                     )}
                   </div>
-
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGame();
+                      setThrowRequest(null);
+                      setHasShotOnce(false);
+                      setTotalShots(0);
+                      setGameSaved(false);
+                      startGame();
+                    }}
+                    className="mt-6 w-full rounded-2xl bg-primary text-secondary py-4 font-extrabold uppercase tracking-wide hover:brightness-90 transition"
+                  >
+                    Play Again
+                  </button>
                   <button
                     type="button"
                     onClick={handleBackToMenu}
-                    className="mt-6 w-full rounded-2xl bg-secondary text-white py-4 font-extrabold uppercase tracking-wide hover:bg-secondary/90 transition"
+                    className="mt-3 w-full rounded-2xl bg-secondary text-white py-4 font-extrabold uppercase tracking-wide hover:bg-secondary/90 transition"
                   >
                     Back to Menu
                   </button>
@@ -1250,4 +1424,4 @@ function ShootYourShotAR() {
   );
 }
 
-export default ShootYourShotAR;
+export default ShootYourShot;
