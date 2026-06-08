@@ -257,6 +257,7 @@ function ShootYourShot() {
   const [challengeWinner, setChallengeWinner] =
     useState<ChallengeResultPlayer | null>(null);
   const challengeStartedRef = useRef(false);
+  const isCancellingOwnChallengeRef = useRef(false);
 
   useEffect(() => {
     sessionStorage.setItem('shoot_game_mode', gameMode);
@@ -483,6 +484,8 @@ function ShootYourShot() {
     }
 
     if (data.status === 'cancelled') {
+      const shouldShowCancelledMessage = !isCancellingOwnChallengeRef.current;
+
       setChallengeId('');
       setChallengeCode('');
       setChallengePlayers([]);
@@ -491,7 +494,10 @@ function ShootYourShot() {
       setChallengeWinner(null);
       setIsHost(false);
       setGameMode('menu');
-      setChallengeError('This challenge was cancelled because the host left.');
+
+      if (shouldShowCancelledMessage) {
+        setChallengeError('This challenge was cancelled because the host left.');
+      }
     }
   };
 
@@ -845,6 +851,9 @@ function ShootYourShot() {
           }
 
           if (updatedChallenge.status === 'cancelled') {
+            const shouldShowCancelledMessage =
+              !isCancellingOwnChallengeRef.current;
+
             setChallengeId('');
             setChallengeCode('');
             setChallengePlayers([]);
@@ -853,7 +862,10 @@ function ShootYourShot() {
             setChallengeWinner(null);
             setIsHost(false);
             setGameMode('menu');
-            setChallengeError('This challenge was cancelled because the host left.');
+
+            if (shouldShowCancelledMessage) {
+              setChallengeError('This challenge was cancelled because the host left.');
+            }
           }
         }
       )
@@ -909,10 +921,12 @@ function ShootYourShot() {
             }
 
             if (gameMode === 'lobby' && isHost) {
+              isCancellingOwnChallengeRef.current = true;
               await cancelCurrentChallenge();
             }
 
             handleBackToMenu();
+            isCancellingOwnChallengeRef.current = false;
           }}
           aria-label="Go back"
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md transition hover:bg-secondary/90"
