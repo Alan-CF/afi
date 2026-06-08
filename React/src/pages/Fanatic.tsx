@@ -94,6 +94,21 @@ function formatTime({ minutes, seconds, total }: CountdownRenderProps) {
     .join(':');
 }
 
+function formatNumberWithCommas(value?: number | null) {
+  if (value === null || value === undefined) return '0';
+  return value.toLocaleString('en-US');
+}
+
+function formatSimilarityPercent(value?: number | null, decimals = 2) {
+  if (value === null || value === undefined) return 'N/A';
+  return (
+    Number((value * 100).toFixed(decimals)).toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }) + '%'
+  );
+}
+
 function Fanatic() {
   const { user, loading: profileLoading } = useProfile();
   const {
@@ -363,14 +378,16 @@ function Fanatic() {
                   </h4>
                   <p className="font-lato text-lg">
                     {submitResult
-                      ? `${(submitResult.similarity_score * 100).toFixed(2)}%`
+                      ? formatSimilarityPercent(submitResult.similarity_score)
                       : 'N/A'}
                   </p>
                   <h4 className="text-xl font-lato text-black font-semibold">
                     Awarded Points:
                   </h4>
                   <p className="font-lato text-lg">
-                    {submitResult ? submitResult.awarded_points : 'N/A'}
+                    {submitResult
+                      ? formatNumberWithCommas(submitResult.awarded_points)
+                      : 'N/A'}
                   </p>
                 </>
               )}
