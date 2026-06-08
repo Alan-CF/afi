@@ -8,6 +8,7 @@ export interface LeaderboardEntry {
     username: string;
     points: number;
     avatar_url: string | null;
+    frameId: string | null;
 }
 
 export interface MyRankInfo {
@@ -16,6 +17,7 @@ export interface MyRankInfo {
     points: number;
     pointsToFirst: number;
     avatar_url: string | null;
+    frameId: string | null;
     streak: number;
 }
 
@@ -30,9 +32,9 @@ export function useLeaderboard() {
             try {
                 const { data: top10, error: topError } = await supabase
                     .from("profiles")
-                    .select("id, username, fanatic_coins, avatar_url")
+                    .select("id, username, fanatic_coins, avatar_url, selected_frame_id")
                     .order("fanatic_coins", { ascending: false })
-                    .limit(10);
+                    .limit(100);
 
                 if (topError) throw topError;
 
@@ -42,6 +44,7 @@ export function useLeaderboard() {
                     username: p.username,
                     points: p.fanatic_coins,
                     avatar_url: p.avatar_url,
+                    frameId: p.selected_frame_id ?? null,
                 }));
 
                 setLeaderboard(entries);
@@ -53,7 +56,7 @@ export function useLeaderboard() {
 
                 const { data: allProfiles, error: allError } = await supabase
                     .from("profiles")
-                    .select("id, fanatic_coins, avatar_url")
+                    .select("id, fanatic_coins, avatar_url, selected_frame_id")
                     .order("fanatic_coins", { ascending: false });
 
                 if (allError) throw allError;
@@ -76,6 +79,7 @@ export function useLeaderboard() {
                     points: userProfile.fanatic_coins,
                     pointsToFirst: position === 1 ? 0 : firstPlace.fanatic_coins - userProfile.fanatic_coins,
                     avatar_url: userProfile.avatar_url ?? null,
+                    frameId: userProfile.selected_frame_id ?? null,
                     streak: streakData?.streak ?? 0,
                 });
             } catch {

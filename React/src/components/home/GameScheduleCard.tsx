@@ -116,9 +116,9 @@ export default function GameScheduleCard({ event, className = "" }: Props) {
           {event.venue && (
             <p className="font-lato text-xs font-bold text-[#1f3668] truncate">{event.venue}</p>
           )}
-          {event.meta.broadcast && (
+          {event.meta.city && (
             <p className="font-lato text-[0.625rem] font-bold text-[#475569] uppercase tracking-wider truncate">
-              {event.meta.broadcast}
+              {event.meta.city}
             </p>
           )}
         </div>

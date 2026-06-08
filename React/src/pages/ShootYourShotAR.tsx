@@ -868,7 +868,7 @@ function ShootYourShot() {
 
   return (
     <div className="min-h-screen bg-text-light-soft font-[family-name:var(--font-lato)]">
-      <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
+      <main className="w-full px-4 sm:px-8 pb-10 pt-5">
         <button
           type="button"
           onClick={async () => {

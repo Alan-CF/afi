@@ -45,6 +45,82 @@ function normalizeTitle(title: string | null | undefined): string {
     .trim();
 }
 
+const LEAD_STOPWORDS = new Set<string>([
+  "this",
+  "that",
+  "with",
+  "from",
+  "have",
+  "been",
+  "they",
+  "their",
+  "about",
+  "warriors",
+  "warrior",
+  "golden",
+  "state",
+  "nba",
+  "espn",
+  "sources",
+  "report",
+  "reports",
+]);
+
+function leadKeywords(title: string | null | undefined): string[] {
+  const out = new Set<string>();
+  for (const raw of (title ?? "").toLowerCase().split(/[^a-z0-9']+/)) {
+    const word = raw.replace(/^'+|'+$/g, "");
+    if (word.length < 4) continue;
+    if (LEAD_STOPWORDS.has(word)) continue;
+    out.add(word);
+  }
+  return [...out];
+}
+
+function endsLikeSentence(p: string): boolean {
+  return /[.!?][)\]"'”’]?\s*$/.test(p.trim());
+}
+
+function isStatListLine(p: string): boolean {
+  if (!p) return false;
+  const s = p.replace(/\*\*/g, "").trim();
+  if (!s) return false;
+  if (/^(19|20)\d{2}-\d{2}\b/.test(s)) return true;
+  if (
+    /^(champion|finals\s+mvp|series\s+mvp|playoff\s+leaders|series\s+result|record|result)\s*:/i.test(
+      s,
+    )
+  ) {
+    return true;
+  }
+  if (/^(pts|reb|trb|ast|stl|blk|min|fg%?|3p%?|ft%?)\s*:/i.test(s)) return true;
+  return false;
+}
+
+function dropLeadingUnrelated(
+  paragraphs: string[],
+  title: string | null | undefined,
+): string[] {
+  if (paragraphs.length === 0) return paragraphs;
+  const keywords = leadKeywords(title);
+  if (keywords.length < 2) return paragraphs;
+  const isLead = (p: string): boolean => {
+    if (p.length < 40 || !endsLikeSentence(p)) return false;
+    const lower = p.toLowerCase();
+    let matches = 0;
+    for (const k of keywords) {
+      if (lower.includes(k)) matches += 1;
+      if (matches >= 2) return true;
+    }
+    return false;
+  };
+  if (isLead(paragraphs[0])) return paragraphs;
+  for (let i = 1; i < paragraphs.length; i += 1) {
+    if (isLead(paragraphs[i])) return paragraphs.slice(i);
+  }
+  return paragraphs;
+}
+
 function normalizeParagraphs(
   paragraphs: string[] | null | undefined,
   body: string | null | undefined,
@@ -75,11 +151,13 @@ function normalizeParagraphs(
     if (!p) continue;
     const key = normalizeTitle(p);
     if (titleKey && key === titleKey) continue;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (!isStatListLine(p)) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+    }
     out.push(p);
   }
-  return out;
+  return dropLeadingUnrelated(out, articleTitle);
 }
 
 async function fetchEnriched(

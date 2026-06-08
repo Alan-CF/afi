@@ -82,17 +82,23 @@ function AccordionGroup({
   );
 }
 
-export default function Footer() {
+interface FooterProps {
+  className?: string;
+}
+
+export default function Footer({ className = '' }: FooterProps) {
   const navigate = useNavigate();
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative bg-secondary text-white overflow-hidden">
+    <footer
+      className={`relative bg-secondary text-white overflow-hidden ${className}`.trim()}
+    >
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 opacity-[0.06]">
         <BayBridgeSilhouette />
       </div>
 
-      <div className="relative mx-auto max-w-[1280px] px-4 md:px-6 lg:px-8">
+      <div className="relative w-full px-4 sm:px-8">
         <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-8 lg:gap-12 py-16">
           <div className="flex flex-col gap-6">
             <img

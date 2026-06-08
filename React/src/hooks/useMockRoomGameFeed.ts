@@ -75,6 +75,10 @@ export const predictionOptions: PredictionOption[] = [
   "Foul",
 ];
 
+// Stretches the whole match timeline (and therefore the gap between
+// prediction rounds / score messages). Higher = more time between points.
+const TIME_SCALE = 3;
+
 const timeline: TimelineSegment[] = [
   {
     kind: "quarter",
@@ -274,7 +278,7 @@ const timeline: TimelineSegment[] = [
   },
 ];
 
-const scoreEvents: ScoreEvent[] = [
+const baseScoreEvents: ScoreEvent[] = [
   {
     at: 7,
     team: "warriors",
@@ -452,6 +456,12 @@ const scoreEvents: ScoreEvent[] = [
   },
 ];
 
+// Scale every event timestamp so messages land further apart in real time.
+const scoreEvents: ScoreEvent[] = baseScoreEvents.map((event) => ({
+  ...event,
+  at: event.at * TIME_SCALE,
+}));
+
 const resolvedTimeline = timeline.reduce<ResolvedSegment[]>(
   (segments, segment) => {
     const previousEnd = segments.length === 0 ? 0 : segments[segments.length - 1].endAt;
@@ -459,7 +469,7 @@ const resolvedTimeline = timeline.reduce<ResolvedSegment[]>(
     segments.push({
       ...segment,
       startAt: previousEnd,
-      endAt: previousEnd + segment.duration,
+      endAt: previousEnd + segment.duration * TIME_SCALE,
     });
 
     return segments;
@@ -506,8 +516,11 @@ function resolveSegment(second: number) {
 function resolveClock(segment: ResolvedSegment, second: number) {
   if (segment.kind === "final") return "0:00";
 
-  const offset = Math.max(0, second - segment.startAt);
-  const remaining = Math.max(segment.clockEnd, segment.clockStart - offset);
+  const offset = Math.max(0, second - segment.startAt) / TIME_SCALE;
+  const remaining = Math.max(
+    segment.clockEnd,
+    segment.clockStart - Math.floor(offset)
+  );
   return formatClock(remaining);
 }
 

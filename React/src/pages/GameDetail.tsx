@@ -53,6 +53,7 @@ function gameAttendeeToFan(attendee: WarriorsGameAttendee): FanEventAttendee {
     createdAt: new Date().toISOString(),
     username: attendee.username,
     avatarUrl: attendee.avatarUrl,
+    frameId: null,
   };
 }
 
@@ -80,6 +81,7 @@ export default function GameDetail() {
         createdAt: new Date().toISOString(),
         username: profile.username,
         avatarUrl: profile.avatar_url || null,
+        frameId: profile.selected_frame_id ?? null,
       };
       return [me, ...base];
     }
@@ -109,7 +111,7 @@ export default function GameDetail() {
     return (
       <div className="flex min-h-screen flex-col bg-text-light-soft">
         <ScoreboardRibbon />
-        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-12 md:px-6 lg:px-8">
+        <main className="w-full flex-1 px-4 sm:px-8 py-12">
           <div className="rounded-3xl border border-container-border bg-white p-8 text-center">
             <p className="font-lato text-base text-text">Game not found.</p>
             <button
@@ -138,7 +140,7 @@ export default function GameDetail() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+      <main className="flex-1 w-full px-4 sm:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <div className="mb-4 flex items-center justify-between gap-3">
           <button
             type="button"
@@ -185,9 +187,6 @@ export default function GameDetail() {
                 <h1 className="font-anton text-3xl leading-[1.05] text-secondary sm:text-4xl md:text-5xl">
                   {game.matchup}
                 </h1>
-                <p className="mt-2 font-lato text-sm font-bold text-[#1f3668]">
-                  {[game.city, game.state].filter(Boolean).join(", ")}
-                </p>
                 {hasFinalScore && (
                   <div className="mt-4 inline-flex items-center gap-3 rounded-2xl bg-[#f6f8fc] px-4 py-2">
                     <span className="font-lato text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#475569]">

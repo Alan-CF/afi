@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -203,6 +203,22 @@ export default function NewsDetail() {
       ? Math.max(1, Math.floor(cleanParagraphs.length * 0.4))
       : -1;
 
+  function renderRichText(text: string): ReactNode {
+    if (!text.includes('**')) {
+      return text;
+    }
+    const parts = text.split(/\*\*(.+?)\*\*/g);
+    return parts.map((part, index) =>
+      index % 2 === 1 ? (
+        <strong key={index} className="font-bold text-secondary">
+          {part}
+        </strong>
+      ) : (
+        <Fragment key={index}>{part.replace(/\*\*/g, '')}</Fragment>
+      )
+    );
+  }
+
   function renderParagraph(p: string, key: string) {
     if (isQuoteParagraph(p)) {
       return (
@@ -210,7 +226,7 @@ export default function NewsDetail() {
           key={key}
           className="my-2 border-l-4 border-primary bg-primary/5 rounded-r-2xl pl-6 pr-5 py-4 font-lato text-lg md:text-2xl text-secondary leading-9 md:leading-10 font-medium italic"
         >
-          {p}
+          {renderRichText(p)}
         </blockquote>
       );
     }
@@ -220,7 +236,7 @@ export default function NewsDetail() {
           key={key}
           className="font-lato text-base md:text-lg text-secondary leading-8 md:leading-9 font-semibold"
         >
-          {p}
+          {renderRichText(p)}
         </p>
       );
     }
@@ -229,7 +245,7 @@ export default function NewsDetail() {
         key={key}
         className="font-lato text-base md:text-lg text-secondary leading-8 md:leading-9"
       >
-        {p}
+        {renderRichText(p)}
       </p>
     );
   }
@@ -238,7 +254,7 @@ export default function NewsDetail() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="flex-1 mx-auto w-full max-w-[1024px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+      <main className="flex-1 w-full px-4 sm:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <button
           type="button"
           onClick={() => navigate('/news')}

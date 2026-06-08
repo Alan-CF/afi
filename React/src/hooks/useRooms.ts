@@ -1,5 +1,11 @@
 import { supabase } from "../lib/supabaseClient";
-import { shouldHideRoomMessage } from "./useRoomChat";
+import { fetchMyFriendIds } from "../lib/friends";
+import { isRoomEventMessage, shouldHideRoomMessage } from "./useRoomChat";
+
+// Messages that should not appear as the room-list last-message preview.
+function isHiddenFromRoomPreview(content: string) {
+  return shouldHideRoomMessage(content) || isRoomEventMessage(content);
+}
 
 export type RoomCardData = {
   id: number;
@@ -9,6 +15,11 @@ export type RoomCardData = {
   subtitle: string;
   accent: string;
   memberProfileIds: string[];
+  lastMessageAt: string | null;
+  lastMessageFromMe: boolean;
+  matchHidden: boolean;
+  imageUrl: string | null;
+  createdAt: string | null;
 };
 
 export type FriendOption = {
@@ -16,7 +27,45 @@ export type FriendOption = {
   name: string;
   accent: string;
   avatar_url: string | null;
+  selected_frame_id: string | null;
 };
+
+export type RoomInvite = {
+  roomId: number;
+  title: string;
+  accent: string;
+  invitedBy: string;
+  memberCount: number;
+  nonFriendCount: number;
+};
+
+// Rooms I created with invites still waiting for a response.
+export type RequestedRoom = {
+  roomId: number;
+  title: string;
+  accent: string;
+  imageUrl: string | null;
+  pendingCount: number;
+  pendingNames: string[];
+};
+
+async function fetchProfileMap(
+  profileIds: string[]
+): Promise<Map<string, string>> {
+  if (profileIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", profileIds);
+
+  if (error) {
+    console.error("profiles error:", error);
+    throw buildQueryError("profiles query failed", error.message);
+  }
+
+  return new Map((data ?? []).map((profile) => [profile.id, profile.username]));
+}
 
 function formatMembers(usernames: string[]) {
   if (usernames.length <= 3) return usernames.join(", ");
@@ -80,7 +129,7 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, selected_frame_id")
     .in("id", friendIds)
     .order("username", { ascending: true });
 
@@ -94,6 +143,7 @@ export async function fetchMyFriends(): Promise<FriendOption[]> {
     name: profile.username,
     accent: friendAccents[index % friendAccents.length],
     avatar_url: profile.avatar_url ?? null,
+    selected_frame_id: profile.selected_frame_id ?? null,
   }));
 }
 
@@ -133,11 +183,17 @@ export async function createRoomWithMembers(
 
   const roomId = createdRoom.id;
   const memberRows = [
-    { room_id: roomId, profile_id: ownerProfileId, role: "owner" },
+    {
+      room_id: roomId,
+      profile_id: ownerProfileId,
+      role: "owner",
+      status: "accepted",
+    },
     ...uniqueMemberIds.map((profileId) => ({
       room_id: roomId,
       profile_id: profileId,
       role: "member" as const,
+      status: "pending" as const,
     })),
   ];
 
@@ -159,12 +215,11 @@ export async function createRoomWithMembers(
 export async function fetchMyRooms(): Promise<RoomCardData[]> {
   const userId = await getAuthenticatedUserId();
 
-  console.log("Authenticated user:", userId);
-
   const { data: myMemberships, error: membershipsError } = await supabase
     .from("room_members")
     .select("room_id")
-    .eq("profile_id", userId);
+    .eq("profile_id", userId)
+    .eq("status", "accepted");
 
   if (membershipsError) {
     console.error("room_members error:", membershipsError);
@@ -173,13 +228,11 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
 
   const roomIds = (myMemberships ?? []).map((item) => item.room_id);
 
-  console.log("My room ids:", roomIds);
-
   if (roomIds.length === 0) return [];
 
   const { data: rooms, error: roomsError } = await supabase
     .from("rooms")
-    .select("id, title, status, accent")
+    .select("id, title, status, accent, match_hidden, image_url, created_at")
     .in("id", roomIds);
 
   if (roomsError) {
@@ -190,7 +243,8 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
   const { data: allMembers, error: allMembersError } = await supabase
     .from("room_members")
     .select("room_id, profile_id")
-    .in("room_id", roomIds);
+    .in("room_id", roomIds)
+    .eq("status", "accepted");
 
   if (allMembersError) {
     console.error("allMembers error:", allMembersError);
@@ -245,7 +299,7 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
 
     const lastMessage = (messages ?? []).find(
       (message) =>
-        message.room_id === room.id && !shouldHideRoomMessage(message.content)
+        message.room_id === room.id && !isHiddenFromRoomPreview(message.content)
     );
 
     const subtitle = lastMessage
@@ -257,9 +311,217 @@ export async function fetchMyRooms(): Promise<RoomCardData[]> {
       title: room.title,
       status: room.status,
       accent: room.accent,
+      matchHidden: room.match_hidden ?? false,
+      imageUrl: room.image_url ?? null,
+      createdAt: room.created_at ?? null,
       members: formatMembers(membersForRoom),
       subtitle,
       memberProfileIds,
+      lastMessageAt: lastMessage ? lastMessage.created_at : null,
+      lastMessageFromMe: lastMessage
+        ? lastMessage.sender_profile_id === userId
+        : false,
     };
   });
+}
+
+async function buildInvitesForRoomIds(
+  roomIds: number[],
+  userId: string
+): Promise<RoomInvite[]> {
+  if (roomIds.length === 0) return [];
+
+  const { data: rooms, error: roomsError } = await supabase
+    .from("rooms")
+    .select("id, title, accent, owner_profile_id")
+    .in("id", roomIds);
+
+  if (roomsError) {
+    console.error("invite rooms error:", roomsError);
+    throw buildQueryError("invite rooms query failed", roomsError.message);
+  }
+
+  const ownerIds = Array.from(
+    new Set((rooms ?? []).map((room) => room.owner_profile_id))
+  );
+
+  const { data: owners, error: ownersError } =
+    ownerIds.length === 0
+      ? { data: [], error: null }
+      : await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", ownerIds);
+
+  if (ownersError) {
+    console.error("invite owners error:", ownersError);
+    throw buildQueryError("invite owners query failed", ownersError.message);
+  }
+
+  const ownerMap = new Map(
+    (owners ?? []).map((owner) => [owner.id, owner.username])
+  );
+
+  // All members of the invited rooms, to flag non-friends.
+  const { data: members, error: membersError } = await supabase
+    .from("room_members")
+    .select("room_id, profile_id")
+    .in("room_id", roomIds);
+
+  if (membersError) {
+    console.error("invite members error:", membersError);
+    throw buildQueryError("invite members query failed", membersError.message);
+  }
+
+  const friendIds = new Set(await fetchMyFriendIds());
+
+  return (rooms ?? []).map((room) => {
+    const roomMembers = (members ?? []).filter(
+      (member) => member.room_id === room.id
+    );
+    const otherMembers = roomMembers.filter(
+      (member) => member.profile_id !== userId
+    );
+    const nonFriendCount = otherMembers.filter(
+      (member) => !friendIds.has(member.profile_id)
+    ).length;
+
+    return {
+      roomId: room.id,
+      title: room.title,
+      accent: room.accent,
+      invitedBy: ownerMap.get(room.owner_profile_id) ?? "Someone",
+      memberCount: otherMembers.length,
+      nonFriendCount,
+    };
+  });
+}
+
+export async function fetchMyRoomInvites(): Promise<RoomInvite[]> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: pendingMemberships, error: pendingError } = await supabase
+    .from("room_members")
+    .select("room_id")
+    .eq("profile_id", userId)
+    .eq("status", "pending");
+
+  if (pendingError) {
+    console.error("pending room_members error:", pendingError);
+    throw buildQueryError("room invites query failed", pendingError.message);
+  }
+
+  const roomIds = Array.from(
+    new Set((pendingMemberships ?? []).map((item) => item.room_id))
+  );
+
+  return buildInvitesForRoomIds(roomIds, userId);
+}
+
+// Outgoing invites: rooms I own that still have members in "pending" status.
+export async function fetchMyRequestedRooms(): Promise<RequestedRoom[]> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: ownedRooms, error: ownedError } = await supabase
+    .from("rooms")
+    .select("id, title, accent, image_url")
+    .eq("owner_profile_id", userId);
+
+  if (ownedError) {
+    console.error("owned rooms error:", ownedError);
+    throw buildQueryError("owned rooms query failed", ownedError.message);
+  }
+
+  const ownedRoomIds = (ownedRooms ?? []).map((room) => room.id);
+  if (ownedRoomIds.length === 0) return [];
+
+  const { data: pendingMembers, error: pendingError } = await supabase
+    .from("room_members")
+    .select("room_id, profile_id")
+    .in("room_id", ownedRoomIds)
+    .eq("status", "pending");
+
+  if (pendingError) {
+    console.error("pending members error:", pendingError);
+    throw buildQueryError("pending members query failed", pendingError.message);
+  }
+
+  const pending = pendingMembers ?? [];
+  if (pending.length === 0) return [];
+
+  const profileMap = await fetchProfileMap(
+    Array.from(new Set(pending.map((member) => member.profile_id)))
+  );
+
+  return (ownedRooms ?? [])
+    .map((room) => {
+      const roomPending = pending.filter(
+        (member) => member.room_id === room.id
+      );
+      return {
+        roomId: room.id,
+        title: room.title,
+        accent: room.accent,
+        imageUrl: room.image_url ?? null,
+        pendingCount: roomPending.length,
+        pendingNames: roomPending
+          .map((member) => profileMap.get(member.profile_id) ?? "User")
+          .filter(Boolean),
+      };
+    })
+    .filter((room) => room.pendingCount > 0);
+}
+
+export async function fetchRoomInvite(
+  roomId: number
+): Promise<RoomInvite | null> {
+  const userId = await getAuthenticatedUserId();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("room_members")
+    .select("room_id, status")
+    .eq("profile_id", userId)
+    .eq("room_id", roomId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (membershipError) {
+    console.error("room invite lookup error:", membershipError);
+    return null;
+  }
+
+  if (!membership) return null;
+
+  const invites = await buildInvitesForRoomIds([roomId], userId);
+  return invites[0] ?? null;
+}
+
+export async function acceptRoomInvite(roomId: number): Promise<void> {
+  const userId = await getAuthenticatedUserId();
+
+  const { error } = await supabase
+    .from("room_members")
+    .update({ status: "accepted" })
+    .eq("room_id", roomId)
+    .eq("profile_id", userId);
+
+  if (error) {
+    console.error("accept room invite error:", error);
+    throw buildQueryError("accept room invite failed", error.message);
+  }
+}
+
+export async function declineRoomInvite(roomId: number): Promise<void> {
+  const userId = await getAuthenticatedUserId();
+
+  const { error } = await supabase
+    .from("room_members")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("profile_id", userId);
+
+  if (error) {
+    console.error("decline room invite error:", error);
+    throw buildQueryError("decline room invite failed", error.message);
+  }
 }

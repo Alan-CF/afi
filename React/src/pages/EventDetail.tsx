@@ -136,6 +136,7 @@ export default function EventDetail() {
         createdAt: new Date().toISOString(),
         username: profile.username,
         avatarUrl: profile.avatar_url || null,
+        frameId: profile.selected_frame_id ?? null,
       };
       return [me, ...event.attendees];
     }
@@ -155,6 +156,12 @@ export default function EventDetail() {
     return baseGoing;
   }, [event, seedAttendance.isAttending, profile]);
 
+  const isFull =
+    !!event &&
+    event.capacity != null &&
+    displayedGoingCount >= event.capacity &&
+    !isAttending;
+
   async function handleToggleAttendance() {
     if (!event) return;
     if (event.source === "seed") {
@@ -173,7 +180,7 @@ export default function EventDetail() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+      <main className="flex-1 w-full px-4 sm:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <div className="mb-4 flex items-center justify-between gap-3">
           <button
             type="button"
@@ -427,7 +434,13 @@ export default function EventDetail() {
                     isLoggedIn={!!currentUserId}
                     isAttending={isAttending}
                     onToggle={handleToggleAttendance}
+                    disabled={isFull}
                   />
+                  {isFull && (
+                    <p className="text-center font-lato text-xs font-bold text-[#be123c]">
+                      This event is full — no spots left.
+                    </p>
+                  )}
                   <InviteFriendsButton
                     eventPath={eventPath}
                     eventTitle={event.title}

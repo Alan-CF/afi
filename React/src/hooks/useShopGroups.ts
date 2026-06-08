@@ -34,7 +34,8 @@ function useShopGroup<T>(rpcName: string, fetchErrorMessage: string) {
         throw error;
       }
 
-      setItems(Array.isArray(data) ? (data as T[]) : []);
+      // RPCs can return null/empty entries; drop them so consumers never map over null.
+      setItems(Array.isArray(data) ? (data as T[]).filter((it) => it != null) : []);
       setError(null);
     } catch (err) {
       console.error(`Error in ${rpcName}:`, err);

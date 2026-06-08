@@ -1,11 +1,11 @@
-import { UserCircleIcon } from '@heroicons/react/24/solid';
 import ScoreboardRibbon from '../components/layout/ScoreboardRibbon';
 import { useLeaderboard } from '../hooks/useRanking';
 import { useProfile } from '../hooks/useProfile';
 import EmptyState from '../components/common/EmptyState';
-import LeaderboardPodium, {
-  type PodiumEntry,
-} from '../components/common/LeaderboardPodium';
+import FramedAvatar from '../components/ui/FramedAvatar';
+import StartingLineup, {
+  type LineupUser,
+} from '../components/leaderboard/StartingLineup';
 
 interface RowEntry {
   profile_id: string;
@@ -13,6 +13,7 @@ interface RowEntry {
   username: string;
   points: number;
   avatar_url: string | null;
+  frameId: string | null;
 }
 
 function ListRow({ entry, isMe = false }: { entry: RowEntry; isMe?: boolean }) {
@@ -23,20 +24,12 @@ function ListRow({ entry, isMe = false }: { entry: RowEntry; isMe?: boolean }) {
       <span className="font-anton text-lg tabular-nums w-10 text-right shrink-0 text-secondary/60">
         {String(entry.rank).padStart(2, '0')}
       </span>
-      <div className="h-10 w-10 md:h-11 md:w-11 shrink-0 rounded-full overflow-hidden bg-secondary">
-        {entry.avatar_url ? (
-          <img
-            src={entry.avatar_url}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        ) : (
-          <UserCircleIcon className="h-full w-full text-white/70" />
-        )}
-      </div>
+      <FramedAvatar
+        avatarUrl={entry.avatar_url}
+        frameId={entry.frameId}
+        size={44}
+        className="shrink-0"
+      />
       <span className="flex-1 min-w-0 truncate font-lato font-bold text-sm md:text-base text-text">
         {isMe ? 'You' : `@${entry.username}`}
         {isMe && (
@@ -92,20 +85,22 @@ export default function Ranking() {
   const { leaderboard, myRank, loading, error } = useLeaderboard();
   const { user } = useProfile();
 
-  const top3: PodiumEntry[] = leaderboard.slice(0, 3).map((e) => ({
+  const lineup: LineupUser[] = leaderboard.slice(0, 5).map((e) => ({
     profile_id: e.profile_id,
     rank: e.rank,
     username: e.username,
     points: e.points,
     avatar_url: e.avatar_url,
+    frameId: e.frameId,
   }));
 
-  const list: RowEntry[] = leaderboard.slice(3, 10).map((e) => ({
+  const list: RowEntry[] = leaderboard.slice(5).map((e) => ({
     profile_id: e.profile_id,
     rank: e.rank,
     username: e.username,
     points: e.points,
     avatar_url: e.avatar_url,
+    frameId: e.frameId,
   }));
 
   const meInTop =
@@ -115,7 +110,7 @@ export default function Ranking() {
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
 
-      <main className="flex-1 mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
+      <main className="flex-1 w-full px-4 sm:px-8 pt-6 md:pt-8 pb-16 md:pb-20">
         <header className="fade-in-up stagger-1">
           <h1 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
             Leaderboard
@@ -150,21 +145,12 @@ export default function Ranking() {
                   <span className="font-anton text-3xl md:text-4xl text-secondary tabular-nums shrink-0">
                     #{myRank.rank}
                   </span>
-                  <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-secondary">
-                    {myRank.avatar_url ? (
-                      <img
-                        src={myRank.avatar_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            'none';
-                        }}
-                      />
-                    ) : (
-                      <UserCircleIcon className="h-full w-full text-white/70" />
-                    )}
-                  </div>
+                  <FramedAvatar
+                    avatarUrl={myRank.avatar_url}
+                    frameId={myRank.frameId}
+                    size={48}
+                    className="shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-lato font-bold text-secondary truncate">
                       @{user?.username ?? 'you'}
@@ -183,36 +169,27 @@ export default function Ranking() {
               </section>
             )}
 
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6 fade-in-up stagger-3">
-              <section className="lg:col-span-5 rounded-3xl bg-white border border-container-border p-6 md:p-8">
-                <h2 className="font-anton text-2xl md:text-3xl text-secondary leading-tight mb-6">
-                  Podium
-                </h2>
-                {top3.length === 0 ? (
-                  <EmptyState
-                    message="No fans on the board yet."
-                    variant="compact"
-                  />
-                ) : (
-                  <LeaderboardPodium
-                    top3={top3}
-                    meId={myRank?.profile_id ?? null}
-                    size="full"
-                  />
-                )}
-              </section>
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-stretch fade-in-up stagger-3">
+              <div className="lg:col-span-6 lg:h-[620px]">
+                <StartingLineup
+                  users={lineup}
+                  currentUserId={myRank?.profile_id ?? null}
+                />
+              </div>
 
-              <section className="lg:col-span-7 rounded-3xl bg-white border border-container-border p-6 md:p-8">
-                <h2 className="font-anton text-2xl md:text-3xl text-secondary leading-tight mb-4">
+              <section className="lg:col-span-6 lg:h-[620px] flex flex-col rounded-3xl bg-white border border-container-border p-6 md:p-8">
+                <h2 className="shrink-0 font-anton text-2xl md:text-3xl text-secondary leading-tight mb-4">
                   Top Fans
                 </h2>
                 {list.length === 0 && !meInTop ? (
-                  <EmptyState
-                    message="Standings open after the first challenge."
-                    variant="compact"
-                  />
+                  <div className="flex flex-1 items-center justify-center">
+                    <EmptyState
+                      message="More fans appear here as the season heats up."
+                      variant="compact"
+                    />
+                  </div>
                 ) : (
-                  <ol className="flex flex-col max-h-[520px] lg:max-h-[420px] overflow-y-auto pr-1 -mr-1">
+                  <ol className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1 max-h-[60vh] lg:max-h-none [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-secondary/20 [&::-webkit-scrollbar]:w-2">
                     {list.map((entry) => (
                       <ListRow
                         key={entry.profile_id}
@@ -233,6 +210,7 @@ export default function Ranking() {
                             username: user?.username ?? 'you',
                             points: myRank.points,
                             avatar_url: myRank.avatar_url,
+                            frameId: myRank.frameId,
                           }}
                           isMe
                         />

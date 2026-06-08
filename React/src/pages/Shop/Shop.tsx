@@ -9,10 +9,11 @@ import ShopCarousel from '../../components/ui/shop/Carrousel';
 import ShopHero from '../../components/ui/shop/Hero';
 import ShopSeparator from '../../components/ui/shop/Separator';
 import SearchBar from '../../components/layout/Shop/SearchBar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import ThunderChat from '../../components/layout/Shop/ThunderChat';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '../../components/ui/Button';
+import type { MainLayoutOutletContext } from '../../components/layout/MainLayout';
 
 function ProductGroupCardSkeleton() {
   return (
@@ -28,6 +29,8 @@ function ProductGroupCardSkeleton() {
 
 export default function Shop() {
   const navigate = useNavigate();
+  const { setIsFooterPushedByChat } =
+    useOutletContext<MainLayoutOutletContext>();
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navigateToProducts = (
@@ -62,6 +65,14 @@ export default function Shop() {
     loading: playersLoading,
     //error: playersError
   } = usePlayers();
+
+  useEffect(() => {
+    setIsFooterPushedByChat(isChatOpen);
+
+    return () => {
+      setIsFooterPushedByChat(false);
+    };
+  }, [isChatOpen, setIsFooterPushedByChat]);
 
   return (
     <div className="flex flex-col">

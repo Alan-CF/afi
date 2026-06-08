@@ -102,7 +102,7 @@ export default function Games() {
   return (
     <div className="flex min-h-screen flex-col bg-text-light-soft">
       <ScoreboardRibbon />
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-6 lg:px-8 pt-4 md:pt-6 pb-16 md:pb-20">
+      <main className="w-full flex-1 px-4 sm:px-8 pt-4 md:pt-6 pb-16 md:pb-20">
         <header className="mb-6 md:mb-8 fade-in-up stagger-1">
           <h1 className="font-anton text-3xl md:text-4xl text-secondary leading-tight">
             Games

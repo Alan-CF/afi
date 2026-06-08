@@ -41,6 +41,7 @@ function seedToFanEventDetail(seed: SeedFanEventDetail): FanEventDetail {
     createdAt: seed.startAt,
     username: attendee.username,
     avatarUrl: attendee.avatarUrl,
+    frameId: null,
   }));
 
   return {
