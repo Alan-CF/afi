@@ -105,6 +105,7 @@ function Ball({
   const ballRef = useRef<THREE.Mesh>(null);
   const basketballTexture = useTexture('/basketball-texture.webp');
   const velocity = useRef(new THREE.Vector3(0, 0, 0));
+  const startPosition = useRef<THREE.Vector3>(new THREE.Vector3(0, -0.5, -1.2));
   const hoopVec = useRef(new THREE.Vector3());
   const rimCenterVec = useRef(new THREE.Vector3());
   const [isThrown, setIsThrown] = useState(false);
@@ -112,15 +113,15 @@ function Ball({
   const hasBounced = useRef(false);
 
   const getRandomStartPosition = (): Position3D => {
-    const randomX = THREE.MathUtils.randFloatSpread(0.8);
-    const randomZ = THREE.MathUtils.randFloat(-1.35, -1.05);
-    return [randomX, -0.50, randomZ];
+    const randomZ = THREE.MathUtils.randFloat(-1.28, -1.12);
+    return [0, -0.50, randomZ];
   };
 
   const resetBall = () => {
     if (!ballRef.current) return;
     const [x, y, z] = getRandomStartPosition();
     ballRef.current.position.set(x, y, z);
+    startPosition.current.set(x, y, z);
     velocity.current.set(0, 0, 0);
     setIsThrown(false);
     hasScored.current = false;
@@ -152,19 +153,19 @@ function Ball({
 
     const wentThroughHoop =
       isFalling &&
-      Math.abs(ballPosition.x - rimCenter.x) < 0.23 &&
-      Math.abs(ballPosition.z - rimCenter.z) < 0.23 &&
-      ballPosition.y < rimCenter.y + 0.2 &&
-      ballPosition.y > rimCenter.y - 0.22;
+      Math.abs(ballPosition.x - rimCenter.x) < 0.34 &&
+      Math.abs(ballPosition.z - rimCenter.z) < 0.40 &&
+      ballPosition.y < rimCenter.y + 0.36 &&
+      ballPosition.y > rimCenter.y - 0.36;
 
     const nearRim =
-      Math.abs(ballPosition.x - rimCenter.x) < 0.48 &&
-      Math.abs(ballPosition.z - rimCenter.z) < 0.48 &&
-      Math.abs(ballPosition.y - rimCenter.y) < 0.2;
+      Math.abs(ballPosition.x - rimCenter.x) < 0.44 &&
+      Math.abs(ballPosition.z - rimCenter.z) < 0.44 &&
+      Math.abs(ballPosition.y - rimCenter.y) < 0.16;
 
     const insideScoringArea =
-      Math.abs(ballPosition.x - rimCenter.x) < 0.23 &&
-      Math.abs(ballPosition.z - rimCenter.z) < 0.23;
+      Math.abs(ballPosition.x - rimCenter.x) < 0.34 &&
+      Math.abs(ballPosition.z - rimCenter.z) < 0.38;
 
     const hitRim =
       !wentThroughHoop &&
@@ -329,25 +330,9 @@ function ShootYourShot() {
     const players = await fetchChallengePlayerData();
     if (!players) return;
 
-    const sortedPlayers = [...players].sort((a, b) => {
-      const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
-      if (scoreDiff !== 0) return scoreDiff;
-      return (b.success_rate ?? -1) - (a.success_rate ?? -1);
-    });
-
-    setChallengeResults(sortedPlayers);
-
-    const allFinished =
-      players.length > 0 &&
-      players.every(
-        (player) => player.status === 'finished' || player.status === 'disconnected'
-      );
+    const { allFinished } = updateChallengeResultsState(players);
 
     if (!allFinished) return;
-
-    const winner = sortedPlayers[0] ?? null;
-    setChallengeCompleted(true);
-    setChallengeWinner(winner);
 
     await supabase
       .from('shoot_challenges')
@@ -358,19 +343,41 @@ function ShootYourShot() {
       .eq('id', challengeId);
   };
 
+  const updateChallengeResultsState = (players: ChallengeResultPlayer[]) => {
+    const sortedPlayers = [...players].sort((a, b) => {
+      const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
+      if (scoreDiff !== 0) return scoreDiff;
+
+      return (b.success_rate ?? -1) - (a.success_rate ?? -1);
+    });
+
+    setChallengeResults(sortedPlayers);
+
+    const allFinished =
+      sortedPlayers.length > 0 &&
+      sortedPlayers.every(
+        (player) =>
+          player.status === 'finished' || player.status === 'disconnected'
+      );
+
+    if (allFinished) {
+      setChallengeCompleted(true);
+      setChallengeWinner(sortedPlayers[0] ?? null);
+    }
+
+    return {
+      sortedPlayers,
+      allFinished,
+    };
+  };
+
   const loadChallengeResults = async () => {
     if (!challengeId) return;
 
     const players = await fetchChallengePlayerData();
     if (!players) return;
 
-    players.sort((a, b) => {
-      const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
-      if (scoreDiff !== 0) return scoreDiff;
-      return (b.success_rate ?? -1) - (a.success_rate ?? -1);
-    });
-
-    setChallengeResults(players);
+    updateChallengeResultsState(players);
   };
 
   const handleJoinChallenge = async () => {
@@ -450,11 +457,16 @@ function ShootYourShot() {
 
     const { data, error } = await supabase
       .from('shoot_challenges')
-      .select('status, started_at')
+      .select('status, started_at, host_profile_id')
       .eq('id', challengeId)
       .maybeSingle();
 
     if (error || !data) return;
+
+    const {data: { user },
+    } = await supabase.auth.getUser();
+
+    setIsHost(Boolean(user && data.host_profile_id === user.id));
 
     if (
       data.status === 'playing' &&
