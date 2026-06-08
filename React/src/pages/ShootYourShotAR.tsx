@@ -412,6 +412,11 @@ function ShootYourShot() {
     });
 
     if (error) {
+      console.log('JOIN ERROR:', error);
+      console.log('MESSAGE:', error.message);
+      console.log('DETAILS:', error.details);
+      console.log('HINT:', error.hint);
+
       console.error(error);
 
       if (error.message.includes('not found')) {
