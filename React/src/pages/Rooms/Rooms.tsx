@@ -17,6 +17,7 @@ import {
   subscribeToAllRoomMessages,
   shouldHideRoomMessage,
   isRoomEventMessage,
+  resetGlobalMockGame,
 } from '../../hooks/useRoomChat';
 import {
   fetchMyFriendIds,
@@ -34,6 +35,7 @@ import {
   SignalIcon,
   CheckIcon,
   XMarkIcon,
+  ArrowPathIcon,
   UserGroupIcon,
   ExclamationTriangleIcon,
   ClockIcon,
@@ -336,6 +338,27 @@ function RoomsPage() {
     return new Date(room.lastMessageAt).getTime() > Number(lastRead);
   }
 
+  // The mock game is shared app-wide; only room owners may restart it.
+  const ownsAnyRoom = useMemo(
+    () => Boolean(myId) && rooms.some((room) => room.ownerProfileId === myId),
+    [rooms, myId]
+  );
+  const [resettingMock, setResettingMock] = useState(false);
+
+  // Restart the shared mock match for every room / device. Owner-gated by the
+  // reset_global_mock_game RPC; the UI only shows it to room owners.
+  async function handleResetMock() {
+    if (resettingMock) return;
+    setResettingMock(true);
+    try {
+      await resetGlobalMockGame();
+    } catch (error) {
+      console.error('Error resetting mock game:', error);
+    } finally {
+      setResettingMock(false);
+    }
+  }
+
   const roomsPanel = (
     <div className="flex flex-col gap-4">
       {/* Search by room name */}
@@ -622,6 +645,20 @@ function RoomsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Single shared mock game. Restarting it syncs to every room on every
+          device. Only room owners see / can press it. */}
+      {panelView === 'rooms' && ownsAnyRoom && (
+        <button
+          type="button"
+          onClick={handleResetMock}
+          disabled={resettingMock}
+          className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 font-lato text-sm font-bold text-white transition hover:bg-secondary/90 disabled:opacity-60"
+        >
+          <ArrowPathIcon className="h-4 w-4" />
+          {resettingMock ? 'Restarting…' : 'Restart mock game'}
+        </button>
       )}
 
     </div>

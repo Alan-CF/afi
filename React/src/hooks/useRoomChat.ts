@@ -1,9 +1,9 @@
 import { supabase } from "../lib/supabaseClient";
 import type { Room } from "../components/ui/RoomCard";
 import {
+  ACTIVE_MOCK_MATCH_ID,
   type PredictionOption,
   type MockGameControl,
-  type MockMatchId,
 } from "./useMockRoomGameFeed";
 
 export const ROOM_SYSTEM_MESSAGE_PREFIX = "[[system]] ";
@@ -60,29 +60,20 @@ type RoomMatchHiddenRow = {
   match_hidden: boolean;
 };
 
-type RoomMockControlRow = {
-  mock_match_id?: string | null;
-  mock_anchor_ms?: number | string | null;
-  mock_offset_seconds?: number | null;
+type MockGameStateRow = {
+  anchor_ms?: number | string | null;
 };
 
-function parseRoomMockControl(row: RoomMockControlRow): MockGameControl {
-  const matchId: MockMatchId = row.mock_match_id === "short" ? "short" : "full";
-
+function parseGlobalMockControl(row: MockGameStateRow | null): MockGameControl {
   // bigint columns can come back as number or string depending on the driver.
   const anchorRaw =
-    row.mock_anchor_ms === null || row.mock_anchor_ms === undefined
+    !row || row.anchor_ms === null || row.anchor_ms === undefined
       ? null
-      : Number(row.mock_anchor_ms);
+      : Number(row.anchor_ms);
   const anchorMs =
     anchorRaw !== null && Number.isFinite(anchorRaw) ? anchorRaw : null;
 
-  return {
-    matchId,
-    anchorMs,
-    offsetSeconds:
-      typeof row.mock_offset_seconds === "number" ? row.mock_offset_seconds : 0,
-  };
+  return { matchId: ACTIVE_MOCK_MATCH_ID, anchorMs, offsetSeconds: 0 };
 }
 
 type SerializedPredictionPayload = {
@@ -151,9 +142,7 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select(
-      "id, title, status, accent, match_hidden, image_url, owner_profile_id, mock_match_id, mock_anchor_ms, mock_offset_seconds"
-    )
+    .select("id, title, status, accent, match_hidden, image_url, owner_profile_id")
     .eq("id", roomId)
     .single();
 
@@ -220,7 +209,58 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
       content: message.content,
       createdAt: message.created_at,
     })),
-    mockControl: parseRoomMockControl(room as RoomMockControlRow),
+    mockControl: await fetchGlobalMockControl(),
+  };
+}
+
+// The mock game is a single shared simulation for the whole app, stored in the
+// mock_game_state singleton row.
+export async function fetchGlobalMockControl(): Promise<MockGameControl> {
+  const { data, error } = await supabase
+    .from("mock_game_state")
+    .select("anchor_ms")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    throw buildQueryError("mock_game_state query failed", error.message);
+  }
+
+  return parseGlobalMockControl((data ?? null) as MockGameStateRow | null);
+}
+
+// Owner-only (enforced by reset_global_mock_game, which checks room ownership).
+// Restarts the shared mock match for everyone, on every device.
+export async function resetGlobalMockGame(): Promise<void> {
+  const { error } = await supabase.rpc("reset_global_mock_game", {
+    p_anchor_ms: Date.now(),
+  });
+
+  if (error) {
+    throw buildQueryError("reset global mock game failed", error.message);
+  }
+}
+
+export function subscribeToGlobalMockControl(
+  onChange: (control: MockGameControl) => void
+) {
+  const channel = supabase
+    .channel("mock-game-state")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "mock_game_state",
+      },
+      (payload) => {
+        onChange(parseGlobalMockControl(payload.new as MockGameStateRow));
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
   };
 }
 
@@ -519,49 +559,6 @@ export function subscribeToRoomMessages(
           content: insertedMessage.content,
           createdAt: insertedMessage.created_at,
         });
-      }
-    )
-    .subscribe();
-
-  return () => {
-    void supabase.removeChannel(channel);
-  };
-}
-
-// Owner-only (enforced by the set_room_mock_control RPC via is_owner_of_room,
-// because rooms_update_members otherwise lets any member update the row).
-export async function setRoomMockControl(
-  roomId: number,
-  control: MockGameControl
-): Promise<void> {
-  const { error } = await supabase.rpc("set_room_mock_control", {
-    target_room_id: roomId,
-    p_match_id: control.matchId,
-    p_anchor_ms: control.anchorMs,
-    p_offset_seconds: control.offsetSeconds,
-  });
-
-  if (error) {
-    throw buildQueryError("set room mock control failed", error.message);
-  }
-}
-
-export function subscribeToRoomMockControl(
-  roomId: number,
-  onChange: (control: MockGameControl) => void
-) {
-  const channel = supabase
-    .channel(`room-mock-control-${roomId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "rooms",
-        filter: `id=eq.${roomId}`,
-      },
-      (payload) => {
-        onChange(parseRoomMockControl(payload.new as RoomMockControlRow));
       }
     )
     .subscribe();

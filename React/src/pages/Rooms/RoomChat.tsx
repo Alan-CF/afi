@@ -29,8 +29,7 @@ import {
   uploadRoomImage,
   subscribeToRoomMatchHidden,
   subscribeToRoomMessages,
-  setRoomMockControl,
-  subscribeToRoomMockControl,
+  subscribeToGlobalMockControl,
   type RoomChatMessageRecord,
   type RoomPredictionEntryRecord,
 } from "../../hooks/useRoomChat";
@@ -38,13 +37,8 @@ import {
   computeMockGameSnapshot,
   getMockPredictionState,
   predictionOptions,
-  mockMatches,
-  buildResetControl,
-  buildLastQuarterControl,
-  buildSelectMatchControl,
   DEFAULT_MOCK_CONTROL,
   type MockGameControl,
-  type MockMatchId,
   type MockGameSnapshot,
   type MockPredictionState,
   type PredictionOption,
@@ -441,12 +435,11 @@ function RoomChat() {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  // Realtime: receive owner-driven control changes for this room.
+  // Realtime: the mock game is shared app-wide; receive owner-driven resets.
   useEffect(() => {
-    if (!activeRoomId) return;
-    const unsubscribe = subscribeToRoomMockControl(activeRoomId, setMockControl);
+    const unsubscribe = subscribeToGlobalMockControl(setMockControl);
     return unsubscribe;
-  }, [activeRoomId]);
+  }, []);
 
   useEffect(() => {
     if (loadingMessages) return;
@@ -725,38 +718,6 @@ function RoomChat() {
     }
   }
 
-  // Owner-only. Optimistically apply the new control, then persist it so every
-  // device in the room receives it via realtime. Reverts on failure.
-  async function applyMockControl(next: MockGameControl) {
-    if (!activeRoomId || !isOwner) return;
-
-    const previous = mockControlRef.current;
-    setMockControl(next);
-
-    try {
-      await setRoomMockControl(activeRoomId, next);
-    } catch (error) {
-      console.error("Error updating mock game control:", error);
-      setMockControl(previous);
-      setChatError(
-        error instanceof Error ? error.message : "Could not update the game."
-      );
-    }
-  }
-
-  function handleMockReset() {
-    void applyMockControl(buildResetControl(mockControl.matchId));
-  }
-
-  function handleMockLastQuarter() {
-    void applyMockControl(buildLastQuarterControl(mockControl.matchId));
-  }
-
-  function handleMockSelectMatch(matchId: MockMatchId) {
-    if (matchId === mockControl.matchId) return;
-    void applyMockControl(buildSelectMatchControl(matchId));
-  }
-
   async function handleLeaveRoom() {
     if (!activeRoomId || leavingRoom) return;
 
@@ -975,53 +936,6 @@ function RoomChat() {
                   </p>
                 )}
               </div>
-
-              {/* Owner-only game controls. Changes sync to every device in the
-                  room. Non-owners just watch the synced game. */}
-              {isOwner && (
-                <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5 sm:px-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-lato text-[0.62rem] font-bold uppercase tracking-[0.16em] text-slate-400">
-                      Game Controls
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleMockReset}
-                        className="rounded-lg px-2.5 py-1 font-lato text-[0.72rem] font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-white"
-                      >
-                        Reset
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleMockLastQuarter}
-                        className="rounded-lg bg-primary px-2.5 py-1 font-lato text-[0.72rem] font-bold text-secondary transition hover:bg-primary-dark"
-                      >
-                        Last Quarter
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-lg bg-slate-200/70 p-1">
-                    {mockMatches.map((match) => {
-                      const active = mockControl.matchId === match.id;
-                      return (
-                        <button
-                          key={match.id}
-                          type="button"
-                          onClick={() => handleMockSelectMatch(match.id)}
-                          className={`flex-1 rounded-md px-2.5 py-1 font-lato text-[0.72rem] font-bold transition ${
-                            active
-                              ? "bg-secondary text-white shadow-sm"
-                              : "text-slate-500 hover:text-secondary"
-                          }`}
-                        >
-                          {match.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               {isFinalState && finalPredictionLeaderText && (
                 <div className="flex items-center gap-2 border-b border-slate-200 bg-primary/15 px-4 py-2.5 sm:px-5">

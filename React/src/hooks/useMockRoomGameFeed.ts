@@ -614,11 +614,6 @@ const matchConfigs: Record<MockMatchId, MatchConfig> = {
   }),
 };
 
-export const mockMatches: { id: MockMatchId; label: string }[] = [
-  { id: "full", label: matchConfigs.full.label },
-  { id: "short", label: matchConfigs.short.label },
-];
-
 const defaultMatchId: MockMatchId = "full";
 
 // Fixed absolute epoch used when a room has not taken manual control yet
@@ -635,8 +630,11 @@ export type MockGameControl = {
   offsetSeconds: number;
 };
 
+// The app runs a single shared mock match: the short "clutch" stretch.
+export const ACTIVE_MOCK_MATCH_ID: MockMatchId = "short";
+
 export const DEFAULT_MOCK_CONTROL: MockGameControl = {
-  matchId: defaultMatchId,
+  matchId: ACTIVE_MOCK_MATCH_ID,
   anchorMs: null,
   offsetSeconds: 0,
 };
@@ -795,29 +793,4 @@ export function getMockPredictionState(
     closesInSeconds,
     resolvedRounds,
   };
-}
-
-// ---------------------------------------------------------------------------
-// Owner control builders. These produce the next control state to persist on
-// the room when the owner presses a button. anchorMs = now re-bases the clock
-// so the new match / jump starts immediately for everyone in the room.
-// ---------------------------------------------------------------------------
-
-export function buildResetControl(matchId: MockMatchId): MockGameControl {
-  return { matchId, anchorMs: Date.now(), offsetSeconds: 0 };
-}
-
-export function buildLastQuarterControl(matchId: MockMatchId): MockGameControl {
-  const config = matchConfigs[matchId] ?? matchConfigs[defaultMatchId];
-  return {
-    matchId,
-    anchorMs: Date.now(),
-    offsetSeconds: config.fourthQuarterStartSecond,
-  };
-}
-
-// Switching matches restarts the freshly selected match from the top so the
-// scoreboard and prediction rounds line up with the new timeline.
-export function buildSelectMatchControl(matchId: MockMatchId): MockGameControl {
-  return buildResetControl(matchId);
 }
