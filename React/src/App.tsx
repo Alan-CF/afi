@@ -30,7 +30,7 @@ import Achievements from './pages/Achievements/Achievements';
 import ProductDetail from './pages/Shop/ProductDetail';
 import ShoppingCartItem from './pages/Shop/ShopingCartItem';
 import MainLayout from './components/layout/MainLayout';
-import ShootYourShotAR from './pages/ShootYourShotAR';
+import ShootYourShot from './pages/ShootYourShotAR';
 import Games from './pages/Games';
 import PointsHistory from './pages/PointsHistory';
 import PointsToastGlobal from "./components/ui/PointsToastGlobal";
@@ -75,7 +75,7 @@ function App() {
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:slug" element={<NewsDetail />} />
-          <Route path="/shoot-your-shot" element={<ShootYourShotAR />} />
+          <Route path="/shoot-your-shot" element={<ShootYourShot />} />
           <Route path="/admin/shop" element={<AdminShop />} />
         </Route>
 

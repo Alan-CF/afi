@@ -214,23 +214,102 @@ function Ball({
   );
 }
 
-function ShootYourShotAR() {
+function ShootYourShot() {
   const navigate = useNavigate();
-  const [gameMode, setGameMode] = useState<
-    'menu' | 'solo' | 'create' | 'join' | 'lobby'
-  >('menu');
 
-  const [challengeCode, setChallengeCode] = useState('');
-  const [challengeId, setChallengeId] = useState('');
+  type GameMode = 'menu' | 'solo' | 'join' | 'lobby';
+
+  const getSavedGameMode = (): GameMode => {
+    const savedMode = sessionStorage.getItem('shoot_game_mode');
+
+    if (
+      savedMode === 'menu' ||
+      savedMode === 'solo' ||
+      savedMode === 'join' ||
+      savedMode === 'lobby'
+    ) {
+      return savedMode;
+    }
+
+    return 'menu';
+  };
+
+  const [gameMode, setGameMode] = useState<GameMode>(getSavedGameMode);
+
+  const [challengeCode, setChallengeCode] = useState(
+    () => sessionStorage.getItem('shoot_challenge_code') ?? ''
+  );
+
+  const [challengeId, setChallengeId] = useState(
+    () => sessionStorage.getItem('shoot_challenge_id') ?? ''
+  );
+
+  const [joinCode, setJoinCode] = useState(
+    () => sessionStorage.getItem('shoot_join_code') ?? ''
+  );
+
   const [challengePlayers, setChallengePlayers] = useState<ChallengePlayer[]>([]);
   const [isHost, setIsHost] = useState(false);
-  const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
   const isChallengeMode = Boolean(challengeId);
   const [challengeResults, setChallengeResults] = useState<ChallengeResultPlayer[]>([]);
   const [challengeCompleted, setChallengeCompleted] = useState(false);
   const [challengeWinner, setChallengeWinner] =
     useState<ChallengeResultPlayer | null>(null);
+  const challengeStartedRef = useRef(false);
+
+  useEffect(() => {
+    sessionStorage.setItem('shoot_game_mode', gameMode);
+  }, [gameMode]);
+
+  useEffect(() => {
+    sessionStorage.setItem('shoot_challenge_id', challengeId);
+  }, [challengeId]);
+
+  useEffect(() => {
+    sessionStorage.setItem('shoot_challenge_code', challengeCode);
+  }, [challengeCode]);
+
+  useEffect(() => {
+    sessionStorage.setItem('shoot_join_code', joinCode);
+  }, [joinCode]);
+
+  useEffect(() => {
+    if (gameMode === 'lobby' && !challengeId) {
+      setGameMode('menu');
+    }
+  }, [gameMode, challengeId]);
+
+  const checkHostStatus = async () => {
+    if (!challengeId) return;
+
+    const { data: challenge } = await supabase
+      .from('shoot_challenges')
+      .select('host_profile_id, status')
+      .eq('id', challengeId)
+      .maybeSingle();
+
+    if (!challenge || challenge.status !== 'waiting') return;
+
+    const { data: hostPlayer } = await supabase
+      .from('shoot_challenge_players')
+      .select('status, last_seen_at')
+      .eq('challenge_id', challengeId)
+      .eq('profile_id', challenge.host_profile_id)
+      .maybeSingle();
+
+    const hostInactive =
+      !hostPlayer ||
+      hostPlayer.status === 'disconnected' ||
+      !hostPlayer.last_seen_at ||
+      new Date(hostPlayer.last_seen_at).getTime() < Date.now() - 15000;
+
+    if (hostInactive) {
+      await supabase.rpc('transfer_shoot_challenge_host', {
+        p_challenge_id: challengeId,
+      });
+    }
+  };
 
   const completeChallengeIfReady = async () => {
     if (!challengeId || !isChallengeMode) return;
@@ -312,8 +391,7 @@ function ShootYourShotAR() {
           avatar_url
         )
       `)
-      .eq('challenge_id', challengeId)
-      .order('score', { ascending: false });
+      .eq('challenge_id', challengeId);
 
     if (error) {
       console.error(error);
@@ -350,14 +428,30 @@ function ShootYourShotAR() {
       return;
     }
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setJoinError('You need to log in to join a challenge.');
+      return;
+    }
+
     const { data, error } = await supabase.rpc('join_shoot_challenge', {
       p_code: cleanCode,
     });
 
-    console.log('join_shoot_challenge response:', { data, error });
-
     if (error) {
-      setJoinError(error.message);
+      console.error(error);
+
+      if (error.message.includes('not found')) {
+        setJoinError('Challenge not found.');
+      } else if (error.message.includes('already started')) {
+        setJoinError('This challenge already started.');
+      } else {
+        setJoinError('Could not join challenge. Please try again.');
+      }
+
       return;
     }
 
@@ -376,7 +470,6 @@ function ShootYourShotAR() {
 
     if (!joinedChallengeId || !joinedChallengeCode) {
       setJoinError('Challenge joined, but response was incomplete.');
-      console.log('Unexpected join response:', joinedChallenge);
       return;
     }
 
@@ -394,19 +487,38 @@ function ShootYourShotAR() {
 
     const { data, error } = await supabase
       .from('shoot_challenges')
-      .select('status, started_at')
+      .select('status, started_at, host_profile_id')
       .eq('id', challengeId)
       .maybeSingle();
 
     if (error || !data) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (data.status === 'playing' && gameMode === 'lobby') {
+    setIsHost(Boolean(user && data.host_profile_id === user.id));
+
+    if (
+      data.status === 'playing' &&
+      gameMode === 'lobby' &&
+      !challengeStartedRef.current
+    ) {
+      challengeStartedRef.current = true;
       setGameMode('solo');
       startGame();
     }
 
     if (data.status === 'completed') {
       setChallengeCompleted(true);
+    }
+
+    if (data.status === 'cancelled') {
+      setChallengeId('');
+      setChallengeCode('');
+      setChallengePlayers([]);
+      setIsHost(false);
+      setGameMode('menu');
+      setChallengeError('This challenge was cancelled because the host disconnected.');
     }
   };
 
@@ -416,6 +528,8 @@ function ShootYourShotAR() {
     loadChallengeStatus();
 
     const interval = window.setInterval(() => {
+      markInactivePlayersDisconnected();
+      checkHostStatus();
       loadChallengeStatus();
       loadChallengePlayers(challengeId);
     }, 1500);
@@ -481,6 +595,45 @@ function ShootYourShotAR() {
 
   const canThrow = hoopPlaced && status === 'playing';
 
+  useEffect(() => {
+    if (!challengeId || gameMode === 'menu') return;
+
+    const updateHeartbeat = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      await supabase
+        .from('shoot_challenge_players')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('challenge_id', challengeId)
+        .eq('profile_id', user.id);
+    };
+
+    updateHeartbeat();
+
+    const interval = window.setInterval(updateHeartbeat, 5000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [challengeId, gameMode]);
+
+  const markInactivePlayersDisconnected = async () => {
+    if (!challengeId) return;
+
+    const cutoff = new Date(Date.now() - 15000).toISOString();
+
+    await supabase
+      .from('shoot_challenge_players')
+      .update({ status: 'disconnected' })
+      .eq('challenge_id', challengeId)
+      .in('status', ['joined', 'playing'])
+      .lt('last_seen_at', cutoff);
+  };
+
   const gestureHandlers = useThrowGesture({
     enabled: canThrow,
     onThrow: (velocity) => {
@@ -511,14 +664,38 @@ function ShootYourShotAR() {
 
   const [challengeError, setChallengeError] = useState<string | null>(null);
 
+  const handleOpenJoinChallenge = async () => {
+    setChallengeError(null);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setChallengeError('You need to log in to join a challenge.');
+      return;
+    }
+
+    setGameMode('join');
+  };
+
   const handleCreateChallenge = async () => {
-    const { data, error } = await supabase.rpc(
-      'create_shoot_challenge'
-    );
+    setChallengeError(null);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setChallengeError('You need to log in to create a challenge.');
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('create_shoot_challenge');
 
     if (error || !data || data.length === 0) {
       console.error(error);
-      setChallengeError(error?.message ?? 'Could not create challenge.');
+      setChallengeError('Could not create challenge. Please try again.');
       return;
     }
 
@@ -562,6 +739,14 @@ function ShootYourShotAR() {
     setChallengeCompleted(false);
     setChallengeWinner(null);
     setIsHost(false);
+    setJoinCode('');
+
+    challengeStartedRef.current = false;
+
+    sessionStorage.removeItem('shoot_game_mode');
+    sessionStorage.removeItem('shoot_challenge_id');
+    sessionStorage.removeItem('shoot_challenge_code');
+    sessionStorage.removeItem('shoot_join_code');
 
     setGameMode('menu');
   };
@@ -662,7 +847,11 @@ function ShootYourShotAR() {
             started_at: string | null;
           };
 
-          if (updatedChallenge.status === 'playing') {
+          if (
+            updatedChallenge.status === 'playing' &&
+            !challengeStartedRef.current
+          ) {
+            challengeStartedRef.current = true;
             setGameMode('solo');
             startGame();
           }
@@ -713,7 +902,13 @@ function ShootYourShotAR() {
       <main className="w-full px-4 pb-10 pt-5 md:px-8 lg:px-10">
         <button
           type="button"
-          onClick={() => navigate('/games')}
+          onClick={() => {
+            if (gameMode === 'menu') {
+              navigate('/games');
+            } else {
+              handleBackToMenu();
+            }
+          }}
           aria-label="Go back"
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md transition hover:bg-secondary/90"
         >
@@ -752,7 +947,7 @@ function ShootYourShotAR() {
 
               <button
                 type="button"
-                onClick={() => setGameMode('join')}
+                onClick={handleOpenJoinChallenge}
                 className="rounded-2xl border border-secondary/20 bg-white py-4 text-secondary font-extrabold uppercase tracking-wide transition hover:bg-secondary/5"
               >
                 Join Challenge
@@ -806,14 +1001,6 @@ function ShootYourShotAR() {
                 className="rounded-2xl bg-secondary py-4 text-white font-extrabold uppercase tracking-wide transition hover:bg-secondary/90"
               >
                 Join Challenge
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setGameMode('menu')}
-                className="rounded-2xl border border-secondary/20 bg-white py-4 text-secondary font-extrabold uppercase tracking-wide transition hover:bg-secondary/5"
-              >
-                Back
               </button>
             </div>
           </section>
@@ -1250,4 +1437,4 @@ function ShootYourShotAR() {
   );
 }
 
-export default ShootYourShotAR;
+export default ShootYourShot;
