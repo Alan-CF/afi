@@ -29,14 +29,16 @@ import {
   uploadRoomImage,
   subscribeToRoomMatchHidden,
   subscribeToRoomMessages,
+  subscribeToGlobalMockControl,
   type RoomChatMessageRecord,
   type RoomPredictionEntryRecord,
 } from "../../hooks/useRoomChat";
 import {
-  getCurrentMockGameSnapshot,
+  computeMockGameSnapshot,
   getMockPredictionState,
   predictionOptions,
-  subscribeToMockGameFeed,
+  DEFAULT_MOCK_CONTROL,
+  type MockGameControl,
   type MockGameSnapshot,
   type MockPredictionState,
   type PredictionOption,
@@ -282,8 +284,12 @@ function RoomChat() {
     : state?.room?.id ?? null;
 
   const [room, setRoom] = useState<Room>(state?.room ?? defaultRoom);
+  const [mockControl, setMockControl] = useState<MockGameControl>(
+    DEFAULT_MOCK_CONTROL
+  );
+  const mockControlRef = useRef<MockGameControl>(DEFAULT_MOCK_CONTROL);
   const [gameState, setGameState] = useState<MockGameSnapshot>(() =>
-    getCurrentMockGameSnapshot()
+    computeMockGameSnapshot(DEFAULT_MOCK_CONTROL)
   );
   const [draft, setDraft] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
@@ -397,6 +403,7 @@ function RoomChat() {
 
         setMessages(parsedMessages.messages);
         setPredictionEntries(parsedMessages.predictionEntries);
+        setMockControl(data.mockControl);
       } catch (error) {
         console.error("Error loading room chat:", error);
         setChatError(
@@ -410,11 +417,27 @@ function RoomChat() {
     void loadRoomChat();
   }, [activeRoomId]);
 
+  // Keep a ref to the latest control so the 1s ticker always reads the current
+  // value, and recompute the snapshot immediately whenever the control changes
+  // (e.g. the owner pressed a button, or a realtime update arrived).
   useEffect(() => {
-    const unsubscribe = subscribeToMockGameFeed((snapshot) => {
-      setGameState(snapshot);
-    });
+    mockControlRef.current = mockControl;
+    setGameState(computeMockGameSnapshot(mockControl, Date.now()));
+  }, [mockControl]);
 
+  // Local clock tick. The game is a pure function of the room-synced control,
+  // so every device advances the same match in lockstep.
+  useEffect(() => {
+    const tick = () =>
+      setGameState(computeMockGameSnapshot(mockControlRef.current, Date.now()));
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  // Realtime: the mock game is shared app-wide; receive owner-driven resets.
+  useEffect(() => {
+    const unsubscribe = subscribeToGlobalMockControl(setMockControl);
     return unsubscribe;
   }, []);
 

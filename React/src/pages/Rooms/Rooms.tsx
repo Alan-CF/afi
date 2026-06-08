@@ -14,13 +14,10 @@ import {
 } from '../../hooks/useRooms';
 import RoomCard, { isRoomNew, type Room } from '../../components/ui/RoomCard';
 import {
-  jumpToMockGameLastQuarter,
-  resetMockGame,
-} from '../../hooks/useMockRoomGameFeed';
-import {
   subscribeToAllRoomMessages,
   shouldHideRoomMessage,
   isRoomEventMessage,
+  resetGlobalMockGame,
 } from '../../hooks/useRoomChat';
 import {
   fetchMyFriendIds,
@@ -38,6 +35,7 @@ import {
   SignalIcon,
   CheckIcon,
   XMarkIcon,
+  ArrowPathIcon,
   UserGroupIcon,
   ExclamationTriangleIcon,
   ClockIcon,
@@ -346,20 +344,33 @@ function RoomsPage() {
     });
   }
 
-  function handleResetGame() {
-    resetMockGame();
-  }
-
-  function handleJumpToLastQuarter() {
-    jumpToMockGameLastQuarter();
-  }
-
   function isRoomUnread(room: Room): boolean {
     if (!room.lastMessageAt || room.lastMessageFromMe) return false;
     if (typeof window === 'undefined') return false;
     const lastRead = window.localStorage.getItem(`room-last-read-${room.id}`);
     if (!lastRead) return true;
     return new Date(room.lastMessageAt).getTime() > Number(lastRead);
+  }
+
+  // The mock game is shared app-wide; only room owners may restart it.
+  const ownsAnyRoom = useMemo(
+    () => Boolean(myId) && rooms.some((room) => room.ownerProfileId === myId),
+    [rooms, myId]
+  );
+  const [resettingMock, setResettingMock] = useState(false);
+
+  // Restart the shared mock match for every room / device. Owner-gated by the
+  // reset_global_mock_game RPC; the UI only shows it to room owners.
+  async function handleResetMock() {
+    if (resettingMock) return;
+    setResettingMock(true);
+    try {
+      await resetGlobalMockGame();
+    } catch (error) {
+      console.error('Error resetting mock game:', error);
+    } finally {
+      setResettingMock(false);
+    }
   }
 
   const roomsPanel = (
@@ -672,26 +683,20 @@ function RoomsPage() {
         </div>
       )}
 
-      {/* Mock game controls */}
-      <div className="mt-1 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5">
-        <p className="font-lato text-[0.7rem] font-bold uppercase tracking-[0.16em] text-slate-400">
-          Mock Game
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={handleResetGame}
-            className="rounded-lg px-3 py-1.5 font-lato text-xs font-bold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
-          >
-            Reset
-          </button>
-          <button
-            onClick={handleJumpToLastQuarter}
-            className="rounded-lg bg-primary px-3 py-1.5 font-lato text-xs font-bold text-secondary transition hover:bg-primary-dark"
-          >
-            Last Quarter
-          </button>
-        </div>
-      </div>
+      {/* Single shared mock game. Restarting it syncs to every room on every
+          device. Only room owners see / can press it. */}
+      {panelView === 'rooms' && ownsAnyRoom && (
+        <button
+          type="button"
+          onClick={handleResetMock}
+          disabled={resettingMock}
+          className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 font-lato text-sm font-bold text-white transition hover:bg-secondary/90 disabled:opacity-60"
+        >
+          <ArrowPathIcon className="h-4 w-4" />
+          {resettingMock ? 'Restarting…' : 'Restart mock game'}
+        </button>
+      )}
+
     </div>
   );
 
