@@ -79,7 +79,7 @@ export default function NavBar() {
   return (
     <>
       <nav className="sticky top-0 z-40 w-full bg-secondary text-white">
-        <div className="mx-auto w-full max-w-[1280px] flex items-center justify-between gap-2 px-3 py-3 min-[900px]:px-4 xl:px-8">
+        <div className="w-full flex items-center justify-between gap-2 px-4 sm:px-8 py-3">
           <button
             onClick={() => navigate(isAdmin ? '/admin' : '/')}
             className="shrink-0 cursor-pointer"

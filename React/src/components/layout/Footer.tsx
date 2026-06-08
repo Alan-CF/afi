@@ -98,7 +98,7 @@ export default function Footer({ className = '' }: FooterProps) {
         <BayBridgeSilhouette />
       </div>
 
-      <div className="relative mx-auto max-w-[1280px] px-4 md:px-6 lg:px-8">
+      <div className="relative w-full px-4 sm:px-8">
         <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-8 lg:gap-12 py-16">
           <div className="flex flex-col gap-6">
             <img
