@@ -78,7 +78,16 @@ function GameCard({ game, stagger }: { game: GameCardConfig; stagger: number }) 
         <div className="mt-1">
           <button
             type="button"
-            onClick={() => navigate(game.to)}
+            onClick={() => {
+              if (game.to === '/shoot-your-shot') {
+                sessionStorage.removeItem('shoot_game_mode');
+                sessionStorage.removeItem('shoot_challenge_id');
+                sessionStorage.removeItem('shoot_challenge_code');
+                sessionStorage.removeItem('shoot_join_code');
+              }
+
+              navigate(game.to);
+            }}
             className="rounded-2xl bg-primary px-5 py-3 font-lato text-sm font-bold text-secondary hover:bg-primary-dark transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {game.cta}
