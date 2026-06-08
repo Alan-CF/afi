@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { PencilIcon, UserIcon, PhotoIcon, SparklesIcon } from "@heroicons/react/24/solid";
 
@@ -23,8 +24,10 @@ export default function AvatarUpload({
 }: AvatarUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [imgError, setImgError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,10 +76,29 @@ export default function AvatarUpload({
     }
   };
 
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const updatePos = () => {
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
+    };
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
+    return () => {
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
+    };
+  }, [menuOpen]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const onDocClick = (e: MouseEvent) => {
-      if (!wrapperRef.current?.contains(e.target as Node)) setMenuOpen(false);
+      const target = e.target as Node;
+      if (!wrapperRef.current?.contains(target) && !menuRef.current?.contains(target)) {
+        setMenuOpen(false);
+      }
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenuOpen(false);
@@ -138,10 +160,12 @@ export default function AvatarUpload({
         onChange={handleAvatarChange}
       />
 
-      {hasMenu && menuOpen ? (
+      {hasMenu && menuOpen ? createPortal(
         <div
+          ref={menuRef}
           role="menu"
-          className="absolute left-1/2 z-30 mt-2 w-52 -translate-x-1/2 overflow-hidden rounded-xl border border-container-border bg-white shadow-lg"
+          className="fixed z-50 w-52 -translate-x-1/2 overflow-hidden rounded-xl border border-container-border bg-white shadow-lg"
+          style={{ top: menuPos.top, left: menuPos.left }}
         >
           <button
             type="button"
@@ -168,7 +192,8 @@ export default function AvatarUpload({
             <SparklesIcon className="h-5 w-5" />
             Change frame
           </button>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </div>
   );
