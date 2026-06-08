@@ -417,6 +417,12 @@ function ShootYourShot() {
         setJoinError('Challenge not found.');
       } else if (error.message.includes('already started')) {
         setJoinError('This challenge already started.');
+      } else if (error.message.includes('cancelled')) {
+        setJoinError('This challenge was cancelled because the host left.');
+      } else if (error.message.includes('already ended')) {
+        setJoinError('This challenge has already ended.');
+      } else if (error.message.includes('already started')) {
+        setJoinError('This challenge already started.');
       } else {
         setJoinError('Could not join challenge. Please try again.');
       }
