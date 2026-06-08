@@ -4,20 +4,20 @@ export type GameStatus = 'idle' | 'countdown' | 'playing' | 'finished';
 
 export function useBasketballGame() {
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(30);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [status, setStatus] = useState<GameStatus>('idle');
 
   const startGame = () => {
     setScore(0);
-    setTimeLeft(60);
+    setTimeLeft(30);
     setCountdown(3);
     setStatus('countdown');
   };
 
   const resetGame = () => {
     setScore(0);
-    setTimeLeft(60);
+    setTimeLeft(30);
     setCountdown(null);
     setStatus('idle');
   };
