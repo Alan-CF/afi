@@ -1,21 +1,7 @@
--- =========================================================
--- GLOBAL MOCK GAME
--- One shared mock game for the entire app. A single-row table holds the clock
--- anchor; resetting it restarts the short "clutch" match for every room on
--- every device at once. Only users who own at least one room may reset it
--- (enforced by the reset_global_mock_game RPC).
---
--- This supersedes the earlier per-room experiment, whose columns / RPC are
--- dropped below if they were ever applied.
--- =========================================================
+-- Keep the shared mock game synchronized from Supabase server time.
+-- This migration is intentionally additive/replacing so it fixes databases
+-- where 20260608010000_global_mock_game.sql was already applied.
 
--- 1) Clean up the per-room experiment.
-drop function if exists public.set_room_mock_control(bigint, text, bigint, integer);
-alter table public.rooms drop column if exists mock_match_id;
-alter table public.rooms drop column if exists mock_anchor_ms;
-alter table public.rooms drop column if exists mock_offset_seconds;
-
--- 2) Singleton table holding the shared clock anchor.
 create table if not exists public.mock_game_state (
   id smallint primary key default 1,
   anchor_ms bigint,
@@ -30,7 +16,6 @@ on conflict (id) do nothing;
 alter table public.mock_game_state enable row level security;
 alter table public.mock_game_state replica identity full;
 
--- Any signed-in user can read the shared state.
 drop policy if exists "mock_game_state_select" on public.mock_game_state;
 create policy "mock_game_state_select"
 on public.mock_game_state
@@ -39,8 +24,6 @@ for select
 to authenticated
 using (true);
 
--- 3) Read/reset RPCs. Only room owners may trigger reset; writes happen here
---    (not via a table policy) so the ownership check is enforced server-side.
 create or replace function public.get_mock_game_state()
  returns table (
   anchor_ms bigint,
@@ -119,7 +102,6 @@ grant execute on function public.reset_global_mock_game() to authenticated;
 revoke all on function public.reset_global_mock_game(bigint) from public;
 grant execute on function public.reset_global_mock_game(bigint) to authenticated;
 
--- 4) Realtime so every device restarts together.
 do $$
 begin
   if not exists (

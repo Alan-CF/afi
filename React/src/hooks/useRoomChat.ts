@@ -2,6 +2,7 @@ import { supabase } from "../lib/supabaseClient";
 import type { Room } from "../components/ui/RoomCard";
 import {
   ACTIVE_MOCK_MATCH_ID,
+  type MockMatchId,
   type PredictionOption,
   type MockGameControl,
 } from "./useMockRoomGameFeed";
@@ -61,19 +62,67 @@ type RoomMatchHiddenRow = {
 };
 
 type MockGameStateRow = {
+  match_id?: string | null;
   anchor_ms?: number | string | null;
+  updated_at?: string | null;
+  server_now_ms?: number | string | null;
 };
 
-function parseGlobalMockControl(row: MockGameStateRow | null): MockGameControl {
-  // bigint columns can come back as number or string depending on the driver.
-  const anchorRaw =
-    !row || row.anchor_ms === null || row.anchor_ms === undefined
-      ? null
-      : Number(row.anchor_ms);
-  const anchorMs =
-    anchorRaw !== null && Number.isFinite(anchorRaw) ? anchorRaw : null;
+type RealtimeMockGamePayload = {
+  new: unknown;
+  commit_timestamp?: string | null;
+};
 
-  return { matchId: ACTIVE_MOCK_MATCH_ID, anchorMs, offsetSeconds: 0 };
+function parseMilliseconds(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseTimestampMilliseconds(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getMockGameStateRow(data: unknown): MockGameStateRow | null {
+  if (Array.isArray(data)) {
+    const [row] = data;
+    return row && typeof row === "object" ? (row as MockGameStateRow) : null;
+  }
+
+  return data && typeof data === "object" ? (data as MockGameStateRow) : null;
+}
+
+function isMissingRpcError(error: { code?: string; message?: string }) {
+  return (
+    error.code === "PGRST202" ||
+    /could not find the function/i.test(error.message ?? "")
+  );
+}
+
+function parseMockMatchId(value: string | null | undefined): MockMatchId {
+  return value === "full" || value === "short" ? value : ACTIVE_MOCK_MATCH_ID;
+}
+
+function parseGlobalMockControl(
+  row: MockGameStateRow | null,
+  serverNowMs: number | null = null,
+  receivedAtMs: number = Date.now()
+): MockGameControl {
+  // bigint columns can come back as number or string depending on the driver.
+  const anchorMs = parseMilliseconds(row?.anchor_ms);
+  const control: MockGameControl = {
+    matchId: parseMockMatchId(row?.match_id),
+    anchorMs,
+    offsetSeconds: 0,
+  };
+
+  if (serverNowMs !== null) {
+    control.serverTimeOffsetMs = serverNowMs - receivedAtMs;
+  }
+
+  return control;
 }
 
 type SerializedPredictionPayload = {
@@ -216,14 +265,28 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
 // The mock game is a single shared simulation for the whole app, stored in the
 // mock_game_state singleton row.
 export async function fetchGlobalMockControl(): Promise<MockGameControl> {
+  const receivedAtMs = Date.now();
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "get_mock_game_state"
+  );
+
+  if (!rpcError) {
+    const row = getMockGameStateRow(rpcData);
+    const serverNowMs = parseMilliseconds(row?.server_now_ms);
+    return parseGlobalMockControl(row, serverNowMs, receivedAtMs);
+  }
+
   const { data, error } = await supabase
     .from("mock_game_state")
-    .select("anchor_ms")
+    .select("match_id, anchor_ms, updated_at")
     .eq("id", 1)
     .maybeSingle();
 
   if (error) {
-    throw buildQueryError("mock_game_state query failed", error.message);
+    const scope = isMissingRpcError(rpcError)
+      ? "mock_game_state query failed"
+      : `mock_game_state query failed after get_mock_game_state failed (${rpcError.message})`;
+    throw buildQueryError(scope, error.message);
   }
 
   return parseGlobalMockControl((data ?? null) as MockGameStateRow | null);
@@ -231,13 +294,31 @@ export async function fetchGlobalMockControl(): Promise<MockGameControl> {
 
 // Owner-only (enforced by reset_global_mock_game, which checks room ownership).
 // Restarts the shared mock match for everyone, on every device.
-export async function resetGlobalMockGame(): Promise<void> {
+export async function resetGlobalMockGame(
+  matchId: MockMatchId = ACTIVE_MOCK_MATCH_ID
+): Promise<void> {
   const { error } = await supabase.rpc("reset_global_mock_game", {
-    p_anchor_ms: Date.now(),
+    p_match_id: matchId,
   });
 
   if (error) {
-    throw buildQueryError("reset global mock game failed", error.message);
+    if (!isMissingRpcError(error) || matchId !== ACTIVE_MOCK_MATCH_ID) {
+      throw buildQueryError("reset global mock game failed", error.message);
+    }
+
+    const { error: legacyError } = await supabase.rpc(
+      "reset_global_mock_game",
+      {
+        p_anchor_ms: Date.now(),
+      }
+    );
+
+    if (legacyError) {
+      throw buildQueryError(
+        "reset global mock game failed",
+        legacyError.message
+      );
+    }
   }
 }
 
@@ -254,7 +335,13 @@ export function subscribeToGlobalMockControl(
         table: "mock_game_state",
       },
       (payload) => {
-        onChange(parseGlobalMockControl(payload.new as MockGameStateRow));
+        const realtimePayload = payload as RealtimeMockGamePayload;
+        const row = getMockGameStateRow(realtimePayload.new);
+        const serverNowMs =
+          parseTimestampMilliseconds(realtimePayload.commit_timestamp) ??
+          parseTimestampMilliseconds(row?.updated_at);
+
+        onChange(parseGlobalMockControl(row, serverNowMs));
       }
     )
     .subscribe();

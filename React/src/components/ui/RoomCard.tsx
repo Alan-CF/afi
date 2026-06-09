@@ -1,4 +1,5 @@
 import { ChevronRightIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import { Crown } from "lucide-react";
 
 export type Room = {
   id: number;
@@ -30,6 +31,7 @@ type RoomCardProps = {
   room: Room;
   onActionClick?: (room: Room) => void;
   hasUnread?: boolean;
+  isOwnedByCurrentUser?: boolean;
 };
 
 function formatLastMessageTime(iso?: string | null): string | null {
@@ -73,7 +75,12 @@ function splitSubtitlePreview(subtitle: string) {
   };
 }
 
-function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
+function RoomCard({
+  room,
+  onActionClick,
+  hasUnread = false,
+  isOwnedByCurrentUser = false,
+}: RoomCardProps) {
   const isLive = room.status === "live";
   const showLive = isLive && !room.matchHidden;
   const actionLabel = isLive ? "Join" : "Summary";
@@ -135,12 +142,21 @@ function RoomCard({ room, onActionClick, hasUnread = false }: RoomCardProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h3
-            className={`truncate font-lato text-[0.95rem] font-bold sm:text-base ${
+            className={`min-w-0 truncate font-lato text-[0.95rem] font-bold sm:text-base ${
               isLive ? "text-[#16213d]" : "text-slate-600"
             }`}
           >
             {room.title}
           </h3>
+          {isOwnedByCurrentUser && (
+            <span
+              title="Owner"
+              aria-label="Owner"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-secondary ring-1 ring-secondary/10"
+            >
+              <Crown className="h-3.5 w-3.5" strokeWidth={2.6} />
+            </span>
+          )}
           {showNew && (
             <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 font-lato text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white">
               New

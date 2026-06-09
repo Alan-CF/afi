@@ -462,7 +462,7 @@ const fullBaseScoreEvents: ScoreEvent[] = [
 // off a foul. Final: Lakers 96 – Warriors 88.
 // ---------------------------------------------------------------------------
 
-const SHORT_TIME_SCALE = 2;
+const SHORT_TIME_SCALE = 1;
 
 const shortBaseScore = { warriors: 85, lakers: 94 };
 
@@ -470,26 +470,8 @@ const shortTimeline: TimelineSegment[] = [
   {
     kind: "quarter",
     quarter: 4,
-    duration: 11,
+    duration: 29,
     clockStart: 27,
-    clockEnd: 16,
-    statusLabel: "Live",
-    detail: null,
-  },
-  {
-    kind: "quarter",
-    quarter: 4,
-    duration: 5,
-    clockStart: 16,
-    clockEnd: 16,
-    statusLabel: "Clock Stopped",
-    detail: "Shooting foul — two at the line.",
-  },
-  {
-    kind: "quarter",
-    quarter: 4,
-    duration: 11,
-    clockStart: 16,
     clockEnd: 0,
     statusLabel: "Live",
     detail: null,
@@ -506,14 +488,14 @@ const shortTimeline: TimelineSegment[] = [
 
 const shortBaseScoreEvents: ScoreEvent[] = [
   {
-    at: 8,
+    at: 12,
     team: "warriors",
     points: 3,
     shotType: "Triple",
     text: "Warriors splash a deep triple to pull within two.",
   },
   {
-    at: 18,
+    at: 29,
     team: "lakers",
     points: 2,
     shotType: "Foul",
@@ -614,7 +596,8 @@ const matchConfigs: Record<MockMatchId, MatchConfig> = {
   }),
 };
 
-const defaultMatchId: MockMatchId = "full";
+// The app runs a single shared mock match: the short "clutch" stretch.
+export const ACTIVE_MOCK_MATCH_ID: MockMatchId = "short";
 
 // Fixed absolute epoch used when a room has not taken manual control yet
 // (mock_anchor_ms is null). Because it is a constant, every device computes
@@ -628,15 +611,14 @@ export type MockGameControl = {
   matchId: MockMatchId;
   anchorMs: number | null;
   offsetSeconds: number;
+  serverTimeOffsetMs?: number;
 };
-
-// The app runs a single shared mock match: the short "clutch" stretch.
-export const ACTIVE_MOCK_MATCH_ID: MockMatchId = "short";
 
 export const DEFAULT_MOCK_CONTROL: MockGameControl = {
   matchId: ACTIVE_MOCK_MATCH_ID,
   anchorMs: null,
   offsetSeconds: 0,
+  serverTimeOffsetMs: 0,
 };
 
 function formatClock(seconds: number) {
@@ -719,19 +701,25 @@ function resolveHighlights(
 }
 
 function getCycleContext(control: MockGameControl, nowMs: number) {
-  const config = matchConfigs[control.matchId] ?? matchConfigs[defaultMatchId];
+  const config =
+    matchConfigs[control.matchId] ?? matchConfigs[ACTIVE_MOCK_MATCH_ID];
+  const serverNowMs = nowMs + (control.serverTimeOffsetMs ?? 0);
+  const hasManualAnchor = control.anchorMs !== null;
   const anchorMs = control.anchorMs ?? sharedMatchEpochMs;
   const offsetSeconds = control.offsetSeconds ?? 0;
-  const elapsedMs = nowMs - anchorMs + offsetSeconds * 1000;
+  const elapsedMs = serverNowMs - anchorMs + offsetSeconds * 1000;
   const cycleDurationMs = config.matchCycleSeconds * 1000;
-  const normalizedMs =
-    ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
+  const matchElapsedMs = hasManualAnchor
+    ? Math.max(0, elapsedMs)
+    : ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
 
   return {
     config,
-    cycleStartMs: nowMs - normalizedMs,
+    cycleStartMs: hasManualAnchor
+      ? anchorMs - offsetSeconds * 1000
+      : serverNowMs - matchElapsedMs,
     second: Math.min(
-      Math.floor(normalizedMs / 1000),
+      Math.floor(matchElapsedMs / 1000),
       config.finalPlayableSecond
     ),
   };
@@ -766,7 +754,8 @@ export function computeMockGameSnapshot(
 export function getMockPredictionState(
   snapshot: Pick<MockGameSnapshot, "elapsedSecond" | "cycleStartMs" | "matchId">
 ): MockPredictionState {
-  const config = matchConfigs[snapshot.matchId] ?? matchConfigs[defaultMatchId];
+  const config =
+    matchConfigs[snapshot.matchId] ?? matchConfigs[ACTIVE_MOCK_MATCH_ID];
   const activeEventIndex = config.scoreEvents.findIndex(
     (event) => event.at > snapshot.elapsedSecond
   );
