@@ -129,6 +129,20 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [isWaitingForReply, setIsWaitingForReply] = useState(false);
 
+  useEffect(() => {
+    const { body, documentElement } = document;
+    const originalBodyOverflow = body.style.overflow;
+    const originalHtmlOverflow = documentElement.style.overflow;
+
+    body.style.overflow = 'hidden';
+    documentElement.style.overflow = 'hidden';
+
+    return () => {
+      body.style.overflow = originalBodyOverflow;
+      documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
+
   const handleSendMessage = async () => {
     const trimmedMessage = messageDraft.trim();
 
@@ -174,9 +188,20 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
   ]);
 
   return (
-    <aside className="fixed inset-x-0 bottom-0 top-16 z-50 w-full border-l border-secondary/20 bg-white py-3 shadow-xl md:left-auto md:right-0 md:w-[30rem] md:max-w-none">
-      <section className="flex h-full min-h-0 flex-col bg-white">
-        <header className=" flex items-center gap-3 border-b border-gray-200 pb-3 px-4">
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
+      {onClose ? (
+        <button
+          type="button"
+          aria-label="Close chat"
+          className="absolute inset-0 bg-black/45"
+          onClick={onClose}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
+      )}
+
+      <section className="absolute inset-0 flex min-h-0 flex-col overflow-hidden bg-white shadow-2xl sm:inset-4 sm:mx-auto sm:max-w-5xl sm:rounded-lg sm:border sm:border-black/10">
+        <header className="flex items-center gap-3 border-b border-gray-200 px-4 py-3 sm:px-6">
           <img
             src="/warriors_icon.png"
             alt="Thunder"
@@ -202,7 +227,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
 
         <div
           ref={messagesContainerRef}
-          className="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-1"
+          className="min-h-0 flex-1 overflow-y-auto px-4 pb-1 pt-2 sm:px-6"
         >
           {messagesLoading && messages.length === 0 && !pendingMessage ? (
             <div className="flex h-full items-center justify-center py-10">
@@ -243,7 +268,7 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
         </div>
 
         <form
-          className="border-t border-gray-200 pt-3 px-4"
+          className="border-t border-gray-200 px-4 py-3 sm:px-6"
           onSubmit={(event) => {
             event.preventDefault();
             void handleSendMessage();
@@ -281,6 +306,6 @@ export default function ThunderChat({ onClose }: ThunderChatProps) {
           ) : null}
         </form>
       </section>
-    </aside>
+    </div>
   );
 }
