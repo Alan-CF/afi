@@ -19,6 +19,7 @@ import {
   isRoomEventMessage,
   resetGlobalMockGame,
 } from '../../hooks/useRoomChat';
+import type { MockMatchId } from '../../hooks/useMockRoomGameFeed';
 import {
   fetchMyFriendIds,
   searchProfilesByUsername,
@@ -343,19 +344,19 @@ function RoomsPage() {
     () => Boolean(myId) && rooms.some((room) => room.ownerProfileId === myId),
     [rooms, myId]
   );
-  const [resettingMock, setResettingMock] = useState(false);
+  const [resettingMock, setResettingMock] = useState<MockMatchId | null>(null);
 
   // Restart the shared mock match for every room / device. Owner-gated by the
   // reset_global_mock_game RPC; the UI only shows it to room owners.
-  async function handleResetMock() {
+  async function handleResetMock(matchId: MockMatchId) {
     if (resettingMock) return;
-    setResettingMock(true);
+    setResettingMock(matchId);
     try {
-      await resetGlobalMockGame();
+      await resetGlobalMockGame(matchId);
     } catch (error) {
       console.error('Error resetting mock game:', error);
     } finally {
-      setResettingMock(false);
+      setResettingMock(null);
     }
   }
 
@@ -641,6 +642,9 @@ function RoomsPage() {
                 room={room}
                 onActionClick={handleRoomAction}
                 hasUnread={isRoomUnread(room)}
+                isOwnedByCurrentUser={Boolean(
+                  myId && room.ownerProfileId === myId
+                )}
               />
             </div>
           ))}
@@ -650,15 +654,35 @@ function RoomsPage() {
       {/* Single shared mock game. Restarting it syncs to every room on every
           device. Only room owners see / can press it. */}
       {panelView === 'rooms' && ownsAnyRoom && (
-        <button
-          type="button"
-          onClick={handleResetMock}
-          disabled={resettingMock}
-          className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 font-lato text-sm font-bold text-white transition hover:bg-secondary/90 disabled:opacity-60"
-        >
-          <ArrowPathIcon className="h-4 w-4" />
-          {resettingMock ? 'Restarting…' : 'Restart mock game'}
-        </button>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => void handleResetMock('short')}
+            disabled={resettingMock !== null}
+            className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 font-lato text-sm font-bold text-white transition hover:bg-secondary/90 disabled:opacity-60"
+          >
+            <ArrowPathIcon
+              className={`h-4 w-4 ${
+                resettingMock === 'short' ? 'animate-spin' : ''
+              }`}
+            />
+            {resettingMock === 'short' ? 'Restarting...' : 'Restart clutch game'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleResetMock('full')}
+            disabled={resettingMock !== null}
+            className="flex items-center justify-center gap-2 rounded-xl border border-secondary/20 bg-white px-4 py-2.5 font-lato text-sm font-bold text-secondary transition hover:border-secondary/40 hover:bg-secondary/5 disabled:opacity-60"
+          >
+            <ArrowPathIcon
+              className={`h-4 w-4 ${
+                resettingMock === 'full' ? 'animate-spin' : ''
+              }`}
+            />
+            {resettingMock === 'full' ? 'Restarting...' : 'Restart full game'}
+          </button>
+        </div>
       )}
 
     </div>

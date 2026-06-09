@@ -462,7 +462,7 @@ const fullBaseScoreEvents: ScoreEvent[] = [
 // off a foul. Final: Lakers 96 – Warriors 88.
 // ---------------------------------------------------------------------------
 
-const SHORT_TIME_SCALE = 2;
+const SHORT_TIME_SCALE = 1;
 
 const shortBaseScore = { warriors: 85, lakers: 94 };
 
@@ -488,7 +488,7 @@ const shortTimeline: TimelineSegment[] = [
   {
     kind: "quarter",
     quarter: 4,
-    duration: 11,
+    duration: 13,
     clockStart: 16,
     clockEnd: 0,
     statusLabel: "Live",
@@ -513,7 +513,7 @@ const shortBaseScoreEvents: ScoreEvent[] = [
     text: "Warriors splash a deep triple to pull within two.",
   },
   {
-    at: 18,
+    at: 29,
     team: "lakers",
     points: 2,
     shotType: "Foul",
@@ -719,7 +719,8 @@ function resolveHighlights(
 }
 
 function getCycleContext(control: MockGameControl, nowMs: number) {
-  const config = matchConfigs[ACTIVE_MOCK_MATCH_ID];
+  const config =
+    matchConfigs[control.matchId] ?? matchConfigs[ACTIVE_MOCK_MATCH_ID];
   const serverNowMs = nowMs + (control.serverTimeOffsetMs ?? 0);
   const anchorMs = control.anchorMs ?? sharedMatchEpochMs;
   const offsetSeconds = control.offsetSeconds ?? 0;
@@ -767,7 +768,8 @@ export function computeMockGameSnapshot(
 export function getMockPredictionState(
   snapshot: Pick<MockGameSnapshot, "elapsedSecond" | "cycleStartMs" | "matchId">
 ): MockPredictionState {
-  const config = matchConfigs[ACTIVE_MOCK_MATCH_ID];
+  const config =
+    matchConfigs[snapshot.matchId] ?? matchConfigs[ACTIVE_MOCK_MATCH_ID];
   const activeEventIndex = config.scoreEvents.findIndex(
     (event) => event.at > snapshot.elapsedSecond
   );

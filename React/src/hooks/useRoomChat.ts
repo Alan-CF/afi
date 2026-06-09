@@ -2,6 +2,7 @@ import { supabase } from "../lib/supabaseClient";
 import type { Room } from "../components/ui/RoomCard";
 import {
   ACTIVE_MOCK_MATCH_ID,
+  type MockMatchId,
   type PredictionOption,
   type MockGameControl,
 } from "./useMockRoomGameFeed";
@@ -61,6 +62,7 @@ type RoomMatchHiddenRow = {
 };
 
 type MockGameStateRow = {
+  match_id?: string | null;
   anchor_ms?: number | string | null;
   updated_at?: string | null;
   server_now_ms?: number | string | null;
@@ -99,6 +101,10 @@ function isMissingRpcError(error: { code?: string; message?: string }) {
   );
 }
 
+function parseMockMatchId(value: string | null | undefined): MockMatchId {
+  return value === "full" || value === "short" ? value : ACTIVE_MOCK_MATCH_ID;
+}
+
 function parseGlobalMockControl(
   row: MockGameStateRow | null,
   serverNowMs: number | null = null,
@@ -107,7 +113,7 @@ function parseGlobalMockControl(
   // bigint columns can come back as number or string depending on the driver.
   const anchorMs = parseMilliseconds(row?.anchor_ms);
   const control: MockGameControl = {
-    matchId: ACTIVE_MOCK_MATCH_ID,
+    matchId: parseMockMatchId(row?.match_id),
     anchorMs,
     offsetSeconds: 0,
   };
@@ -272,7 +278,7 @@ export async function fetchGlobalMockControl(): Promise<MockGameControl> {
 
   const { data, error } = await supabase
     .from("mock_game_state")
-    .select("anchor_ms, updated_at")
+    .select("match_id, anchor_ms, updated_at")
     .eq("id", 1)
     .maybeSingle();
 
@@ -288,11 +294,15 @@ export async function fetchGlobalMockControl(): Promise<MockGameControl> {
 
 // Owner-only (enforced by reset_global_mock_game, which checks room ownership).
 // Restarts the shared mock match for everyone, on every device.
-export async function resetGlobalMockGame(): Promise<void> {
-  const { error } = await supabase.rpc("reset_global_mock_game");
+export async function resetGlobalMockGame(
+  matchId: MockMatchId = ACTIVE_MOCK_MATCH_ID
+): Promise<void> {
+  const { error } = await supabase.rpc("reset_global_mock_game", {
+    p_match_id: matchId,
+  });
 
   if (error) {
-    if (!isMissingRpcError(error)) {
+    if (!isMissingRpcError(error) || matchId !== ACTIVE_MOCK_MATCH_ID) {
       throw buildQueryError("reset global mock game failed", error.message);
     }
 
