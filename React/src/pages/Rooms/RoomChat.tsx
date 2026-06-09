@@ -27,6 +27,7 @@ import {
   shouldHideRoomMessage,
   updateRoomImage,
   uploadRoomImage,
+  fetchGlobalMockControl,
   subscribeToRoomMatchHidden,
   subscribeToRoomMessages,
   subscribeToGlobalMockControl,
@@ -154,6 +155,17 @@ function mergePredictionEntries(
   return [...deduped, nextEntry].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
+}
+
+function mergeMockControl(
+  current: MockGameControl,
+  next: MockGameControl
+): MockGameControl {
+  return {
+    ...next,
+    serverTimeOffsetMs:
+      next.serverTimeOffsetMs ?? current.serverTimeOffsetMs ?? 0,
+  };
 }
 
 function parseClockToSeconds(clock: string) {
@@ -437,9 +449,41 @@ function RoomChat() {
 
   // Realtime: the mock game is shared app-wide; receive owner-driven resets.
   useEffect(() => {
-    const unsubscribe = subscribeToGlobalMockControl(setMockControl);
+    const unsubscribe = subscribeToGlobalMockControl((control) => {
+      setMockControl((current) => mergeMockControl(current, control));
+    });
     return unsubscribe;
   }, []);
+
+  // Polling fallback: keeps rooms aligned even if the realtime notification is
+  // delayed or missed by one device.
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    let cancelled = false;
+
+    async function syncGlobalMockControl() {
+      try {
+        const control = await fetchGlobalMockControl();
+        if (cancelled) return;
+
+        setMockControl((current) => mergeMockControl(current, control));
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Error syncing global mock game:", error);
+        }
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      void syncGlobalMockControl();
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [activeRoomId]);
 
   useEffect(() => {
     if (loadingMessages) return;

@@ -614,7 +614,8 @@ const matchConfigs: Record<MockMatchId, MatchConfig> = {
   }),
 };
 
-const defaultMatchId: MockMatchId = "full";
+// The app runs a single shared mock match: the short "clutch" stretch.
+export const ACTIVE_MOCK_MATCH_ID: MockMatchId = "short";
 
 // Fixed absolute epoch used when a room has not taken manual control yet
 // (mock_anchor_ms is null). Because it is a constant, every device computes
@@ -628,15 +629,14 @@ export type MockGameControl = {
   matchId: MockMatchId;
   anchorMs: number | null;
   offsetSeconds: number;
+  serverTimeOffsetMs?: number;
 };
-
-// The app runs a single shared mock match: the short "clutch" stretch.
-export const ACTIVE_MOCK_MATCH_ID: MockMatchId = "short";
 
 export const DEFAULT_MOCK_CONTROL: MockGameControl = {
   matchId: ACTIVE_MOCK_MATCH_ID,
   anchorMs: null,
   offsetSeconds: 0,
+  serverTimeOffsetMs: 0,
 };
 
 function formatClock(seconds: number) {
@@ -719,17 +719,18 @@ function resolveHighlights(
 }
 
 function getCycleContext(control: MockGameControl, nowMs: number) {
-  const config = matchConfigs[control.matchId] ?? matchConfigs[defaultMatchId];
+  const config = matchConfigs[ACTIVE_MOCK_MATCH_ID];
+  const serverNowMs = nowMs + (control.serverTimeOffsetMs ?? 0);
   const anchorMs = control.anchorMs ?? sharedMatchEpochMs;
   const offsetSeconds = control.offsetSeconds ?? 0;
-  const elapsedMs = nowMs - anchorMs + offsetSeconds * 1000;
+  const elapsedMs = serverNowMs - anchorMs + offsetSeconds * 1000;
   const cycleDurationMs = config.matchCycleSeconds * 1000;
   const normalizedMs =
     ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
 
   return {
     config,
-    cycleStartMs: nowMs - normalizedMs,
+    cycleStartMs: serverNowMs - normalizedMs,
     second: Math.min(
       Math.floor(normalizedMs / 1000),
       config.finalPlayableSecond
@@ -766,7 +767,7 @@ export function computeMockGameSnapshot(
 export function getMockPredictionState(
   snapshot: Pick<MockGameSnapshot, "elapsedSecond" | "cycleStartMs" | "matchId">
 ): MockPredictionState {
-  const config = matchConfigs[snapshot.matchId] ?? matchConfigs[defaultMatchId];
+  const config = matchConfigs[ACTIVE_MOCK_MATCH_ID];
   const activeEventIndex = config.scoreEvents.findIndex(
     (event) => event.at > snapshot.elapsedSecond
   );
