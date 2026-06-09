@@ -6,6 +6,7 @@ import {
   PencilIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/solid";
+import { Crown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Room } from "../../components/ui/RoomCard";
@@ -52,6 +53,7 @@ type ChatLocationState = {
 
 type ChatMessage = {
   id: number | string;
+  senderProfileId: string | null;
   sender: string;
   text: string;
   time: string;
@@ -88,6 +90,7 @@ function toDisplayMessage(
   if (isRoomEventMessage(message.content)) {
     return {
       id: message.id,
+      senderProfileId: null,
       sender: "System",
       text: message.content.replace(ROOM_EVENT_MESSAGE_PREFIX, ""),
       time: formatMessageTime(createdAt),
@@ -98,6 +101,7 @@ function toDisplayMessage(
 
   return {
     id: message.id,
+    senderProfileId: message.senderProfileId,
     sender: message.senderName,
     text: message.content.replace(ROOM_SYSTEM_MESSAGE_PREFIX, ""),
     time: formatMessageTime(createdAt),
@@ -212,11 +216,16 @@ function buildPredictionResultText(
   return `${correctCount} people guessed correctly. Result: ${result}.`;
 }
 
-function buildPredictionLeaderText(
+type PredictionLeaderSummary = {
+  text: string;
+  winnerProfileIds: string[];
+};
+
+function buildPredictionLeaderSummary(
   predictionEntries: RoomPredictionEntryRecord[],
   predictionState: MockPredictionState,
   cycleStartMs: number
-) {
+): PredictionLeaderSummary | null {
   if (predictionState.activeRound !== null) return null;
 
   const scoreboard = new Map<string, { name: string; correct: number }>();
@@ -240,22 +249,33 @@ function buildPredictionLeaderText(
     }
   }
 
-  const leaders = [...scoreboard.values()].sort((a, b) => b.correct - a.correct);
+  const leaders = [...scoreboard.entries()]
+    .map(([profileId, score]) => ({ profileId, ...score }))
+    .sort((a, b) => b.correct - a.correct);
 
   if (leaders.length === 0 || leaders[0].correct === 0) {
-    return "Prediction leader: no correct guesses this match.";
+    return {
+      text: "Prediction leader: no correct guesses this match.",
+      winnerProfileIds: [],
+    };
   }
 
   const topScore = leaders[0].correct;
-  const topNames = leaders
-    .filter((leader) => leader.correct === topScore)
-    .map((leader) => leader.name);
+  const topLeaders = leaders.filter((leader) => leader.correct === topScore);
+  const topNames = topLeaders.map((leader) => leader.name);
+  const winnerProfileIds = topLeaders.map((leader) => leader.profileId);
 
   if (topNames.length === 1) {
-    return `Top predictor: ${topNames[0]} with ${topScore} correct.`;
+    return {
+      text: `Top predictor: ${topNames[0]} with ${topScore} correct.`,
+      winnerProfileIds,
+    };
   }
 
-  return `Top predictors: ${topNames.join(", ")} with ${topScore} correct each.`;
+  return {
+    text: `Top predictors: ${topNames.join(", ")} with ${topScore} correct each.`,
+    winnerProfileIds,
+  };
 }
 
 function buildPredictionAnnouncements(
@@ -276,6 +296,7 @@ function buildPredictionAnnouncements(
 
     return {
       id: `prediction-round-${cycleStartMs}-${round.round}`,
+      senderProfileId: null,
       sender: "System",
       text: buildPredictionResultText(correctCount, round.result),
       time: "",
@@ -283,6 +304,31 @@ function buildPredictionAnnouncements(
       createdAt: round.resolvedAtMs + 250,
     };
   });
+}
+
+// How many points the given user has this match: +1 for each resolved round
+// where their (latest, pre-resolution) pick matched the result.
+function countCorrectPredictionsForUser(
+  predictionEntries: RoomPredictionEntryRecord[],
+  predictionState: MockPredictionState,
+  cycleStartMs: number,
+  userId: string
+): number {
+  if (!userId) return 0;
+
+  let points = 0;
+  for (const round of predictionState.resolvedRounds) {
+    const latestEntries = getLatestRoundEntries(
+      predictionEntries,
+      round.round,
+      cycleStartMs,
+      round.resolvedAtMs
+    );
+    const mine = latestEntries.find((entry) => entry.senderProfileId === userId);
+    if (mine && mine.choice === round.result) points += 1;
+  }
+
+  return points;
 }
 
 function RoomChat() {
@@ -338,6 +384,12 @@ function RoomChat() {
     !isFinalState &&
     clockSeconds !== null &&
     clockSeconds <= 19;
+  const hideShortMockClues = gameState.matchId === "short";
+  const displayGameStatusLabel =
+    hideShortMockClues && gameState.statusLabel === "Clock Stopped"
+      ? "Live"
+      : gameState.statusLabel;
+  const displayGameDetail = hideShortMockClues ? null : gameState.detail;
   const predictionState = useMemo(
     () => getMockPredictionState(gameState),
     [gameState]
@@ -358,6 +410,17 @@ function RoomChat() {
     predictionState.activeRound,
   ]);
 
+  const myPoints = useMemo(
+    () =>
+      countCorrectPredictionsForUser(
+        predictionEntries,
+        predictionState,
+        gameState.cycleStartMs,
+        currentUserId
+      ),
+    [currentUserId, gameState.cycleStartMs, predictionEntries, predictionState]
+  );
+
   const predictionAnnouncements = useMemo(
     () =>
       buildPredictionAnnouncements(
@@ -367,14 +430,19 @@ function RoomChat() {
       ),
     [gameState.cycleStartMs, predictionEntries, predictionState]
   );
-  const finalPredictionLeaderText = useMemo(
+  const finalPredictionLeader = useMemo(
     () =>
-      buildPredictionLeaderText(
+      buildPredictionLeaderSummary(
         predictionEntries,
         predictionState,
         gameState.cycleStartMs
       ),
     [gameState.cycleStartMs, predictionEntries, predictionState]
+  );
+  const finalPredictionLeaderText = finalPredictionLeader?.text ?? null;
+  const winnerProfileIds = useMemo(
+    () => new Set(finalPredictionLeader?.winnerProfileIds ?? []),
+    [finalPredictionLeader]
   );
 
   const displayMessages = useMemo(() => {
@@ -787,6 +855,14 @@ function RoomChat() {
   }
 
   const hasMatch = !gameHidden && room.status === "live";
+  function isWinningPlayerMessage(message: ChatMessage) {
+    return (
+      isFinalState &&
+      !gameHidden &&
+      message.senderProfileId !== null &&
+      winnerProfileIds.has(message.senderProfileId)
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-slate-50">
@@ -950,7 +1026,7 @@ function RoomChat() {
                           : "text-white/75"
                       }`}
                     >
-                      {gameState.statusLabel}
+                      {displayGameStatusLabel}
                     </p>
                   </div>
 
@@ -970,13 +1046,13 @@ function RoomChat() {
                   </div>
                 </div>
 
-                {gameState.detail && !isFinalState && (
+                {displayGameDetail && !isFinalState && (
                   <p
                     className={`mt-2 text-center font-lato text-[0.68rem] font-semibold sm:text-xs ${
                       isClutchMoment ? "text-secondary/80" : "text-white/85"
                     }`}
                   >
-                    {gameState.detail}
+                    {displayGameDetail}
                   </p>
                 )}
               </div>
@@ -1077,12 +1153,27 @@ function RoomChat() {
                           </p>
                         )}
                         <div
-                          className={`px-3.5 py-2 shadow-sm ${
+                          className={`relative px-3.5 py-2 shadow-sm ${
                             message.align === "right"
                               ? "rounded-2xl rounded-br-md bg-secondary text-white"
                               : "rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-700"
+                          } ${
+                            isWinningPlayerMessage(message)
+                              ? "ring-2 ring-primary/70"
+                              : ""
                           }`}
                         >
+                          {isWinningPlayerMessage(message) && (
+                            <span
+                              aria-label="Winner"
+                              title="Winner"
+                              className={`pointer-events-none absolute -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-secondary shadow-[0_8px_18px_rgba(15,23,42,0.22)] ring-2 ring-white ${
+                                message.align === "right" ? "-left-2" : "-right-2"
+                              }`}
+                            >
+                              <Crown className="h-4 w-4" strokeWidth={2.8} />
+                            </span>
+                          )}
                           <p className="font-lato text-sm leading-6 [overflow-wrap:anywhere] sm:text-[0.95rem]">
                             {message.text}
                           </p>
@@ -1107,6 +1198,17 @@ function RoomChat() {
             {chatError && displayMessages.length > 0 && (
               <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5">
                 <p className="font-lato text-sm text-rose-700">{chatError}</p>
+              </div>
+            )}
+
+            {!gameHidden && !loadingMessages && (
+              <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2">
+                <span className="font-lato text-[0.7rem] font-bold uppercase tracking-[0.14em] text-secondary/70">
+                  Your points
+                </span>
+                <span className="font-lato text-sm font-extrabold tabular-nums text-secondary">
+                  {myPoints} {myPoints === 1 ? "pt" : "pts"}
+                </span>
               </div>
             )}
 

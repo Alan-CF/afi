@@ -470,26 +470,8 @@ const shortTimeline: TimelineSegment[] = [
   {
     kind: "quarter",
     quarter: 4,
-    duration: 11,
+    duration: 29,
     clockStart: 27,
-    clockEnd: 16,
-    statusLabel: "Live",
-    detail: null,
-  },
-  {
-    kind: "quarter",
-    quarter: 4,
-    duration: 5,
-    clockStart: 16,
-    clockEnd: 16,
-    statusLabel: "Clock Stopped",
-    detail: "Shooting foul — two at the line.",
-  },
-  {
-    kind: "quarter",
-    quarter: 4,
-    duration: 13,
-    clockStart: 16,
     clockEnd: 0,
     statusLabel: "Live",
     detail: null,
@@ -506,7 +488,7 @@ const shortTimeline: TimelineSegment[] = [
 
 const shortBaseScoreEvents: ScoreEvent[] = [
   {
-    at: 8,
+    at: 12,
     team: "warriors",
     points: 3,
     shotType: "Triple",
@@ -722,18 +704,22 @@ function getCycleContext(control: MockGameControl, nowMs: number) {
   const config =
     matchConfigs[control.matchId] ?? matchConfigs[ACTIVE_MOCK_MATCH_ID];
   const serverNowMs = nowMs + (control.serverTimeOffsetMs ?? 0);
+  const hasManualAnchor = control.anchorMs !== null;
   const anchorMs = control.anchorMs ?? sharedMatchEpochMs;
   const offsetSeconds = control.offsetSeconds ?? 0;
   const elapsedMs = serverNowMs - anchorMs + offsetSeconds * 1000;
   const cycleDurationMs = config.matchCycleSeconds * 1000;
-  const normalizedMs =
-    ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
+  const matchElapsedMs = hasManualAnchor
+    ? Math.max(0, elapsedMs)
+    : ((elapsedMs % cycleDurationMs) + cycleDurationMs) % cycleDurationMs;
 
   return {
     config,
-    cycleStartMs: serverNowMs - normalizedMs,
+    cycleStartMs: hasManualAnchor
+      ? anchorMs - offsetSeconds * 1000
+      : serverNowMs - matchElapsedMs,
     second: Math.min(
-      Math.floor(normalizedMs / 1000),
+      Math.floor(matchElapsedMs / 1000),
       config.finalPlayableSecond
     ),
   };
