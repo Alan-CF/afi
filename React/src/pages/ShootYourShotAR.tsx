@@ -153,7 +153,7 @@ function Ball({
 
     const wentThroughHoop =
       isFalling &&
-      Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
+      Math.abs(ballPosition.x - rimCenter.x) < 0.28 &&
       Math.abs(ballPosition.z - rimCenter.z) < 0.40 &&
       ballPosition.y < rimCenter.y + 0.36 &&
       ballPosition.y > rimCenter.y - 0.36;
@@ -164,7 +164,7 @@ function Ball({
       Math.abs(ballPosition.y - rimCenter.y) < 0.16;
 
     const insideScoringArea =
-      Math.abs(ballPosition.x - rimCenter.x) < 0.32 &&
+      Math.abs(ballPosition.x - rimCenter.x) < 0.28 &&
       Math.abs(ballPosition.z - rimCenter.z) < 0.38;
 
     const hitRim =
@@ -1393,20 +1393,22 @@ function ShootYourShot() {
                     )}
                   </div>
                   
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetGame();
-                      setThrowRequest(null);
-                      setHasShotOnce(false);
-                      setTotalShots(0);
-                      setGameSaved(false);
-                      startGame();
-                    }}
-                    className="mt-6 w-full rounded-2xl bg-primary text-secondary py-4 font-extrabold uppercase tracking-wide hover:brightness-90 transition"
-                  >
-                    Play Again
-                  </button>
+                  {!isChallengeMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetGame();
+                        setThrowRequest(null);
+                        setHasShotOnce(false);
+                        setTotalShots(0);
+                        setGameSaved(false);
+                        startGame();
+                      }}
+                      className="mt-3 w-full rounded-2xl bg-primary text-secondary py-4 font-extrabold uppercase tracking-wide hover:brightness-95 transition"
+                    >
+                      Play Again
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleBackToMenu}

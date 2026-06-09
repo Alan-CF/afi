@@ -13,6 +13,7 @@ export type Room = {
   matchHidden?: boolean;
   imageUrl?: string | null;
   createdAt?: string | null;
+  ownerProfileId?: string;
 };
 
 // A room is flagged "NEW" for this long after creation.

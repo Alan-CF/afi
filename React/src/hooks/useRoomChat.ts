@@ -1,6 +1,10 @@
 import { supabase } from "../lib/supabaseClient";
 import type { Room } from "../components/ui/RoomCard";
-import type { PredictionOption } from "./useMockRoomGameFeed";
+import {
+  ACTIVE_MOCK_MATCH_ID,
+  type PredictionOption,
+  type MockGameControl,
+} from "./useMockRoomGameFeed";
 
 export const ROOM_SYSTEM_MESSAGE_PREFIX = "[[system]] ";
 export const ROOM_PREDICTION_MESSAGE_PREFIX = "[[prediction]] ";
@@ -21,6 +25,7 @@ export type RoomChatBootstrap = {
   currentUsername: string;
   isOwner: boolean;
   messages: RoomChatMessageRecord[];
+  mockControl: MockGameControl;
 };
 
 export type RoomPredictionEntryRecord = {
@@ -54,6 +59,22 @@ type RoomMatchHiddenRow = {
   id: number;
   match_hidden: boolean;
 };
+
+type MockGameStateRow = {
+  anchor_ms?: number | string | null;
+};
+
+function parseGlobalMockControl(row: MockGameStateRow | null): MockGameControl {
+  // bigint columns can come back as number or string depending on the driver.
+  const anchorRaw =
+    !row || row.anchor_ms === null || row.anchor_ms === undefined
+      ? null
+      : Number(row.anchor_ms);
+  const anchorMs =
+    anchorRaw !== null && Number.isFinite(anchorRaw) ? anchorRaw : null;
+
+  return { matchId: ACTIVE_MOCK_MATCH_ID, anchorMs, offsetSeconds: 0 };
+}
 
 type SerializedPredictionPayload = {
   round: number;
@@ -188,6 +209,58 @@ export async function fetchRoomChat(roomId: number): Promise<RoomChatBootstrap> 
       content: message.content,
       createdAt: message.created_at,
     })),
+    mockControl: await fetchGlobalMockControl(),
+  };
+}
+
+// The mock game is a single shared simulation for the whole app, stored in the
+// mock_game_state singleton row.
+export async function fetchGlobalMockControl(): Promise<MockGameControl> {
+  const { data, error } = await supabase
+    .from("mock_game_state")
+    .select("anchor_ms")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    throw buildQueryError("mock_game_state query failed", error.message);
+  }
+
+  return parseGlobalMockControl((data ?? null) as MockGameStateRow | null);
+}
+
+// Owner-only (enforced by reset_global_mock_game, which checks room ownership).
+// Restarts the shared mock match for everyone, on every device.
+export async function resetGlobalMockGame(): Promise<void> {
+  const { error } = await supabase.rpc("reset_global_mock_game", {
+    p_anchor_ms: Date.now(),
+  });
+
+  if (error) {
+    throw buildQueryError("reset global mock game failed", error.message);
+  }
+}
+
+export function subscribeToGlobalMockControl(
+  onChange: (control: MockGameControl) => void
+) {
+  const channel = supabase
+    .channel("mock-game-state")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "mock_game_state",
+      },
+      (payload) => {
+        onChange(parseGlobalMockControl(payload.new as MockGameStateRow));
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
   };
 }
 
