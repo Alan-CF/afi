@@ -63,8 +63,19 @@ function handlePricedProducts(
 }
 
 function ParsedMessage({ content }: { content: string }) {
+  const renderBoldText = (text: string) =>
+    text.split(/(\*\*[^*]+?\*\*)/g).map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+
+      return part;
+    });
+
   const renderText = (text: string) => (
-    <p className="whitespace-pre-line font-lato text-sm">{text}</p>
+    <p className="whitespace-pre-line font-lato text-sm">
+      {renderBoldText(text)}
+    </p>
   );
 
   let parsedReply: ThunderJsonReply['reply'] | null = null;
